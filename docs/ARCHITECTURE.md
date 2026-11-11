@@ -93,13 +93,13 @@ backroom/
 | GET | `/memory/graph?as_of=` | nodes/edges valid at time |
 | GET | `/memory/facts/{id}` | fact + provenance |
 | POST | `/memory/ingest/invoice` | PDF/image → extractor → facts |
-| POST | `/chaos` | `{portal, seed}` (dev/demo only) |
+| POST | `/chaos` | `{portal, seed}` (dev/demo only). Forwards to the portals service's `POST /_admin/chaos` with `PORTALS_ADMIN_TOKEN` |
 | POST | `/ask` | SSE answer with tool calls + citations (P1) |
 
 ## 4. Mock portals and the chaos engine (services/portals)
 
 - Server-rendered Jinja2 with tiny vanilla JS. Realistic patterns: login → TOTP (pyotp) → dashboard, cookie banner, catalog search + pagination, cart, checkout confirm, order history, generated PDF invoices (WeasyPrint or ReportLab).
-- **Chaos engine:** each request reads a `chaos_seed` (session or `/chaos`). A seeded RNG picks variants from a catalog:
+- **Chaos engine:** the portals service keeps one current `chaos_seed` per portal (default 0), set through `POST /_admin/chaos {portal, seed}` (requires the `PORTALS_ADMIN_TOKEN` header; the api's `/chaos` route is the only caller). Every request renders with that portal's current seed. Bench runs set the seed before each run. A seeded RNG picks variants from a catalog:
   - label synonyms and language (EN/DE: "Add to cart" ↔ "In den Warenkorb")
   - DOM order and layout permutations; wrapper-div depth; randomised ids/classes
   - interstitials (cookie banner, "what's new" modal, survey)
@@ -165,11 +165,11 @@ LLM_PLANNER_MODEL=claude-haiku-5-5 LLM_ESCALATION_MODEL=claude-haiku-5-5
 - **Prompt caching:** frozen system prompt + deterministic tool list first; volatile content (time, page snapshot) after the last breakpoint. Track `cache_read_input_tokens` and show the cache-hit % on the bench page.
 - Parse tool inputs with `json.loads` / Pydantic. Never string-match.
 
-**Escalation ladder** (shared by heal and refusal handling): deterministic fallbacks → worker model → escalation model (+ screenshot) → `ask_human`.
+**Escalation ladder** (shared by heal and refusal handling): deterministic fallbacks → healer model (`LLM_HEAL_MODEL`) → escalation model (`LLM_ESCALATION_MODEL`, + screenshot) → `ask_human`. For refusals on other roles, the first rung is skipped and the call goes straight to the escalation model.
 
 **Cost meter:** every call records `{provider, role, model, input, output, cache_read, $}` to the run. On OpenRouter, the bench JSON adds the ~5.5% credit fee as a separate line (`OPENROUTER_FEE_PCT=5.5`). That feeds the UI ticker, the budget guard and the bench JSON.
 
-**Rough budget:** explore run ≈ 15 steps × 4K in / 200 out on Haiku ≈ **$0.008**. Planner brief ≈ 30K in / 4K out on Sonnet ≈ **$0.10**. Full bench B1–B3 ≈ **< $5**. Total build + bench ≈ **$15–30**.
+**Rough budget:** explore run ≈ 15 steps × 4K in / 200 out on Haiku ≈ **$0.008**. Planner brief ≈ 30K in / 4K out on Sonnet ≈ **$0.10**. Full bench B1–B3 + B5 ≈ **< $5**. Total build + bench ≈ **$15–30**.
 
 ## 6. Frontend (apps/web)
 

@@ -39,7 +39,7 @@ Every milestone has a **gate**: don't start the next one until its acceptance ch
 - **Gate:**
   - "Reorder oat milk ×24": cold explore succeeds at seed 0.
   - Warm replay < 5 s, 0 LLM calls.
-  - Seed 3 → heal succeeds and creates v2 with a visible diff.
+  - Chaos seed 7 (the demo seed) and one other seed → heal succeeds and creates v2 with a visible diff.
 
 ## M3 — Memory + Brief + UI · Thu 14:00–19:00
 - Memory schema, deterministic writers, supersession, context packer.
@@ -65,7 +65,7 @@ Every milestone has a **gate**: don't start the next one until its acceptance ch
 - UI review pass (`ui-ux-pro-max` review + Playwright screenshots); Lighthouse ≥ 90 (`web-perf` skill + Chrome DevTools MCP).
 - README: hero GIF, benchmark table with real numbers.
 - Optional 2-minute screen recording as a backup.
-- Rehearse the demo script 3× on the deployed URL.
+- Rehearse the demo script 3× on the deployed URL, including the chaos seed 7 heal.
 - **11:30 FREEZE.** Take a Lightsail snapshot. No more deploys.
 
 ## Working agreements for Fable sessions

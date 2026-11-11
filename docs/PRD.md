@@ -4,7 +4,7 @@
 
 | | |
 |---|---|
-| Status | v1.0. Build window: Wed 11 Nov 19:00 → Fri 13 Nov 11:30 (code freeze) |
+| Status | v1.0. Build window: Wed 11 Nov 22:00 → Fri 13 Nov 11:30 (code freeze) |
 | Owner | Vijay (Vijay190899) |
 | Audience | Super44 founders (Henry George, CTO; Alex Riesenkampff), in the Founding Engineer interview on Fri 13 Nov |
 | Build agent | Claude Fable 5.2 in Claude Code |
@@ -98,7 +98,7 @@ As Lena, after approving, I watch the agent work.
 - First time a task runs: an **EXPLORE** run. The LLM agent drives the browser over the accessibility snapshot.
 - On success, the trajectory is **compiled** into a parameterised skill (JSON): steps with semantic locators, fallbacks, pre/postconditions, and secret placeholders.
 - Later runs: **REPLAY** deterministically (Playwright), with no LLM.
-- When a step's locator or postcondition fails: **HEAL**. Try the locator fallbacks → worker model with snapshot + step intent → escalate to the stronger model → `ask_human`. The healed step is written as a new skill version, and the UI shows a diff ("Step 4: `button 'Add to cart'` → `button 'In den Warenkorb'`").
+- When a step's locator or postcondition fails: **HEAL**. Try the locator fallbacks → healer model (`LLM_HEAL_MODEL`) with snapshot + step intent → escalation model (`LLM_ESCALATION_MODEL`) with a screenshot → `ask_human`. The healed step is written as a new skill version, and the UI shows a diff ("Step 4: `button 'Add to cart'` → `button 'In den Warenkorb'`").
 - **AC:** the skill registry page lists skills with version history, success rate, mean latency and mean $; it diffs versions.
 
 ### F4. Memory (P0)
@@ -132,7 +132,7 @@ As Lena, after approving, I watch the agent work.
 | Temporal memory graph + context packer | Invoice upload via UI (vision extraction) | Competitor map (OSM) |
 | Brief: detectors → planner → verifier → number guard | Langfuse tracing | Figma-designed marketing page |
 | Approve / reject loop + preference learning | Undo for all actions | |
-| Bench harness B1–B3 + bench page | B4 model-swap table | |
+| Bench harness B1–B3 + B5 + bench page | B4 model-swap table | |
 | Deploy (Vercel + Lightsail), replay fallback, budget cap | Sentry | |
 
 **Cut order if behind:** P2 → Localboard → Ask → invoice upload UI (keep the ingest script) → B4. **Never cut:** heal under chaos, number guard, bench page, replay fallback.
@@ -213,7 +213,7 @@ All benchmarks are reproducible with one command (`pnpm bench`). Results are JSO
 
 ## 10. Success criteria for the interview
 1. The full demo script ([DEMO_SCRIPT.md](DEMO_SCRIPT.md)) runs live on the public URL in < 5 minutes without a hitch, three rehearsals in a row.
-2. The bench page shows real B1–B3 numbers.
+2. The bench page shows real B1–B3 and B5 numbers.
 3. The README explains the architecture in < 2 minutes of reading, with a GIF.
 4. You can answer "how would this work on a real POS or supplier?" from the architecture (adapters: API-first, browser fallback; skills per portal; human handoff).
 
@@ -222,7 +222,7 @@ All benchmarks are reproducible with one command (`pnpm bench`). Results are JSO
 | Risk | Mitigation |
 |---|---|
 | Browser agent flaky on cold explore | Small, well-labelled portals; ARIA snapshot observation; step budget; golden skills pre-compiled before the demo |
-| Healing too slow live | Fallback locators first (no LLM); worker model before escalation; pre-warm demo seeds |
+| Healing too slow live | Fallback locators first (no LLM); healer model before escalation; demo chaos seed 7 verified at the M2 gate and again in rehearsal |
 | Lightsail box down or Wi-Fi bad | Replay mode with recorded golden runs; local `docker compose` backup on the laptop |
 | LLM refusal or outage | Escalation ladder plus template copy; replay mode |
 | Time overrun | Strict milestone gates ([BUILD_PLAN.md](BUILD_PLAN.md)); cut list in §6 |
