@@ -1,0 +1,37 @@
+# env & secrets
+.env
+.env.*
+!.env.example
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+
+# node / next
+node_modules/
+.next/
+out/
+.vercel/
+.turbo/
+*.tsbuildinfo
+
+# data (raw downloads and generated outputs are reproducible)
+data/raw/
+data/out/
+
+# tooling caches
+graphify-out/
+.serena/cache/
+playwright-report/
+test-results/
+.claude/settings.local.json
+
+# os / editor
+.DS_Store
+Thumbs.db
+.idea/
