@@ -1,0 +1,43 @@
+/*
+ * Backroom design tokens (PRD §7). Components never use raw hex: they use these
+ * tokens through the Tailwind colour names mapped in app/globals.css.
+ * Every text token is >= 4.5:1 against bg, surface and subtle in both themes.
+ * Tokens are prefixed `--t-` because shadcn/ui already owns `--accent` and `--muted`.
+ */
+:root {
+  --t-bg: #f6f2ec; /* crema */
+  --t-surface: #ffffff;
+  --t-subtle: #eee7dd;
+  --t-ink: #1b1612;
+  --t-muted: #6b6158;
+  --t-line: #e6ded3;
+  --t-accent: #c8742b; /* roasted caramel: fills, rings, indicators (not small text) */
+  --t-accent-ink: #96500f; /* caramel for text */
+  --t-pos: #2a7153;
+  --t-neg: #a63d29;
+  /* Run-mode badges */
+  --t-explore: #8f5e0b;
+  --t-replay: #2a7153;
+  --t-heal: #6a48b8;
+
+  --t-radius-card: 0.875rem; /* 14px */
+  --t-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --t-dur-fast: 160ms;
+  --t-dur: 240ms;
+}
+
+.dark {
+  --t-bg: #121010;
+  --t-surface: #1b1817;
+  --t-subtle: #252120;
+  --t-ink: #f3eee8;
+  --t-muted: #a39a90;
+  --t-line: #2c2725;
+  --t-accent: #e29a52;
+  --t-accent-ink: #e29a52;
+  --t-pos: #5fbf8f;
+  --t-neg: #e8826c;
+  --t-explore: #e0a84a;
+  --t-replay: #5fbf8f;
+  --t-heal: #b09aea;
+}

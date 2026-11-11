@@ -1,0 +1,142 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "../styles/tokens.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-instrument-serif);
+  --font-heading: var(--font-instrument-serif);
+  --color-ink: var(--t-ink);
+  --color-surface: var(--t-surface);
+  --color-subtle: var(--t-subtle);
+  --color-line: var(--t-line);
+  --color-caramel: var(--t-accent);
+  --color-caramel-ink: var(--t-accent-ink);
+  --color-pos: var(--t-pos);
+  --color-neg: var(--t-neg);
+  --color-explore: var(--t-explore);
+  --color-replay: var(--t-replay);
+  --color-heal: var(--t-heal);
+  --ease-out-soft: var(--t-ease-out);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --background: var(--t-bg);
+  --foreground: var(--t-ink);
+  --card: var(--t-surface);
+  --card-foreground: var(--t-ink);
+  --popover: var(--t-surface);
+  --popover-foreground: var(--t-ink);
+  --primary: var(--t-ink);
+  --primary-foreground: var(--t-bg);
+  --secondary: var(--t-subtle);
+  --secondary-foreground: var(--t-ink);
+  --muted: var(--t-subtle);
+  --muted-foreground: var(--t-muted);
+  --accent: var(--t-subtle);
+  --accent-foreground: var(--t-ink);
+  --destructive: var(--t-neg);
+  --border: var(--t-line);
+  --input: var(--t-line);
+  --ring: var(--t-accent);
+  --chart-1: var(--t-accent);
+  --chart-2: var(--t-pos);
+  --chart-3: var(--t-heal);
+  --chart-4: var(--t-muted);
+  --chart-5: var(--t-neg);
+  --radius: 0.625rem;
+  --sidebar: var(--t-bg);
+  --sidebar-foreground: var(--t-ink);
+  --sidebar-primary: var(--t-ink);
+  --sidebar-primary-foreground: var(--t-bg);
+  --sidebar-accent: var(--t-subtle);
+  --sidebar-accent-foreground: var(--t-ink);
+  --sidebar-border: var(--t-line);
+  --sidebar-ring: var(--t-accent);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    color-scheme: light;
+    -webkit-tap-highlight-color: transparent;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "ss01", "cv11";
+  }
+  :focus-visible {
+    outline: 2px solid var(--t-accent);
+    outline-offset: 2px;
+  }
+  a,
+  button {
+    touch-action: manipulation;
+  }
+}
+
+@layer utilities {
+  /* Prices, timers and counters keep their width as digits change. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

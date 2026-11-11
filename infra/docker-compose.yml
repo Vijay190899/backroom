@@ -1,0 +1,73 @@
+name: backroom
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: backroom
+      POSTGRES_PASSWORD: backroom
+      POSTGRES_DB: backroom
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U backroom -d backroom"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # --- Deploy-only services (local dev runs api and portals natively: `pnpm dev`) ---
+  portals:
+    profiles: ["deploy"]
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.portals
+    restart: unless-stopped
+    env_file: ../.env
+    expose:
+      - "8001"
+
+  api:
+    profiles: ["deploy"]
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.api
+    restart: unless-stopped
+    env_file: ../.env
+    environment:
+      DATABASE_URL: postgresql://backroom:backroom@postgres:5432/backroom
+      PORTALS_BASE_URL: http://portals:8001
+      LLM_LEDGER_PATH: /var/lib/backroom/llm_ledger.jsonl
+    volumes:
+      - apidata:/var/lib/backroom
+    depends_on:
+      postgres:
+        condition: service_healthy
+      portals:
+        condition: service_started
+    expose:
+      - "8000"
+
+  caddy:
+    profiles: ["deploy"]
+    image: caddy:2
+    restart: unless-stopped
+    environment:
+      API_HOST: ${API_HOST:-api.localhost}
+      PORTALS_HOST: ${PORTALS_HOST:-portals.localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+    depends_on:
+      - api
+      - portals
+
+volumes:
+  pgdata:
+  apidata:
+  caddydata:

@@ -71,7 +71,7 @@ backroom/
 | Concern | Choice | Why |
 |---|---|---|
 | Runtime | Python 3.12, `uv`, FastAPI, Pydantic v2 | Their stack. Typed schemas shared with LLM structured outputs |
-| DB | Postgres 16 + pgvector (`pgvector/pgvector:pg16`), `psycopg` 3, plain SQL migrations | One store for graph, runs and skills. Bitemporal queries are easy in SQL |
+| DB | Postgres 16 + pgvector (`pgvector/pgvector:pg16`), `psycopg` 3 (synchronous pool, called from worker threads; ADR-10), plain SQL migrations | One store for graph, runs and skills. Bitemporal queries are easy in SQL |
 | Analytics | DuckDB over Parquet | Fast embedded OLAP. Detectors are pure SQL |
 | Browser | Playwright (Python) Chromium; CDP `Page.startScreencast` for live frames | Own the loop. No vendor lock-in. Live view for free |
 | Streaming | SSE for run events (resumable via `Last-Event-ID`); WebSocket for JPEG frames | SSE is simple and proxy-friendly; frames need binary |
@@ -123,6 +123,7 @@ One code path: the official `anthropic` Python SDK, pointed at the chosen provid
 
 - `LLM_*_MODEL` env vars always hold **canonical IDs** (`claude-haiku-5-5`). The registry maps them per provider. An ID containing `/` (e.g. `google/gemini-…`) passes through untouched on OpenRouter, for B4 experiments.
 - **Capability flags per provider** (`registry.CAPS[provider]`): `effort`, `strict_tools`, `structured_outputs`, `prompt_cache`, `streaming`, `server_fallbacks`, `betas`. Call sites check flags; they never branch on the provider name.
+- A flag is switched off with `LLM_CAPS_OFF` (comma-separated, e.g. `LLM_CAPS_OFF=effort,strict_tools`). With `effort` off, no `output_config.effort` is sent; with `strict_tools` off, `strict` is stripped from tool definitions; with `structured_outputs` off, a JSON-schema request raises so the caller uses a tool instead.
 - **The capability probe** (`pnpm probe:llm`, M0 gate) makes one cheap Haiku call per feature: tool call with `strict`, structured output, cache hit on the repeat (`cache_read_input_tokens > 0`), streaming, `stop_reason`, and `output_config.effort` accepted. Results go to `bench/results/provider_probe.json`. Any failure flips that flag off for the provider and is logged in DECISIONS.md.
 
 ### 5.2 Roles
@@ -167,7 +168,9 @@ LLM_PLANNER_MODEL=claude-haiku-5-5 LLM_ESCALATION_MODEL=claude-haiku-5-5
 
 **Escalation ladder** (shared by heal and refusal handling): deterministic fallbacks → healer model (`LLM_HEAL_MODEL`) → escalation model (`LLM_ESCALATION_MODEL`, + screenshot) → `ask_human`. For refusals on other roles, the first rung is skipped and the call goes straight to the escalation model.
 
-**Cost meter:** every call records `{provider, role, model, input, output, cache_read, $}` to the run. On OpenRouter, the bench JSON adds the ~5.5% credit fee as a separate line (`OPENROUTER_FEE_PCT=5.5`). That feeds the UI ticker, the budget guard and the bench JSON.
+**One call path:** `llm/client.py` (`LLM.create` / `LLM.stream`) checks the daily budget, calls the provider, and records the call. Nothing else talks to the SDK.
+
+**Cost meter:** every call appends `{ts, provider, role, model, input, output, cache_read, cache_write, $, stop_reason, run_id}` to the ledger (`var/llm_ledger.jsonl`; `LLM_LEDGER_PATH`), and the budget guard sums today's rows before each call. On OpenRouter, the bench JSON adds the ~5.5% credit fee as a separate line (`OPENROUTER_FEE_PCT=5.5`). That feeds the UI ticker, the budget guard and the bench JSON.
 
 **Rough budget:** explore run ≈ 15 steps × 4K in / 200 out on Haiku ≈ **$0.008**. Planner brief ≈ 30K in / 4K out on Sonnet ≈ **$0.10**. Full bench B1–B3 + B5 ≈ **< $5**. Total build + bench ≈ **$15–30**.
 

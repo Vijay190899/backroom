@@ -1,0 +1,10 @@
+.git
+.venv
+node_modules
+apps
+graphify-out
+var
+data/raw
+data/out
+**/__pycache__
+.env

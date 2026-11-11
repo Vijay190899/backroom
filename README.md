@@ -71,15 +71,17 @@ Example: `LLM_PLANNER_MODEL=claude-opus-5-5`. See [ARCHITECTURE §5](docs/ARCHIT
 
 ## Run locally
 
-_Coming with milestone M0._ Planned:
+Needs Node 24, pnpm 9, [uv](https://docs.astral.sh/uv/) and Docker.
 
 ```bash
 cp .env.example .env            # add OPENROUTER_API_KEY
 pnpm install && uv sync --all-packages
-pnpm seed                       # open data → Postgres + Parquet
-pnpm dev                        # postgres (docker) + api + portals + web
-pnpm check                      # lint, types, tests
+pnpm dev                        # Postgres (Docker) + API :8000 + portals :8001 + web :3000
+pnpm check                      # ruff, pyright, pytest, eslint, tsc
+pnpm probe:llm                  # confirms which LLM features the provider supports
 ```
+
+`pnpm seed` (open data → Postgres + Parquet) arrives with milestone M1, and `pnpm bench` with M4.
 
 ## Data attribution
 Weather data by [Open-Meteo](https://open-meteo.com/) (CC BY 4.0). Holidays by [Nager.Date](https://date.nager.at/). Sales based on the Maven Analytics "Coffee Shop Sales" sample dataset, re-based (see [DATA.md](docs/DATA.md)).

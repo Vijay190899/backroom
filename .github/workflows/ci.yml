@@ -23,7 +23,7 @@ jobs:
       - name: Check relative links in Markdown
         uses: lycheeverse/lychee-action@v2
         with:
-          args: --offline --no-progress --exclude-path graphify-out './**/*.md'
+          args: --offline --no-progress --exclude-path graphify-out --exclude-path node_modules './*.md' './docs/**/*.md'
           fail: true
 
   python:
@@ -47,7 +47,7 @@ jobs:
         run: uv run pytest -q
 
   web:
-    name: Web (lint · typecheck)
+    name: Web (lint · typecheck · build)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -57,8 +57,6 @@ jobs:
           if [ -f apps/web/package.json ]; then echo "present=true" >> "$GITHUB_OUTPUT"; else echo "present=false" >> "$GITHUB_OUTPUT"; echo "No apps/web yet; skipping (activates at M0)."; fi
       - if: steps.detect.outputs.present == 'true'
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
       - if: steps.detect.outputs.present == 'true'
         uses: actions/setup-node@v4
         with:
@@ -70,3 +68,5 @@ jobs:
         run: pnpm -C apps/web lint
       - if: steps.detect.outputs.present == 'true'
         run: pnpm -C apps/web typecheck
+      - if: steps.detect.outputs.present == 'true'
+        run: pnpm -C apps/web build
