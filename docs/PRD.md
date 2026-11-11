@@ -188,7 +188,7 @@ As Lena, after approving, I watch the agent work.
 ### 8.4 Brief pipeline: "agents for judgment, code for math"
 1. **Detectors** (pure Python + DuckDB SQL): stock-out forecast, margin erosion, weather-demand. Each emits a `Candidate{kind, evidence[], impact_eur, proposed_action}` with all numbers computed.
 2. **Planner** (planner model, structured output): ranks and selects ≤ 3 candidates, writes owner-voice copy using only evidence values, and binds each to a skill + params.
-3. **Verifier** (worker model): checks each card against `Preference` facts and business rules (price cap, supplier order days). It can veto or adjust within the rules and records its reason.
+3. **Verifier** (verifier model, `LLM_VERIFIER_MODEL`, default Haiku 5.5): checks each card against `Preference` facts and business rules (price cap, supplier order days). It can veto or adjust within the rules and records its reason.
 4. **Number guard** (deterministic): every number in the copy must match a number in the card's evidence (with rounding tolerance). On failure: one regeneration, then fall back to template copy.
 
 ### 8.5 Reliability and safety
