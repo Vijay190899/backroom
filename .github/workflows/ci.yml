@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs:
+    name: Docs & config
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate JSON config
+        run: python -m json.tool .mcp.json > /dev/null
+      - name: Check relative links in Markdown
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --offline --no-progress --exclude-path graphify-out './**/*.md'
+          fail: true
+
+  python:
+    name: Python (ruff · pyright · pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect Python workspace
+        id: detect
+        run: |
+          if [ -f pyproject.toml ]; then echo "present=true" >> "$GITHUB_OUTPUT"; else echo "present=false" >> "$GITHUB_OUTPUT"; echo "No pyproject.toml yet; skipping (activates at M0)."; fi
+      - if: steps.detect.outputs.present == 'true'
+        uses: astral-sh/setup-uv@v6
+      - if: steps.detect.outputs.present == 'true'
+        run: uv sync --all-packages
+      - if: steps.detect.outputs.present == 'true'
+        run: uv run ruff check .
+      - if: steps.detect.outputs.present == 'true'
+        run: uv run pyright
+      - if: steps.detect.outputs.present == 'true'
+        run: uv run pytest -q
+
+  web:
+    name: Web (lint · typecheck)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect web app
+        id: detect
+        run: |
+          if [ -f apps/web/package.json ]; then echo "present=true" >> "$GITHUB_OUTPUT"; else echo "present=false" >> "$GITHUB_OUTPUT"; echo "No apps/web yet; skipping (activates at M0)."; fi
+      - if: steps.detect.outputs.present == 'true'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - if: steps.detect.outputs.present == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - if: steps.detect.outputs.present == 'true'
+        run: pnpm install --frozen-lockfile
+      - if: steps.detect.outputs.present == 'true'
+        run: pnpm -C apps/web lint
+      - if: steps.detect.outputs.present == 'true'
+        run: pnpm -C apps/web typecheck
