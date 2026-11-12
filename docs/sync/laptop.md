@@ -14,6 +14,29 @@ Notes: surprises, shortcuts, things left undone.
 
 ---
 
+## Thu 12 Nov 2026 20:40 · L2 · branch laptop/l2-chaos (stacked on laptop/l1-grainline)
+Done:
+- The chaos engine, with 9 families (language, nav position, section order, wrapper depth, id/class salt, interstitials, delayed render, button↔link, table↔cards), rendered through `templates/macros.html` and the `Look` object in `rendering.py`.
+- `GET /_admin/chaos` and `POST /_admin/chaos {portal, seed}` → `ChaosState`; `/_admin/reset` sets every seed back to 0.
+- Seed 0 is canonical. Seed 7 gives German controls, top-bar nav and a cookie banner.
+Verify:
+- `uv run pytest services/portals` (146 in `pnpm check`):
+  - same seed ⇒ same DOM hash across the whole reorder path;
+  - seeds 0–19 ⇒ 20 distinct hashes;
+  - every non-canonical variant has a DOM marker;
+  - label/for/id soundness and the skill test ids hold at all 20 seeds;
+  - the reorder flow works at seeds 3, 7 and 11.
+- By hand: `curl -X POST localhost:8001/_admin/chaos -H "X-Admin-Token: $PORTALS_ADMIN_TOKEN" -H "Content-Type: application/json" -d '{"portal":"grainline","seed":7}'`, then open http://localhost:8001/grainline/catalog.
+Needs from PC (H2/H3), see `docs/CONTRACTS.md` §3 "Rules for the agent runner":
+- a fresh browser context per run;
+- wait for `[aria-busy]` to clear before each snapshot;
+- open the hamburger `<details>` before clicking nav links;
+- link-variant actions are role `link`.
+Also: the api `POST /chaos` forwarding route is yours (L-23). Please time a real seed-7 heal early: it will touch at least 5 steps (L-24).
+Notes:
+- Deviations are logged as L-18…L-25 in `docs/DECISIONS.md`. L-1…L-17 (L0/L1/L10) were added on this branch too, at the user's request.
+- The audit found no blockers and 8 issues worth fixing; all are fixed.
+
 ## Thu 12 Nov 2026 19:10 · L1 · branch laptop/l1-grainline (stacked on laptop/l0-contracts)
 Done:
 - The Grainline portal at `/grainline`: login + TOTP (RFC 6238, no new dependency), catalog search with pagination, cart (add, update, remove), checkout with a delivery-date choice, order page with cancel as the Undo, order history, invoices list, and invoice PDFs (hand-written, deterministic, € and umlauts via WinAnsi).

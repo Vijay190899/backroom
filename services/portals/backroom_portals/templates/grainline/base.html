@@ -1,3 +1,4 @@
+{% import "macros.html" as m with context -%}
 <!doctype html>
 <html lang="{{ 'de' if variants.language == 'de' else 'en' }}">
 <head>
@@ -7,32 +8,37 @@
 <style>
   body { margin: 0; font: 14px/1.45 Verdana, Geneva, sans-serif; color: #222; background: #eef1f4; }
   a { color: #1d4f91; }
-  .topbar { display: block; background: #1d4f91; color: #fff; padding: 10px 18px; font-weight: bold; letter-spacing: .02em; }
-  .topbar small { font-weight: normal; opacity: .8; margin-left: 8px; }
-  .layout { display: flex; min-height: calc(100vh - 40px); }
-  nav.side { width: 180px; background: #dde3ea; padding: 14px 0; flex-shrink: 0; }
-  nav.side ul { list-style: none; margin: 0; padding: 0; }
-  nav.side li a, nav.side button { display: block; padding: 7px 18px; text-decoration: none; color: #1d2b3a; background: none; border: 0; font: inherit; cursor: pointer; text-align: left; width: 100%; }
-  nav.side li a:hover, nav.side button:hover { background: #c9d3de; }
+  .{{ look.cls('topbar') }} { display: block; background: #1d4f91; color: #fff; padding: 10px 18px; font-weight: bold; letter-spacing: .02em; }
+  .{{ look.cls('topbar') }} small { font-weight: normal; opacity: .8; margin-left: 8px; }
+  .{{ look.cls('layout') }} { display: flex; min-height: calc(100vh - 40px); }
+  nav.{{ look.cls('side') }} { width: 180px; background: #dde3ea; padding: 14px 0; flex-shrink: 0; }
+  nav.{{ look.cls('side') }} ul { list-style: none; margin: 0; padding: 0; }
+  nav.{{ look.cls('side') }} li a, nav.{{ look.cls('side') }} .{{ look.cls('btn') }} { display: block; padding: 7px 18px; text-decoration: none; color: #1d2b3a; background: none; border: 0; font: inherit; cursor: pointer; text-align: left; width: 100%; box-sizing: border-box; }
+  nav.{{ look.cls('top') }} { background: #dde3ea; }
   main { flex: 1; padding: 18px 24px; max-width: 900px; }
   h1 { font-size: 20px; margin: 0 0 14px; }
   table { border-collapse: collapse; width: 100%; background: #fff; }
   th, td { border: 1px solid #c8d0d8; padding: 6px 8px; text-align: left; }
-  th { background: #f3f5f7; }
-  td.num, th.num { text-align: right; }
-  .box { background: #fff; border: 1px solid #c8d0d8; padding: 16px; max-width: 360px; }
-  .box label { display: block; margin: 8px 0 3px; }
+  thead th { background: #f3f5f7; }
+  .{{ look.cls('num') }} { text-align: right; }
+  .{{ look.cls('box') }} { background: #fff; border: 1px solid #c8d0d8; padding: 16px; max-width: 360px; }
+  .{{ look.cls('box') }} label { display: block; margin: 8px 0 3px; }
   input[type=text], input[type=email], input[type=password], input[type=number], select { padding: 5px; border: 1px solid #8a96a3; font: inherit; }
   input[type=number] { width: 64px; }
-  button, .btn { background: #e8a33d; border: 1px solid #b57718; color: #222; padding: 5px 12px; font: inherit; cursor: pointer; }
-  .error { color: #a40000; margin: 8px 0; }
-  .notice { background: #fff8d6; border: 1px solid #e0cd6b; padding: 8px 12px; margin-bottom: 12px; }
-  .muted { color: #666; }
-  form.inline { display: inline; }
+  .{{ look.cls('btn') }} { display: inline-block; background: #e8a33d; border: 1px solid #b57718; color: #222; padding: 5px 12px; font: inherit; cursor: pointer; text-decoration: none; }
+  .{{ look.cls('error') }} { color: #a40000; margin: 8px 0; }
+  .{{ look.cls('notice') }} { background: #fff8d6; border: 1px solid #e0cd6b; padding: 8px 12px; margin-bottom: 12px; }
+  .{{ look.cls('muted') }} { color: #666; }
+  form.{{ look.cls('inline') }}, form.{{ look.cls('inline') }} div { display: inline; }
+{{ m.chaos_css() }}
 </style>
 </head>
 <body>
-<header class="topbar">Grainline Wholesale <small>B2B ordering</small></header>
+<header class="{{ look.cls('topbar') }}">Grainline Wholesale <small>B2B ordering</small></header>
+{% if look.delay_ms %}<div class="{{ look.cls('skeleton') }}" aria-busy="true">Loading…</div><div hidden data-reveal="{{ look.delay_ms }}">{% endif %}
 {% block body %}{% endblock %}
+{% if look.delay_ms %}</div>{% endif %}
+{% if show_interstitial %}{{ m.interstitial() }}{% endif %}
+{{ m.chaos_js() }}
 </body>
 </html>

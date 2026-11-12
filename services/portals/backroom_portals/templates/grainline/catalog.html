@@ -2,34 +2,52 @@
 {% block title %}Catalog · Grainline Wholesale{% endblock %}
 {% block main %}
 <h1>Catalog</h1>
-<form method="get" action="/grainline/catalog" role="search" data-testid="{{ tid('search_form') }}">
-  <label for="q">{{ t('search') }}</label>
-  <input id="q" name="q" type="text" value="{{ q }}" data-testid="{{ tid('search') }}">
-  <button type="submit" data-testid="{{ tid('search_submit') }}">{{ t('search_submit') }}</button>
+{% macro add_form(p) -%}
+<form class="{{ look.cls('inline') }}" method="post" action="/grainline/cart/add">
+  <input type="hidden" name="sku" value="{{ p.sku }}">
+  {{ m.field('quantity', 'qty', type='number', row=p.sku, value='1', attrs='min="1" max="999" required') }}
+  {{ m.submit('add_to_cart', row=p.sku) }}
 </form>
-<p class="muted" data-testid="{{ tid('result_count') }}">{{ total }} product{{ '' if total == 1 else 's' }}</p>
+{%- endmacro %}
+{% macro s_search() %}
+<form method="get" action="/grainline/catalog" role="search" data-testid="{{ tid('search_form') }}">
+  {{ m.field('search', 'q', value=q) }}
+  {{ m.submit('search_submit') }}
+</form>
+{% endmacro %}
+{% macro s_results() %}
+<p class="{{ look.cls('muted') }}" data-testid="{{ tid('result_count') }}">{{ total }} product{{ '' if total == 1 else 's' }}</p>
+{% if look.cards %}
+<ul class="{{ look.cls('cards') }}" data-testid="{{ tid('catalog') }}">
+  {% for p, price in rows %}
+  <li data-testid="{{ tid('row', p.sku) }}">
+    <h2>{{ p.name }}</h2>
+    <p>{{ p.sku }} · €{{ '%.2f' % price }} / {{ p.unit }}</p>
+    {{ add_form(p) }}
+  </li>
+  {% else %}
+  <li>No products match "{{ q }}".</li>
+  {% endfor %}
+</ul>
+{% else %}
 <table data-testid="{{ tid('catalog') }}">
-  <thead><tr><th>Product</th><th>SKU</th><th class="num">Price</th><th>Order</th></tr></thead>
+  <thead><tr><th>Product</th><th>SKU</th><th class="{{ look.cls('num') }}">Price</th><th>Order</th></tr></thead>
   <tbody>
   {% for p, price in rows %}
     <tr data-testid="{{ tid('row', p.sku) }}">
       <th scope="row">{{ p.name }}</th>
       <td>{{ p.sku }}</td>
-      <td class="num">€{{ '%.2f' % price }} / {{ p.unit }}</td>
-      <td>
-        <form class="inline" method="post" action="/grainline/cart/add">
-          <input type="hidden" name="sku" value="{{ p.sku }}">
-          <label for="qty-{{ p.sku }}">{{ t('quantity') }}</label>
-          <input id="qty-{{ p.sku }}" name="qty" type="number" min="1" max="999" value="1" required data-testid="{{ tid('quantity', p.sku) }}">
-          <button type="submit" data-testid="{{ tid('add_to_cart', p.sku) }}">{{ t('add_to_cart') }}</button>
-        </form>
-      </td>
+      <td class="{{ look.cls('num') }}">€{{ '%.2f' % price }} / {{ p.unit }}</td>
+      <td>{{ add_form(p) }}</td>
     </tr>
   {% else %}
     <tr><td colspan="4">No products match "{{ q }}".</td></tr>
   {% endfor %}
   </tbody>
 </table>
+{% endif %}
+{% endmacro %}
+{% macro s_pages() %}
 {% if pages > 1 %}
 <p data-testid="{{ tid('pagination') }}">
   {% if page_no > 1 %}<a href="/grainline/catalog?q={{ q | urlencode }}&amp;page={{ page_no - 1 }}" data-testid="{{ tid('prev_page') }}">{{ t('prev_page') }}</a>{% endif %}
@@ -37,4 +55,6 @@
   {% if page_no < pages %}<a href="/grainline/catalog?q={{ q | urlencode }}&amp;page={{ page_no + 1 }}" data-testid="{{ tid('next_page') }}">{{ t('next_page') }}</a>{% endif %}
 </p>
 {% endif %}
+{% endmacro %}
+{% for s in look.arrange('catalog', [s_search, s_results, s_pages]) %}{{ s() }}{% endfor %}
 {% endblock %}

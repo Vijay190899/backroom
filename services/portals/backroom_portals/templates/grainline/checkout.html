@@ -3,24 +3,31 @@
 {% block main %}
 <h1>Checkout</h1>
 {% if error == 'empty' or not lines %}
-<p class="error" role="alert" data-testid="{{ tid('checkout_error') }}">Your cart is empty. <a href="/grainline/catalog">Browse the catalog</a>.</p>
+<p class="{{ look.cls('error') }}" role="alert" data-testid="{{ tid('checkout_error') }}">Your cart is empty. <a href="/grainline/catalog">Browse the catalog</a>.</p>
 {% else %}
-{% if error == 'date' %}<p class="error" role="alert" data-testid="{{ tid('checkout_error') }}">Please choose one of the offered delivery dates.</p>{% endif %}
+{% if error == 'date' %}<p class="{{ look.cls('error') }}" role="alert" data-testid="{{ tid('checkout_error') }}">Please choose one of the offered delivery dates.</p>{% endif %}
+{% macro s_lines() %}
 <table data-testid="{{ tid('checkout_lines') }}">
-  <thead><tr><th>Product</th><th class="num">Qty</th><th class="num">Amount</th></tr></thead>
+  <thead><tr><th>Product</th><th class="{{ look.cls('num') }}">Qty</th><th class="{{ look.cls('num') }}">Amount</th></tr></thead>
   <tbody>
   {% for line in lines %}
-    <tr><td>{{ products[line.sku].name }}</td><td class="num">{{ line.qty }}</td><td class="num">€{{ '%.2f' % (line.qty * line.unit_price_eur) }}</td></tr>
+    <tr><th scope="row">{{ products[line.sku].name }}</th><td class="{{ look.cls('num') }}">{{ line.qty }}</td><td class="{{ look.cls('num') }}">€{{ '%.2f' % (line.qty * line.unit_price_eur) }}</td></tr>
   {% endfor %}
   </tbody>
-  <tfoot><tr><th colspan="2">Net total</th><th class="num" data-testid="{{ tid('checkout_total') }}">€{{ '%.2f' % total }}</th></tr></tfoot>
+  <tfoot><tr><th colspan="2">Net total</th><th class="{{ look.cls('num') }}" data-testid="{{ tid('checkout_total') }}">€{{ '%.2f' % total }}</th></tr></tfoot>
 </table>
-<form class="box" method="post" action="/grainline/checkout" data-testid="{{ tid('checkout_form') }}">
-  <label for="delivery_date">{{ t('delivery_date') }}</label>
-  <select id="delivery_date" name="delivery_date" data-testid="{{ tid('delivery_date') }}">
+{% endmacro %}
+{% macro s_form() %}
+<form class="{{ look.cls('box') }}" method="post" action="/grainline/checkout" data-testid="{{ tid('checkout_form') }}">
+  {% call m.wrap() %}
+  <label for="{{ look.id('delivery_date') }}">{{ t('delivery_date') }}</label>
+  <select id="{{ look.id('delivery_date') }}" name="delivery_date" data-testid="{{ tid('delivery_date') }}">
     {% for day in options %}<option value="{{ day.isoformat() }}">{{ day.strftime('%a %d %b %Y') }}</option>{% endfor %}
   </select>
-  <p><button type="submit" data-testid="{{ tid('place_order') }}">{{ t('place_order') }}</button></p>
+  {% endcall %}
+  <div>{{ m.submit('place_order') }}</div>
 </form>
+{% endmacro %}
+{% for s in look.arrange('checkout', [s_lines, s_form]) %}{{ s() }}{% endfor %}
 {% endif %}
 {% endblock %}

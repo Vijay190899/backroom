@@ -51,7 +51,13 @@ The api's `POST /chaos` takes the same `ChaosRequest` and returns the same `Chao
 Nine families, the first variant of each canonical: `language` (en, en_alt, de), `nav_position` (sidebar, topbar, hamburger), `section_order`, `wrapper_depth`, `id_class_salt`, `interstitial` (none, cookie_banner, whats_new_modal, survey), `delayed_render` (0–1500 ms), `control_kind` (button or link), `list_layout` (table or cards).
 
 - `pick_variants(portal, seed)` is the only way a seed becomes variants: seed **0 is canonical**; seed **7 (the demo seed) is pinned** to German labels + top-bar nav + cookie banner and nothing else; every other seed draws from `random.Random(f"{portal}:{seed}")` and always changes at least one family.
-- L2 implements the rendering. Its DOM-hash tests prove same seed ⇒ same DOM, different seeds ⇒ different DOM.
+- Templates render through `templates/macros.html` (controls, fields, wrappers, nav, interstitials) and the per-request `Look` in `rendering.py`; every portal template imports the macros `with context`. Cards (`list_layout`) apply to product, menu and invoice lists; other tables stay tables.
+- DOM-hash tests prove same seed ⇒ same DOM and seeds 0–19 ⇒ 20 different DOMs, across every page of the reorder path (login and TOTP included).
+- **Rules for the agent runner (PC):**
+  1. Use a **fresh browser context per run**. A dismissed interstitial is remembered in the cookie `<portal>_dismissed_<seed>_<kind>`, which `/_admin/reset` cannot clear.
+  2. After every navigation, **wait until no `[aria-busy]` element is left** before taking the ARIA snapshot. With `delayed_render`, the page is a "Loading…" skeleton for up to 1.5 s.
+  3. The hamburger nav is a closed `<details>`: open it with its summary ("Open menu" / "Menü öffnen") before clicking a nav link.
+  4. With `control_kind=link`, primary actions are links (`<a href="#">`, role `link`) that submit their form via JS. A hidden `aria-hidden` submit button keeps Enter-to-submit working.
 
 ## 4. Skills
 

@@ -2,19 +2,31 @@
 {% block title %}Invoices · Grainline Wholesale{% endblock %}
 {% block main %}
 <h1>Invoices</h1>
+{% if look.cards %}
+<ul class="{{ look.cls('cards') }}" data-testid="{{ tid('invoices') }}">
+  {% for inv in invoices %}
+  <li data-testid="{{ tid('invoice', inv.id) }}">
+    <h2>{{ inv.id }}</h2>
+    <p>{{ inv.issued_on.isoformat() }} · <a href="/grainline/orders/{{ inv.order_id }}">{{ inv.order_id }}</a> · net €{{ '%.2f' % inv.net_eur }} · due €{{ '%.2f' % inv.gross_eur }}</p>
+    {% call m.wrap() %}<a href="/grainline/invoices/{{ inv.id }}.pdf" aria-label="{{ t('download_invoice') }} {{ inv.id }}" data-testid="{{ tid('download_invoice', inv.id) }}">{{ t('download_invoice') }}</a>{% endcall %}
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
 <table data-testid="{{ tid('invoices') }}">
-  <thead><tr><th>Invoice</th><th>Date</th><th>Order</th><th class="num">Net</th><th class="num">Total due</th><th>PDF</th></tr></thead>
+  <thead><tr><th>Invoice</th><th>Date</th><th>Order</th><th class="{{ look.cls('num') }}">Net</th><th class="{{ look.cls('num') }}">Total due</th><th>PDF</th></tr></thead>
   <tbody>
   {% for inv in invoices %}
     <tr data-testid="{{ tid('invoice', inv.id) }}">
       <th scope="row">{{ inv.id }}</th>
       <td>{{ inv.issued_on.isoformat() }}</td>
       <td><a href="/grainline/orders/{{ inv.order_id }}">{{ inv.order_id }}</a></td>
-      <td class="num">€{{ '%.2f' % inv.net_eur }}</td>
-      <td class="num">€{{ '%.2f' % inv.gross_eur }}</td>
-      <td><a href="/grainline/invoices/{{ inv.id }}.pdf" aria-label="{{ t('download_invoice') }} {{ inv.id }}" data-testid="{{ tid('download_invoice', inv.id) }}">{{ t('download_invoice') }}</a></td>
+      <td class="{{ look.cls('num') }}">€{{ '%.2f' % inv.net_eur }}</td>
+      <td class="{{ look.cls('num') }}">€{{ '%.2f' % inv.gross_eur }}</td>
+      <td>{% call m.wrap() %}<a href="/grainline/invoices/{{ inv.id }}.pdf" aria-label="{{ t('download_invoice') }} {{ inv.id }}" data-testid="{{ tid('download_invoice', inv.id) }}">{{ t('download_invoice') }}</a>{% endcall %}</td>
     </tr>
   {% endfor %}
   </tbody>
 </table>
+{% endif %}
 {% endblock %}

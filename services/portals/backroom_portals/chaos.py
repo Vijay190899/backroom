@@ -26,7 +26,7 @@ CATALOG: dict[str, tuple[str, ...]] = {
     "interstitial": ("none", "cookie_banner", "whats_new_modal", "survey"),
     # Skeleton first, real content after a delay.
     "delayed_render": ("0", "300", "800", "1500"),
-    # Primary actions rendered as <button> or as a styled <a role="link">.
+    # Primary actions rendered as <button> or as a styled <a href="#"> that submits via JS.
     "control_kind": ("button", "link"),
     # Product and menu lists as a table or as cards.
     "list_layout": ("table", "cards"),

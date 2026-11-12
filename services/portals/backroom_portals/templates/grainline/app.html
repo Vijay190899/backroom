@@ -1,21 +1,18 @@
 {% extends "grainline/base.html" %}
 {% block body %}
-<div class="layout">
-  <nav class="side" aria-label="Main" data-testid="{{ tid('nav') }}">
-    <ul>
-      <li><a href="/grainline/catalog" data-testid="{{ tid('nav_catalog') }}">{{ t('nav_catalog') }}</a></li>
-      <li><a href="/grainline/cart" data-testid="{{ tid('nav_cart') }}">{{ t('nav_cart') }}</a></li>
-      <li><a href="/grainline/orders" data-testid="{{ tid('nav_orders') }}">{{ t('nav_orders') }}</a></li>
-      <li><a href="/grainline/invoices" data-testid="{{ tid('nav_invoices') }}">{{ t('nav_invoices') }}</a></li>
-      <li>
-        <form method="post" action="/grainline/logout">
-          <button type="submit" data-testid="{{ tid('sign_out') }}">{{ t('sign_out') }}</button>
-        </form>
-      </li>
-    </ul>
-  </nav>
-  <main>
-    {% block main %}{% endblock %}
-  </main>
+{%- set items = [
+  ("/grainline/catalog", "nav_catalog"),
+  ("/grainline/cart", "nav_cart"),
+  ("/grainline/orders", "nav_orders"),
+  ("/grainline/invoices", "nav_invoices"),
+] -%}
+{% if look.nav == 'sidebar' %}
+<div class="{{ look.cls('layout') }}">
+  {{ m.nav(items, "/grainline/logout") }}
+  <main>{% block main %}{% endblock %}</main>
 </div>
+{% else %}
+{{ m.nav(items, "/grainline/logout") }}
+<main>{{ self.main() }}</main>
+{% endif %}
 {% endblock %}
