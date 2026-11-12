@@ -26,9 +26,10 @@ Rules:
 - Run `pnpm check` before every commit and at each milestone gate.
 
 ## Read order (stop when you have enough)
-1. `docs/BUILD_PLAN.md`: find the current milestone and its gate.
-2. `graphify-out/GRAPH_REPORT.md`: map of docs and code (if present).
-3. Only the PRD/ARCHITECTURE sections the task touches. Don't read whole docs by default.
+1. `docs/HANDOVER.md`: current state, setup, working agreements, open items. **Update it at every milestone gate.**
+2. `docs/BUILD_PLAN.md`: find the current milestone and its gate.
+3. `graphify-out/GRAPH_REPORT.md`: map of docs and code (committed).
+4. Only the PRD/ARCHITECTURE sections the task touches. Don't read whole docs by default.
 
 ## Token discipline (graph memory)
 - **Navigate before reading.** Use the `graphify` MCP (`query_graph`, `get_neighbors`, `shortest_path`) to find concepts, and the `serena` MCP (`find_symbol`, `find_referencing_symbols`, `get_symbols_overview`) to find code. Read whole files only when editing them.
