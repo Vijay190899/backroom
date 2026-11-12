@@ -14,6 +14,23 @@ Notes: surprises, shortcuts, things left undone.
 
 ---
 
+## Thu 12 Nov 2026 21:40 · L3 · branch laptop/l3-tilldesk (stacked on laptop/l2-chaos)
+Done:
+- The TillDesk portal at `/tilldesk`: login (username + password, no TOTP), menu list (8 items), edit price (a draft), and "Publish menu".
+- Chaos applies through the shared macros, with cards on the menu list.
+- Admin `GET /_admin/state/tilldesk` returns `TillDeskState`, with `items` keyed by id; `/_admin/reset` restores the menu.
+- Undo is saving the old price and publishing again.
+Verify:
+- `uv run pytest services/portals/tests/test_tilldesk.py`. All of `pnpm check` passes: 200 tests.
+- By hand: `pnpm dev:lite`, open http://localhost:8001/tilldesk/login, sign in as `$TILLDESK_USER` / `$TILLDESK_PASSWORD`.
+Needs from PC:
+- `tilldesk.change_price`: the postcondition is `items.<item_id>.published_price_eur`.
+- Edit links are named "<Edit label> <item name>". Either target that, or `goto /tilldesk/menu/{{item_id}}/edit` (CONTRACTS §4).
+- Use exact name matching in the runner (CONTRACTS §3 rule 5).
+Notes:
+- Deviations are logged as L-26…L-31 in `docs/DECISIONS.md`. Localboard (P1) is not built (L-26).
+- The audit found 1 blocker (Publish was hidden when nothing had changed) and 4 issues worth fixing; all are fixed and tested.
+
 ## Thu 12 Nov 2026 20:40 · L2 · branch laptop/l2-chaos (stacked on laptop/l1-grainline)
 Done:
 - The chaos engine, with 9 families (language, nav position, section order, wrapper depth, id/class salt, interstitials, delayed render, button↔link, table↔cards), rendered through `templates/macros.html` and the `Look` object in `rendering.py`.

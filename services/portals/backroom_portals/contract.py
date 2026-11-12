@@ -49,6 +49,7 @@ GRAINLINE_ROUTES: dict[str, tuple[str, str]] = {
 }
 
 TILLDESK_ROUTES: dict[str, tuple[str, str]] = {
+    "home": ("GET", "/tilldesk/"),  # redirects to the menu
     "login": ("GET", "/tilldesk/login"),
     "login_submit": ("POST", "/tilldesk/login"),
     "menu": ("GET", "/tilldesk/menu"),
