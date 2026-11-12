@@ -7,7 +7,7 @@
   "scripts": {
     "check": "pnpm check:py && pnpm check:web",
     "check:py": "uv run ruff check . && uv run pyright && uv run pytest",
-    "check:web": "pnpm -C apps/web lint && pnpm -C apps/web typecheck",
+    "check:web": "pnpm -C apps/web lint && pnpm -C apps/web typecheck && pnpm -C apps/web contracts",
     "seed": "uv run backroom-data all",
     "bench": "uv run backroom-bench all",
     "probe:llm": "uv run backroom-bench probe",

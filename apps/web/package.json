@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
+    "contracts": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/lib/contracts.check.mts",
     "e2e": "node -e \"console.error('e2e tests land in M3');process.exit(2)\""
   },
   "dependencies": {

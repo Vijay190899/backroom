@@ -1,0 +1,508 @@
+{
+  "skill_id": "grainline.reorder_item",
+  "versions": [
+    {
+      "id": "grainline.reorder_item",
+      "task": "grainline.reorder_item",
+      "portal": "grainline",
+      "version": 1,
+      "parent_version": null,
+      "heal_note": null,
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "sku": {
+            "type": "string",
+            "pattern": "^[A-Z0-9-]+$"
+          },
+          "qty": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          }
+        },
+        "required": [
+          "sku",
+          "qty"
+        ],
+        "additionalProperties": false
+      },
+      "steps": [
+        {
+          "intent": "Open the Grainline login page",
+          "action": "goto",
+          "target": null,
+          "fallbacks": [],
+          "value_template": "/grainline/login",
+          "expect": {
+            "url_pattern": "^/grainline/login$",
+            "visible": null,
+            "text": null
+          },
+          "timeout_ms": 5000
+        },
+        {
+          "intent": "Enter the account email",
+          "action": "fill_secret",
+          "target": {
+            "role": "textbox",
+            "name": "Email"
+          },
+          "fallbacks": [
+            {
+              "label": "Email"
+            },
+            {
+              "css": "input[name=email]"
+            }
+          ],
+          "value_template": "{{secret:grainline_user}}",
+          "expect": null,
+          "timeout_ms": 5000
+        },
+        {
+          "intent": "Enter the password",
+          "action": "fill_secret",
+          "target": {
+            "role": "textbox",
+            "name": "Password"
+          },
+          "fallbacks": [
+            {
+              "css": "input[name=password]"
+            }
+          ],
+          "value_template": "{{secret:grainline_password}}",
+          "expect": null,
+          "timeout_ms": 5000
+        },
+        {
+          "intent": "Sign in",
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Sign in"
+          },
+          "fallbacks": [],
+          "value_template": null,
+          "expect": {
+            "url_pattern": "^/grainline/login/totp$",
+            "visible": null,
+            "text": null
+          },
+          "timeout_ms": 5000
+        },
+        {
+          "intent": "Enter the authenticator code",
+          "action": "totp",
+          "target": {
+            "role": "textbox",
+            "name": "Authentication code"
+          },
+          "fallbacks": [
+            {
+              "css": "input[name=code]"
+            }
+          ],
+          "value_template": "{{secret:grainline_totp}}",
+          "expect": null,
+          "timeout_ms": 5000
+        },
+        {
+          "intent": "Confirm the code",
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Verify"
+          },
+          "fallbacks": [],
+          "value_template": null,
+          "expect": {
+            "url_pattern": "^/grainline/$",
+            "visible": null,
+            "text": null
+          },
+          "timeout_ms": 5000
+        },
+        {
+          "intent": "Open the catalog search",
+          "action": "goto",
+          "target": null,
+          "fallbacks": [],
+          "value_template": "/grainline/catalog?q={{sku}}",
+          "expect": {
+            "url_pattern": null,
+            "visible": null,
+            "text": "{{sku}}"
+          },
+          "timeout_ms": 5000
+        },
+        {
+          "intent": "Set the quantity",
+          "action": "fill",
+          "target": {
+            "role": "spinbutton",
+            "name": "Quantity"
+          },
+          "fallbacks": [],
+          "value_template": "{{qty}}",
+          "expect": null,
+          "timeout_ms": 5000
+        },
+        {
+          "intent": "Add the item to the cart",
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Add to cart"
+          },
+          "fallbacks": [
+            {
+              "css": "form[action$='/cart/add'] [type=submit]"
+            }
+          ],
+          "value_template": null,
+          "expect": null,
+          "timeout_ms": 5000
+        },
+        {
+          "intent": "Go to checkout",
+          "action": "goto",
+          "target": null,
+          "fallbacks": [],
+          "value_template": "/grainline/checkout",
+          "expect": {
+            "url_pattern": "^/grainline/checkout$",
+            "visible": null,
+            "text": null
+          },
+          "timeout_ms": 5000
+        },
+        {
+          "intent": "Place the order",
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Place order"
+          },
+          "fallbacks": [],
+          "value_template": null,
+          "expect": {
+            "url_pattern": "^/grainline/orders/GW-\\d{5}$",
+            "visible": null,
+            "text": null
+          },
+          "timeout_ms": 5000
+        }
+      ],
+      "postconditions": [
+        {
+          "kind": "portal_state",
+          "value": "orders.last.status",
+          "equals": "placed"
+        },
+        {
+          "kind": "portal_state",
+          "value": "orders.last.lines.0.sku",
+          "equals": "{{sku}}"
+        }
+      ],
+      "stats": {
+        "runs": 6,
+        "successes": 6,
+        "mean_latency_ms": 2410.0,
+        "mean_usd": 0.0,
+        "last_run_at": null
+      },
+      "created_at": "2026-11-12T11:30:00Z"
+    },
+    {
+      "id": "grainline.reorder_item",
+      "task": "grainline.reorder_item",
+      "portal": "grainline",
+      "version": 2,
+      "parent_version": 1,
+      "heal_note": "Seed 7: cookie banner and German labels; added a dismiss step, healed 2",
+      "params_schema": {
+        "type": "object",
+        "properties": {
+          "sku": {
+            "type": "string",
+            "pattern": "^[A-Z0-9-]+$"
+          },
+          "qty": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          }
+        },
+        "required": [
+          "sku",
+          "qty"
+        ],
+        "additionalProperties": false
+      },
+      "steps": [
+        {
+          "intent": "Open the Grainline login page",
+          "action": "goto",
+          "target": null,
+          "fallbacks": [],
+          "value_template": "/grainline/login",
+          "expect": {
+            "url_pattern": "^/grainline/login$",
+            "visible": null,
+            "text": null
+          },
+          "timeout_ms": 5000
+        },
+        {
+          "intent": "Enter the account email",
+          "action": "fill_secret",
+          "target": {
+            "role": "textbox",
+            "name": "Email"
+          },
+          "fallbacks": [
+            {
+              "label": "Email"
+            },
+            {
+              "css": "input[name=email]"
+            }
+          ],
+          "value_template": "{{secret:grainline_user}}",
+          "expect": null,
+          "timeout_ms": 5000
+        },
+        {
+          "intent": "Enter the password",
+          "action": "fill_secret",
+          "target": {
+            "role": "textbox",
+            "name": "Password"
+          },
+          "fallbacks": [
+            {
+              "css": "input[name=password]"
+            }
+          ],
+          "value_template": "{{secret:grainline_password}}",
+          "expect": null,
+          "timeout_ms": 5000
+        },
+        {
+          "intent": "Accept the cookie banner",
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Alle akzeptieren"
+          },
+          "fallbacks": [
+            {
+              "text": "Alle akzeptieren"
+            }
+          ],
+          "value_template": null,
+          "expect": null,
+          "timeout_ms": 5000
+        },
+        {
+          "intent": "Sign in",
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Anmelden"
+          },
+          "fallbacks": [],
+          "value_template": null,
+          "expect": {
+            "url_pattern": "^/grainline/login/totp$",
+            "visible": null,
+            "text": null
+          },
+          "timeout_ms": 5000
+        },
+        {
+          "intent": "Enter the authenticator code",
+          "action": "totp",
+          "target": {
+            "role": "textbox",
+            "name": "Authentication code"
+          },
+          "fallbacks": [
+            {
+              "css": "input[name=code]"
+            }
+          ],
+          "value_template": "{{secret:grainline_totp}}",
+          "expect": null,
+          "timeout_ms": 5000
+        },
+        {
+          "intent": "Confirm the code",
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Verify"
+          },
+          "fallbacks": [],
+          "value_template": null,
+          "expect": {
+            "url_pattern": "^/grainline/$",
+            "visible": null,
+            "text": null
+          },
+          "timeout_ms": 5000
+        },
+        {
+          "intent": "Open the catalog search",
+          "action": "goto",
+          "target": null,
+          "fallbacks": [],
+          "value_template": "/grainline/catalog?q={{sku}}",
+          "expect": {
+            "url_pattern": null,
+            "visible": null,
+            "text": "{{sku}}"
+          },
+          "timeout_ms": 5000
+        },
+        {
+          "intent": "Set the quantity",
+          "action": "fill",
+          "target": {
+            "role": "spinbutton",
+            "name": "Quantity"
+          },
+          "fallbacks": [],
+          "value_template": "{{qty}}",
+          "expect": null,
+          "timeout_ms": 5000
+        },
+        {
+          "intent": "Add the item to the cart",
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "In den Warenkorb"
+          },
+          "fallbacks": [
+            {
+              "css": "form[action$='/cart/add'] [type=submit]"
+            }
+          ],
+          "value_template": null,
+          "expect": null,
+          "timeout_ms": 5000
+        },
+        {
+          "intent": "Go to checkout",
+          "action": "goto",
+          "target": null,
+          "fallbacks": [],
+          "value_template": "/grainline/checkout",
+          "expect": {
+            "url_pattern": "^/grainline/checkout$",
+            "visible": null,
+            "text": null
+          },
+          "timeout_ms": 5000
+        },
+        {
+          "intent": "Place the order",
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Place order"
+          },
+          "fallbacks": [],
+          "value_template": null,
+          "expect": {
+            "url_pattern": "^/grainline/orders/GW-\\d{5}$",
+            "visible": null,
+            "text": null
+          },
+          "timeout_ms": 5000
+        }
+      ],
+      "postconditions": [
+        {
+          "kind": "portal_state",
+          "value": "orders.last.status",
+          "equals": "placed"
+        },
+        {
+          "kind": "portal_state",
+          "value": "orders.last.lines.0.sku",
+          "equals": "{{sku}}"
+        }
+      ],
+      "stats": {
+        "runs": 1,
+        "successes": 1,
+        "mean_latency_ms": 9120.0,
+        "mean_usd": 0.0031,
+        "last_run_at": null
+      },
+      "created_at": "2026-11-13T07:32:00Z"
+    }
+  ],
+  "diffs": [
+    {
+      "skill_id": "grainline.reorder_item",
+      "from_version": 1,
+      "to_version": 2,
+      "changes": [
+        {
+          "op": "insert",
+          "step_index": 3,
+          "field": "step",
+          "before": null,
+          "after": {
+            "intent": "Accept the cookie banner",
+            "action": "click",
+            "target": {
+              "role": "button",
+              "name": "Alle akzeptieren"
+            },
+            "fallbacks": [
+              {
+                "text": "Alle akzeptieren"
+              }
+            ],
+            "value_template": null,
+            "expect": null,
+            "timeout_ms": 5000
+          }
+        },
+        {
+          "op": "update",
+          "step_index": 4,
+          "field": "target",
+          "before": {
+            "role": "button",
+            "name": "Sign in"
+          },
+          "after": {
+            "role": "button",
+            "name": "Anmelden"
+          }
+        },
+        {
+          "op": "update",
+          "step_index": 9,
+          "field": "target",
+          "before": {
+            "role": "button",
+            "name": "Add to cart"
+          },
+          "after": {
+            "role": "button",
+            "name": "In den Warenkorb"
+          }
+        }
+      ]
+    }
+  ]
+}

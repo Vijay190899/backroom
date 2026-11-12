@@ -1,0 +1,317 @@
+{
+  "id": "brief_2026-11-13_r1",
+  "generated_at": "2026-11-13T07:34:00Z",
+  "as_of": "2026-11-13T07:30:00Z",
+  "cards": [
+    {
+      "id": "act_oat_reorder",
+      "candidate_id": "stockout:ingredient:oat-milk:2026-11-13",
+      "kind": "stockout",
+      "rank": 2,
+      "title": "Reorder oat milk",
+      "impact_eur_weekly": 212.4,
+      "why": "Oat milk runs out in 2 days at this week's pace; 24 cartons for €38.16 on Friday's delivery protect about €212.40 of oat drinks a week.",
+      "evidence": [
+        {
+          "id": "ev_oat_velocity",
+          "kind": "sql",
+          "label": "Oat milk use, last 7 days",
+          "sql": "select day, litres from oat_milk_use where day >= :as_of - 7 order by day",
+          "columns": [
+            "day",
+            "litres"
+          ],
+          "rows": [
+            [
+              "2026-11-06",
+              5.9
+            ],
+            [
+              "2026-11-07",
+              7.4
+            ],
+            [
+              "2026-11-08",
+              6.1
+            ]
+          ],
+          "fact_ids": [],
+          "synthetic": true
+        },
+        {
+          "id": "ev_oat_stock",
+          "kind": "fact",
+          "label": "Stock on hand",
+          "sql": null,
+          "columns": [],
+          "rows": [],
+          "fact_ids": [
+            "f_oat_stock"
+          ],
+          "synthetic": false
+        }
+      ],
+      "numbers": [
+        {
+          "key": "days_left",
+          "value": 2.0,
+          "unit": "days",
+          "label": "Days of stock left"
+        },
+        {
+          "key": "qty",
+          "value": 24.0,
+          "unit": "count",
+          "label": "Cartons to order"
+        },
+        {
+          "key": "order_total_eur",
+          "value": 38.16,
+          "unit": "eur",
+          "label": "Order total"
+        },
+        {
+          "key": "impact_eur_weekly",
+          "value": 212.4,
+          "unit": "eur",
+          "label": "Weekly oat-drink sales at risk"
+        }
+      ],
+      "task": "grainline.reorder_item",
+      "portal": "grainline",
+      "params": {
+        "sku": "OAT-1L",
+        "qty": 24
+      },
+      "executable": true,
+      "status": "proposed",
+      "preference_note": "Scheduled for Friday, your next Grainline order day",
+      "copy_source": "llm",
+      "guard": {
+        "passed": true,
+        "regenerations": 0,
+        "unmatched": []
+      }
+    },
+    {
+      "id": "act_franz_price_capped",
+      "candidate_id": "margin_erosion:product:franzbroetchen:2026-11-13",
+      "kind": "margin_erosion",
+      "rank": 1,
+      "title": "Fix Franzbrötchen margin",
+      "impact_eur_weekly": 45.0,
+      "why": "Butter is up 16%, so a Franzbrötchen now costs €1.02 to make and its margin fell to 68%; €3.20 → €3.45 (+7.8%) brings it back to your 70% target.",
+      "evidence": [
+        {
+          "id": "ev_butter_invoice",
+          "kind": "invoice",
+          "label": "Grainline invoice INV-204118: butter €8.24/kg",
+          "sql": null,
+          "columns": [],
+          "rows": [],
+          "fact_ids": [
+            "f_butter_price_2"
+          ],
+          "synthetic": false
+        },
+        {
+          "id": "ev_franz_cost",
+          "kind": "sql",
+          "label": "Franzbrötchen unit cost",
+          "sql": "select ingredient, cost_eur from unit_cost where product = 'franzbroetchen'",
+          "columns": [
+            "ingredient",
+            "before_eur",
+            "after_eur"
+          ],
+          "rows": [
+            [
+              "butter",
+              0.55,
+              0.64
+            ],
+            [
+              "flour",
+              0.21,
+              0.21
+            ],
+            [
+              "other",
+              0.17,
+              0.17
+            ]
+          ],
+          "fact_ids": [],
+          "synthetic": false
+        }
+      ],
+      "numbers": [
+        {
+          "key": "butter_increase_pct",
+          "value": 16.0,
+          "unit": "pct",
+          "label": "Butter price change"
+        },
+        {
+          "key": "butter_cost_before_eur",
+          "value": 0.55,
+          "unit": "eur",
+          "label": "Butter per Franzbrötchen, before"
+        },
+        {
+          "key": "unit_cost_before_eur",
+          "value": 0.93,
+          "unit": "eur",
+          "label": "Unit cost before"
+        },
+        {
+          "key": "unit_cost_after_eur",
+          "value": 1.02,
+          "unit": "eur",
+          "label": "Unit cost now"
+        },
+        {
+          "key": "margin_before_pct",
+          "value": 71.0,
+          "unit": "pct",
+          "label": "Margin before"
+        },
+        {
+          "key": "margin_after_pct",
+          "value": 68.0,
+          "unit": "pct",
+          "label": "Margin now"
+        },
+        {
+          "key": "margin_target_pct",
+          "value": 70.0,
+          "unit": "pct",
+          "label": "Target margin"
+        },
+        {
+          "key": "price_now_eur",
+          "value": 3.2,
+          "unit": "eur",
+          "label": "Current price"
+        },
+        {
+          "key": "price_new_eur",
+          "value": 3.45,
+          "unit": "eur",
+          "label": "Proposed price"
+        },
+        {
+          "key": "price_increase_pct",
+          "value": 7.8,
+          "unit": "pct",
+          "label": "Price change"
+        },
+        {
+          "key": "margin_new_pct",
+          "value": 70.0,
+          "unit": "pct",
+          "label": "Margin at new price"
+        },
+        {
+          "key": "max_price_increase_pct",
+          "value": 8.0,
+          "unit": "pct",
+          "label": "Your cap on price rises"
+        },
+        {
+          "key": "impact_eur_weekly",
+          "value": 45.0,
+          "unit": "eur",
+          "label": "Weekly margin recovered"
+        }
+      ],
+      "task": "tilldesk.change_price",
+      "portal": "tilldesk",
+      "params": {
+        "item_id": "franzbroetchen",
+        "price_eur": 3.45
+      },
+      "executable": true,
+      "status": "proposed",
+      "preference_note": "Kept under your 8% cap",
+      "copy_source": "llm",
+      "guard": {
+        "passed": true,
+        "regenerations": 0,
+        "unmatched": []
+      }
+    },
+    {
+      "id": "act_rainy_saturday",
+      "candidate_id": "weather_demand:business:hafer-und-bohne:2026-11-13",
+      "kind": "weather_demand",
+      "rank": 3,
+      "title": "Rainy Saturday: trim one shift",
+      "impact_eur_weekly": 58.0,
+      "why": "Saturday's forecast is 9 mm of rain and rainy Saturdays bring 14% fewer guests; trimming one 4-hour afternoon shift saves €58.00.",
+      "evidence": [
+        {
+          "id": "ev_rain_history",
+          "kind": "chart",
+          "label": "Saturday footfall, rain vs dry",
+          "sql": null,
+          "columns": [
+            "weather",
+            "avg_transactions"
+          ],
+          "rows": [
+            [
+              "dry",
+              412
+            ],
+            [
+              "rain",
+              354
+            ]
+          ],
+          "fact_ids": [],
+          "synthetic": true
+        }
+      ],
+      "numbers": [
+        {
+          "key": "rain_mm",
+          "value": 9.0,
+          "unit": "mm",
+          "label": "Forecast rain"
+        },
+        {
+          "key": "footfall_change_pct",
+          "value": -14.0,
+          "unit": "pct",
+          "label": "Footfall on rainy Saturdays"
+        },
+        {
+          "key": "shift_hours",
+          "value": 4.0,
+          "unit": "hours",
+          "label": "Shift length"
+        },
+        {
+          "key": "impact_eur_weekly",
+          "value": 58.0,
+          "unit": "eur",
+          "label": "Labour saved"
+        }
+      ],
+      "task": null,
+      "portal": null,
+      "params": {},
+      "executable": false,
+      "status": "proposed",
+      "preference_note": null,
+      "copy_source": "template",
+      "guard": {
+        "passed": true,
+        "regenerations": 1,
+        "unmatched": []
+      }
+    }
+  ],
+  "cached": false
+}
