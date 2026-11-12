@@ -119,6 +119,9 @@ INTERSTITIAL_LABELS: dict[str, Label] = {
     "accept_cookies": Label("Accept all", "Accept", "Alle akzeptieren"),
     "close": Label("Close", "Dismiss", "Schließen"),
     "survey_skip": Label("No thanks", "Skip", "Nein danke"),
+    "open_menu": Label(
+        "Open menu", "Show navigation", "Menü öffnen"
+    ),  # hamburger nav (nav_position)
 }
 
 # --- Test ids ---------------------------------------------------------------------------

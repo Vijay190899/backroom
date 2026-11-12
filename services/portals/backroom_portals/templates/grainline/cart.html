@@ -3,38 +3,42 @@
 {% block main %}
 <h1>Your cart</h1>
 {% if added %}
-<p class="notice" role="status" data-testid="{{ tid('added_notice') }}">Added to your cart: {{ added.name }}</p>
+<p class="{{ look.cls('notice') }}" role="status" data-testid="{{ tid('added_notice') }}">Added to your cart: {{ added.name }}</p>
 {% endif %}
-{% if error %}<p class="error" role="alert" data-testid="{{ tid('cart_error') }}">Please enter a whole number for the quantity.</p>{% endif %}
+{% if error %}<p class="{{ look.cls('error') }}" role="alert" data-testid="{{ tid('cart_error') }}">Please enter a whole number for the quantity.</p>{% endif %}
 {% if lines %}
+{% macro s_lines() %}
 <table data-testid="{{ tid('cart') }}">
-  <thead><tr><th>Product</th><th>SKU</th><th class="num">Unit price</th><th>Quantity</th><th class="num">Amount</th></tr></thead>
+  <thead><tr><th>Product</th><th>SKU</th><th class="{{ look.cls('num') }}">Unit price</th><th>Quantity</th><th class="{{ look.cls('num') }}">Amount</th></tr></thead>
   <tbody>
   {% for line in lines %}
     <tr data-testid="{{ tid('cart_line', line.sku) }}">
       <th scope="row">{{ products[line.sku].name }}</th>
       <td>{{ line.sku }}</td>
-      <td class="num">€{{ '%.2f' % line.unit_price_eur }}</td>
+      <td class="{{ look.cls('num') }}">€{{ '%.2f' % line.unit_price_eur }}</td>
       <td>
-        <form class="inline" method="post" action="/grainline/cart/update">
+        <form class="{{ look.cls('inline') }}" method="post" action="/grainline/cart/update">
           <input type="hidden" name="sku" value="{{ line.sku }}">
-          <label for="cart-qty-{{ line.sku }}">{{ t('quantity') }}</label>
-          <input id="cart-qty-{{ line.sku }}" name="qty" type="number" min="0" max="999" value="{{ line.qty }}" data-testid="{{ tid('cart_qty', line.sku) }}">
-          <button type="submit" data-testid="{{ tid('update_qty', line.sku) }}">{{ t('update_qty') }}</button>
+          {{ m.field('quantity', 'qty', type='number', row=line.sku, value=line.qty, attrs='min="0" max="999"', id_base='cart-qty') }}
+          {{ m.submit('update_qty', row=line.sku) }}
         </form>
-        <form class="inline" method="post" action="/grainline/cart/update">
+        <form class="{{ look.cls('inline') }}" method="post" action="/grainline/cart/update">
           <input type="hidden" name="sku" value="{{ line.sku }}">
           <input type="hidden" name="qty" value="0">
-          <button type="submit" data-testid="{{ tid('remove', line.sku) }}">{{ t('remove') }}</button>
+          {{ m.submit('remove', row=line.sku) }}
         </form>
       </td>
-      <td class="num">€{{ '%.2f' % (line.qty * line.unit_price_eur) }}</td>
+      <td class="{{ look.cls('num') }}">€{{ '%.2f' % (line.qty * line.unit_price_eur) }}</td>
     </tr>
   {% endfor %}
   </tbody>
-  <tfoot><tr><th colspan="4">Net total</th><th class="num" data-testid="{{ tid('cart_total') }}">€{{ '%.2f' % total }}</th></tr></tfoot>
+  <tfoot><tr><th colspan="4">Net total</th><th class="{{ look.cls('num') }}" data-testid="{{ tid('cart_total') }}">€{{ '%.2f' % total }}</th></tr></tfoot>
 </table>
-<p><a class="btn" href="/grainline/checkout" role="button" data-testid="{{ tid('checkout') }}">{{ t('checkout') }}</a></p>
+{% endmacro %}
+{% macro s_checkout() %}
+<div>{% call m.wrap() %}<a class="{{ look.cls('btn') }}" href="/grainline/checkout" data-testid="{{ tid('checkout') }}">{{ t('checkout') }}</a>{% endcall %}</div>
+{% endmacro %}
+{% for s in look.arrange('cart', [s_lines, s_checkout]) %}{{ s() }}{% endfor %}
 {% else %}
 <p data-testid="{{ tid('cart_empty') }}">Your cart is empty. <a href="/grainline/catalog">Browse the catalog</a>.</p>
 {% endif %}
