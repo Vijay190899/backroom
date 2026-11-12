@@ -1,0 +1,15 @@
+{% extends "grainline/base.html" %}
+{% block title %}Sign in · Grainline Wholesale{% endblock %}
+{% block body %}
+<main>
+  <h1>Customer login</h1>
+  <form class="box" method="post" action="/grainline/login" data-testid="{{ tid('login_form') }}">
+    {% if error %}<p class="error" role="alert" data-testid="{{ tid('login_error') }}">Email or password is incorrect.</p>{% endif %}
+    <label for="email">{{ t('email') }}</label>
+    <input id="email" name="email" type="email" autocomplete="username" required data-testid="{{ tid('email') }}">
+    <label for="password">{{ t('password') }}</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required data-testid="{{ tid('password') }}">
+    <p><button type="submit" data-testid="{{ tid('sign_in') }}">{{ t('sign_in') }}</button></p>
+  </form>
+</main>
+{% endblock %}

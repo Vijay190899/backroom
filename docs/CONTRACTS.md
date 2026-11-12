@@ -29,6 +29,9 @@ The shapes the PC and the laptop build against in parallel ([HANDOVER §9](HANDO
 - **Routes** are the `*_ROUTES` tables. Forms post and redirect with 303, like a classic SaaS app. Undo is `order_cancel` on Grainline and saving the old price again on TillDesk.
 - **Labels** (`*_LABELS`) are what the agent sees and what skills match. Each has three forms: `en` (canonical, seed 0), `en_alt` (synonym) and `de`; chaos picks one.
 - **Test ids** (`data-testid`, built by `testid()`): `gl-` / `td-` / `lb-` + label key with `-`, plus a row key for list rows (`gl-add-to-cart-OAT-1L`, `td-edit-franzbroetchen`). They **never change under chaos** and are for our tests and fixtures only. The agent never sees them (they are not in the ARIA snapshot), and a skill must never use them as a locator.
+- **Non-label test ids** (structure, not controls): Grainline uses `gl-nav`, `gl-row-<SKU>`, `gl-cart`, `gl-cart-line-<SKU>`, `gl-cart-qty-<SKU>`, `gl-cart-total`, `gl-checkout-total`, `gl-order-<id>`, `gl-order-status`, `gl-order-total`, `gl-invoice-<id>`, `gl-download-invoice-<invoice id>`, and one per message (`gl-login-error`, `gl-totp-error`, `gl-cart-error`, `gl-checkout-error`, `gl-cancel-error`, `gl-added-notice`, `gl-order-placed`, `gl-order-cancelled`).
+- **Visible copy:** only control labels (the `*_LABELS` tables) vary with chaos. Headings and messages stay English at every seed.
+- **Signing in by hand:** `uv run python -m backroom_portals.totp` prints the TOTP secret and the current code.
 - **Ids and demo prices:** order ids `GW-\d{5}`, invoice ids `INV-\d{6}`; SKUs in `GRAINLINE_SKUS`, TillDesk item ids in `TILLDESK_ITEM_IDS`. The demo-story prices (`DEMO_PRICES_EUR`: oat milk €1.59, butter €7.10 → €8.24/kg, Franzbrötchen €3.20) are fixed here so the portal (L1), the data pipeline (L4) and the detectors (L6) agree.
 - **Admin API** (header `X-Admin-Token: $PORTALS_ADMIN_TOKEN`; only the api and the bench call it):
 

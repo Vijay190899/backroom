@@ -1,0 +1,15 @@
+{% extends "grainline/app.html" %}
+{% block title %}Dashboard · Grainline Wholesale{% endblock %}
+{% block main %}
+<h1>Welcome back, Hafer &amp; Bohne</h1>
+<p>Order by 18:00 for delivery on the next working day.</p>
+<h2>Recent orders</h2>
+<table data-testid="{{ tid('recent_orders') }}">
+  <thead><tr><th>Order</th><th>Delivery</th><th class="num">Net total</th><th>Status</th></tr></thead>
+  <tbody>
+  {% for o in recent %}
+    <tr><td><a href="/grainline/orders/{{ o.id }}">{{ o.id }}</a></td><td>{{ o.delivery_date.isoformat() }}</td><td class="num">€{{ '%.2f' % o.total_eur }}</td><td>{{ o.status }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

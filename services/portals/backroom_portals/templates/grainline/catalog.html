@@ -1,0 +1,40 @@
+{% extends "grainline/app.html" %}
+{% block title %}Catalog · Grainline Wholesale{% endblock %}
+{% block main %}
+<h1>Catalog</h1>
+<form method="get" action="/grainline/catalog" role="search" data-testid="{{ tid('search_form') }}">
+  <label for="q">{{ t('search') }}</label>
+  <input id="q" name="q" type="text" value="{{ q }}" data-testid="{{ tid('search') }}">
+  <button type="submit" data-testid="{{ tid('search_submit') }}">{{ t('search_submit') }}</button>
+</form>
+<p class="muted" data-testid="{{ tid('result_count') }}">{{ total }} product{{ '' if total == 1 else 's' }}</p>
+<table data-testid="{{ tid('catalog') }}">
+  <thead><tr><th>Product</th><th>SKU</th><th class="num">Price</th><th>Order</th></tr></thead>
+  <tbody>
+  {% for p, price in rows %}
+    <tr data-testid="{{ tid('row', p.sku) }}">
+      <th scope="row">{{ p.name }}</th>
+      <td>{{ p.sku }}</td>
+      <td class="num">€{{ '%.2f' % price }} / {{ p.unit }}</td>
+      <td>
+        <form class="inline" method="post" action="/grainline/cart/add">
+          <input type="hidden" name="sku" value="{{ p.sku }}">
+          <label for="qty-{{ p.sku }}">{{ t('quantity') }}</label>
+          <input id="qty-{{ p.sku }}" name="qty" type="number" min="1" max="999" value="1" required data-testid="{{ tid('quantity', p.sku) }}">
+          <button type="submit" data-testid="{{ tid('add_to_cart', p.sku) }}">{{ t('add_to_cart') }}</button>
+        </form>
+      </td>
+    </tr>
+  {% else %}
+    <tr><td colspan="4">No products match "{{ q }}".</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% if pages > 1 %}
+<p data-testid="{{ tid('pagination') }}">
+  {% if page_no > 1 %}<a href="/grainline/catalog?q={{ q | urlencode }}&amp;page={{ page_no - 1 }}" data-testid="{{ tid('prev_page') }}">{{ t('prev_page') }}</a>{% endif %}
+  Page {{ page_no }} of {{ pages }}
+  {% if page_no < pages %}<a href="/grainline/catalog?q={{ q | urlencode }}&amp;page={{ page_no + 1 }}" data-testid="{{ tid('next_page') }}">{{ t('next_page') }}</a>{% endif %}
+</p>
+{% endif %}
+{% endblock %}

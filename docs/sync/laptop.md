@@ -14,6 +14,23 @@ Notes: surprises, shortcuts, things left undone.
 
 ---
 
+## Thu 12 Nov 2026 19:10 · L1 · branch laptop/l1-grainline (stacked on laptop/l0-contracts)
+Done:
+- The Grainline portal at `/grainline`: login + TOTP (RFC 6238, no new dependency), catalog search with pagination, cart (add, update, remove), checkout with a delivery-date choice, order page with cancel as the Undo, order history, invoices list, and invoice PDFs (hand-written, deterministic, € and umlauts via WinAnsi).
+- Admin `GET /_admin/state/grainline` and `POST /_admin/reset` (`X-Admin-Token`).
+- Seeded history: Tue/Fri orders over the last 28 days, `GW-10474`…`GW-10481`. Butter is €7.10 → €8.24 from day −9, oat milk €1.46 → €1.59 from day −3. The next order is `GW-10482` (24 × €1.59 = €38.16). It is pure functions in `grainline/catalog.py` (`seeded_orders`, `price_on`, `PRODUCTS` with pack sizes), so L4/L6 import the same numbers.
+Verify:
+- `uv run pytest services/portals` (52 pass) or `pnpm check`.
+- By hand: `pnpm dev:lite`, open http://localhost:8001/grainline/login, sign in as `$GRAINLINE_USER` / `$GRAINLINE_PASSWORD`, and get the code from `uv run python -m backroom_portals.totp`.
+Needs from PC:
+- `pydantic-settings` added to `services/portals/pyproject.toml` (already in the lock via the api; `uv.lock` +2 lines). Re-lock on merge as usual.
+- With `GRAINLINE_TOTP_SECRET` empty, the portal derives the secret from `DATA_SEED` (`backroom_portals.totp.default_secret`). The agent's vault must use the same rule, or `pnpm seed` writes a secret to `.env`.
+- Contract change, proposed here (L0 not yet acknowledged): 4 Grainline labels added: `update_qty`, `remove`, `prev_page`, `next_page`.
+Notes:
+- A fresh login empties the cart, so a replay never inherits leftovers.
+- Catalog and cart rows use `<th scope="row">` with the product name, so the agent can scope "Quantity" and "Add to cart" to a row when the page lists several products.
+- The audit (2 blockers, 7 should-fix) is addressed. Left for L2: chaos rendering (nav position, wrappers, interstitials, button/link, table/cards). L2 will move the templates onto shared macros first.
+
 ## Thu 12 Nov 2026 17:30 · L0 · branch laptop/l0-contracts
 Done: contracts for every shared shape, in `docs/CONTRACTS.md` plus code. Portal routes, labels (EN / EN-alt / DE), test ids, admin API, SKUs and secret keys are in `backroom_portals/contract.py`. The chaos catalog (9 families; seed 0 canonical; seed 7 pinned to DE + top-bar nav + cookie banner) is `backroom_portals/chaos.py`. The skill schema is `backroom_api/skills/schema.py`. Run events (SSE), WS frames and golden-run frames are `backroom_api/contracts/events.py`; API bodies are `contracts/api.py`; the detector `Candidate` is `contracts/candidate.py`. The memory migration is `services/api/migrations/0001_memory.sql`, bitemporal with `invalidated_at`. The zod mirror is `apps/web/src/lib/contracts.ts`. Six shared fixtures in `apps/web/src/fixtures/` are generated from the pydantic models by `services/api/scripts/gen_fixtures.py`.
 Verify: `pnpm check` (66 pytest pass, including fixtures parsed with pydantic; `pnpm -C apps/web contracts` parses the same fixtures with zod and checks rejections).
