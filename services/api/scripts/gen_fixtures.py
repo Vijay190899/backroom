@@ -73,10 +73,10 @@ cards = [
         kind="stockout",
         rank=2,
         title="Reorder oat milk",
-        impact_eur_weekly=212.40,
+        impact_eur_weekly=730.80,
         why=(
-            "Oat milk runs out in 2 days at this week's pace; 24 cartons for €38.16 on "
-            "Friday's delivery protect about €212.40 of oat drinks a week."
+            "Oat milk runs out in 2 days at this week's pace; 28 cartons for €44.52 cover "
+            "7 days and protect about €730.80 of oat lattes a week."
         ),
         evidence=[
             Evidence(
@@ -94,13 +94,14 @@ cards = [
         ],
         numbers=[
             n("days_left", 2, "days", "Days of stock left"),
-            n("qty", 24, "count", "Cartons to order"),
-            n("order_total_eur", 38.16, "eur", "Order total"),
-            n("impact_eur_weekly", 212.40, "eur", "Weekly oat-drink sales at risk"),
+            n("qty", 28, "count", "Cartons to order"),
+            n("cover_days", 7, "days", "Days the order covers"),
+            n("order_total_eur", 44.52, "eur", "Order total"),
+            n("impact_eur_weekly", 730.80, "eur", "Weekly sales of items that need it"),
         ],
         task="grainline.reorder_item",
         portal="grainline",
-        params={"sku": "OAT-1L", "qty": 24},
+        params={"sku": "OAT-1L", "qty": 28},
         executable=True,
         status="proposed",
         preference_note="Scheduled for Friday, your next Grainline order day",
@@ -113,7 +114,7 @@ cards = [
         kind="margin_erosion",
         rank=1,
         title="Fix Franzbrötchen margin",
-        impact_eur_weekly=72.00,
+        impact_eur_weekly=86.80,
         why=(
             "Butter is up 16%, so a Franzbrötchen now costs €1.02 to make and its margin fell "
             "from 71% to 68%, under your 70% target; €3.20 → €3.60 brings it to 72%."
@@ -135,8 +136,8 @@ cards = [
             ),
         ],
         numbers=[
-            n("butter_increase_pct", 16, "pct", "Butter price change"),
-            n("butter_cost_before_eur", 0.55, "eur", "Butter per Franzbrötchen, before"),
+            n("driver_increase_pct", 16.1, "pct", "Butter price change"),
+            n("driver_cost_before_eur", 0.55, "eur", "Butter per Franzbrötchen, before"),
             n("unit_cost_before_eur", 0.93, "eur", "Unit cost before"),
             n("unit_cost_after_eur", 1.02, "eur", "Unit cost now"),
             n("margin_before_pct", 71, "pct", "Margin before"),
@@ -146,7 +147,7 @@ cards = [
             n("price_new_eur", 3.60, "eur", "Proposed price"),
             n("price_increase_pct", 12.5, "pct", "Price change"),
             n("margin_new_pct", 72, "pct", "Margin at new price"),
-            n("impact_eur_weekly", 72.00, "eur", "Weekly margin recovered"),
+            n("impact_eur_weekly", 86.80, "eur", "Weekly margin recovered"),
         ],
         task="tilldesk.change_price",
         portal="tilldesk",
@@ -218,9 +219,9 @@ capped = franz.model_copy(
             n("price_increase_pct", 7.8, "pct", "Price change"),
             n("margin_new_pct", 70, "pct", "Margin at new price"),
             n("max_price_increase_pct", 8, "pct", "Your cap on price rises"),
-            n("impact_eur_weekly", 45.00, "eur", "Weekly margin recovered"),
+            n("impact_eur_weekly", 54.25, "eur", "Weekly margin recovered"),
         ],
-        "impact_eur_weekly": 45.00,
+        "impact_eur_weekly": 54.25,
         "params": {"item_id": "franzbroetchen", "price_eur": 3.45},
         "preference_note": "Kept under your 8% cap",
     }
@@ -446,7 +447,7 @@ events.append(
         chaos_seed=7,
     )
 )
-PARAMS = {"sku": "OAT-1L", "qty": "24"}
+PARAMS = {"sku": "OAT-1L", "qty": "28"}
 offset = 0  # v2 has one extra step once the first heal inserted it
 for v1_index, step in enumerate(v1.steps):
     i = v1_index + offset
@@ -565,8 +566,8 @@ events.append(
         run_id=RUN_ID,
         ts=ts,
         status="succeeded",
-        summary="Order GW-10482 placed, 24 \u00d7 1L oat milk, €38.16, arrives Fri",
-        result={"order_id": "GW-10482", "total_eur": 38.16},
+        summary="Order GW-10482 placed, 28 \u00d7 1L oat milk, €44.52, arrives Mon",
+        result={"order_id": "GW-10482", "total_eur": 44.52},
         undo_available=True,
         skill_version=2,
         totals=tot,

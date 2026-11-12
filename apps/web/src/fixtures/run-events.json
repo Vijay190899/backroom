@@ -328,7 +328,7 @@
       "role": "spinbutton",
       "name": "Quantity"
     },
-    "value": "24",
+    "value": "28",
     "mode": "replay"
   },
   {
@@ -536,10 +536,10 @@
     "ts": "2026-11-13T07:31:16.190000Z",
     "type": "run.finished",
     "status": "succeeded",
-    "summary": "Order GW-10482 placed, 24 × 1L oat milk, €38.16, arrives Fri",
+    "summary": "Order GW-10482 placed, 28 × 1L oat milk, €44.52, arrives Mon",
     "result": {
       "order_id": "GW-10482",
-      "total_eur": 38.16
+      "total_eur": 44.52
     },
     "undo_available": true,
     "skill_version": 2,
