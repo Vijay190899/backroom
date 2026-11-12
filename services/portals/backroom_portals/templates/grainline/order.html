@@ -1,0 +1,29 @@
+{% extends "grainline/app.html" %}
+{% block title %}Order {{ order.id }} · Grainline Wholesale{% endblock %}
+{% block main %}
+{% if placed %}
+<p class="notice" role="status" data-testid="{{ tid('order_placed') }}">Order {{ order.id }} placed. Delivery on {{ order.delivery_date.strftime('%a %d %b %Y') }}.</p>
+{% elif cancelled %}
+<p class="notice" role="status" data-testid="{{ tid('order_cancelled') }}">Order {{ order.id }} cancelled.</p>
+{% endif %}
+{% if error == 'cancel' %}<p class="error" role="alert" data-testid="{{ tid('cancel_error') }}">This order can no longer be cancelled.</p>{% endif %}
+<h1>Order {{ order.id }}</h1>
+<p>Status: <strong data-testid="{{ tid('order_status') }}">{{ order.status }}</strong> · Delivery: {{ order.delivery_date.isoformat() }}</p>
+<table data-testid="{{ tid('order_lines') }}">
+  <thead><tr><th>Product</th><th>SKU</th><th class="num">Qty</th><th class="num">Unit price</th><th class="num">Amount</th></tr></thead>
+  <tbody>
+  {% for line in order.lines %}
+    <tr><th scope="row">{{ products[line.sku].name }}</th><td>{{ line.sku }}</td><td class="num">{{ line.qty }}</td><td class="num">€{{ '%.2f' % line.unit_price_eur }}</td><td class="num">€{{ '%.2f' % (line.qty * line.unit_price_eur) }}</td></tr>
+  {% endfor %}
+  </tbody>
+  <tfoot><tr><th colspan="4">Net total</th><th class="num" data-testid="{{ tid('order_total') }}">€{{ '%.2f' % order.total_eur }}</th></tr></tfoot>
+</table>
+<p>
+  {% if order.invoice_id %}<a href="/grainline/invoices/{{ order.invoice_id }}.pdf" aria-label="{{ t('download_invoice') }} {{ order.invoice_id }}" data-testid="{{ tid('download_invoice', order.invoice_id) }}">{{ t('download_invoice') }}</a> ({{ order.invoice_id }}){% endif %}
+</p>
+{% if can_cancel %}
+<form method="post" action="/grainline/orders/{{ order.id }}/cancel">
+  <button type="submit" data-testid="{{ tid('cancel_order') }}">{{ t('cancel_order') }}</button>
+</form>
+{% endif %}
+{% endblock %}

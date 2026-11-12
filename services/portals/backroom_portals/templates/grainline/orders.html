@@ -1,0 +1,19 @@
+{% extends "grainline/app.html" %}
+{% block title %}Orders · Grainline Wholesale{% endblock %}
+{% block main %}
+<h1>Order history</h1>
+<table data-testid="{{ tid('orders') }}">
+  <thead><tr><th>Order</th><th>Ordered</th><th>Delivery</th><th class="num">Net total</th><th>Status</th></tr></thead>
+  <tbody>
+  {% for o in orders %}
+    <tr data-testid="{{ tid('order', o.id) }}">
+      <th scope="row"><a href="/grainline/orders/{{ o.id }}">{{ o.id }}</a></th>
+      <td>{{ invoices[o.invoice_id].issued_on.isoformat() if o.invoice_id in invoices else '' }}</td>
+      <td>{{ o.delivery_date.isoformat() }}</td>
+      <td class="num">€{{ '%.2f' % o.total_eur }}</td>
+      <td>{{ o.status }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

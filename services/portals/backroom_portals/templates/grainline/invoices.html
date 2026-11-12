@@ -1,0 +1,20 @@
+{% extends "grainline/app.html" %}
+{% block title %}Invoices · Grainline Wholesale{% endblock %}
+{% block main %}
+<h1>Invoices</h1>
+<table data-testid="{{ tid('invoices') }}">
+  <thead><tr><th>Invoice</th><th>Date</th><th>Order</th><th class="num">Net</th><th class="num">Total due</th><th>PDF</th></tr></thead>
+  <tbody>
+  {% for inv in invoices %}
+    <tr data-testid="{{ tid('invoice', inv.id) }}">
+      <th scope="row">{{ inv.id }}</th>
+      <td>{{ inv.issued_on.isoformat() }}</td>
+      <td><a href="/grainline/orders/{{ inv.order_id }}">{{ inv.order_id }}</a></td>
+      <td class="num">€{{ '%.2f' % inv.net_eur }}</td>
+      <td class="num">€{{ '%.2f' % inv.gross_eur }}</td>
+      <td><a href="/grainline/invoices/{{ inv.id }}.pdf" aria-label="{{ t('download_invoice') }} {{ inv.id }}" data-testid="{{ tid('download_invoice', inv.id) }}">{{ t('download_invoice') }}</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
