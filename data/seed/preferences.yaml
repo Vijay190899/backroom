@@ -1,0 +1,11 @@
+# Seeded owner preferences and business rules (memory episodes of kind "seed").
+# No price-cap preference is seeded: the demo learns "max 8%" live (PRD F4, DATA.md).
+preferences:
+  - id: grainline-order-days
+    text: Lena orders from Grainline only on Tuesdays and Fridays.
+    rule: {supplier: grainline, weekdays: [tue, fri]}
+    since_days_ago: 45
+business_rules:
+  - id: margin-target
+    text: Every menu item should keep a gross margin of at least 70%.
+    rule: {margin_target_pct: 70}

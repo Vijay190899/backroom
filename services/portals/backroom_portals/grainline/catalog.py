@@ -88,8 +88,12 @@ class SeedOrder:
 
 
 # Lena's usual Tue/Fri order (the seeded preference); quantities vary a little per order.
+# Oat milk is ordered well under what the café now uses (220 ml per oat latte, ~38 L a
+# week vs ~20 L delivered), so stock falls steadily to the demo's stock-out with its
+# lowest point at the end of the window (backroom_data.world.inventory). The agent's
+# reorder of 24 cartons is the fix.
 _USUAL_BASKET = {
-    "OAT-1L": 24,
+    "OAT-1L": 10,
     "MILK-1L": 30,
     "BEANS-1KG": 6,
     "BUTTER-1KG": 4,
