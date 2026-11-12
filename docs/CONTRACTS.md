@@ -95,6 +95,15 @@ Number guard rules (L7 implements them; deterministic, no LLM):
 3. Digits inside ids and names do not count: SKUs, order and invoice ids, entity names.
 4. Any unmatched number fails the card: one regeneration, then template copy from `title_hint` and `numbers`. `GuardResult` records the outcome.
 5. Copy avoids clock times and dates written as numbers ("Friday", not "13.11.").
+6. **Units must agree** (L7): a number written with `€` only matches an `eur` value, one written with `%` only a `pct` value. Without this check "8%" would match 8.24 (butter €/kg).
+7. Rounding is **half-up** (`analytics.pricing.round_half_up`; 70.5 → 71, as JS `Math.round` does), never Python's half-to-even `round`.
+
+Detectors (L6, `backroom_api/analytics/detectors.py`) compute every number, over the 7 full days before `as_of`. `run_all()` refuses an `as_of` the data wasn't built for. Weekly impact means something different per kind (cards are ranked by it):
+- **stock-out:** last week's sales of every item that needs the ingredient;
+- **margin:** units sold × the proposed price rise;
+- **weather:** the cost of the one shift to trim.
+
+`run_all(max_price_increase_pct=8)` re-proposes the margin card within an owner's cap and adds `max_price_increase_pct` to its numbers (PRD F4). Prices come from `analytics.pricing.propose_price`: target + 1.5 points on a 10-cent grid, or the highest 5-cent step under the cap, never below today's price.
 
 ## 7. API shapes
 

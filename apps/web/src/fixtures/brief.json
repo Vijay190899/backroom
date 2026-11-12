@@ -9,8 +9,8 @@
       "kind": "stockout",
       "rank": 2,
       "title": "Reorder oat milk",
-      "impact_eur_weekly": 212.4,
-      "why": "Oat milk runs out in 2 days at this week's pace; 24 cartons for €38.16 on Friday's delivery protect about €212.40 of oat drinks a week.",
+      "impact_eur_weekly": 730.8,
+      "why": "Oat milk runs out in 2 days at this week's pace; 28 cartons for €44.52 cover 7 days and protect about €730.80 of oat lattes a week.",
       "evidence": [
         {
           "id": "ev_oat_velocity",
@@ -60,28 +60,34 @@
         },
         {
           "key": "qty",
-          "value": 24.0,
+          "value": 28.0,
           "unit": "count",
           "label": "Cartons to order"
         },
         {
+          "key": "cover_days",
+          "value": 7.0,
+          "unit": "days",
+          "label": "Days the order covers"
+        },
+        {
           "key": "order_total_eur",
-          "value": 38.16,
+          "value": 44.52,
           "unit": "eur",
           "label": "Order total"
         },
         {
           "key": "impact_eur_weekly",
-          "value": 212.4,
+          "value": 730.8,
           "unit": "eur",
-          "label": "Weekly oat-drink sales at risk"
+          "label": "Weekly sales of items that need it"
         }
       ],
       "task": "grainline.reorder_item",
       "portal": "grainline",
       "params": {
         "sku": "OAT-1L",
-        "qty": 24
+        "qty": 28
       },
       "executable": true,
       "status": "proposed",
@@ -99,7 +105,7 @@
       "kind": "margin_erosion",
       "rank": 1,
       "title": "Fix Franzbrötchen margin",
-      "impact_eur_weekly": 72.0,
+      "impact_eur_weekly": 86.8,
       "why": "Butter is up 16%, so a Franzbrötchen now costs €1.02 to make and its margin fell from 71% to 68%, under your 70% target; €3.20 → €3.60 brings it to 72%.",
       "evidence": [
         {
@@ -147,13 +153,13 @@
       ],
       "numbers": [
         {
-          "key": "butter_increase_pct",
-          "value": 16.0,
+          "key": "driver_increase_pct",
+          "value": 16.1,
           "unit": "pct",
           "label": "Butter price change"
         },
         {
-          "key": "butter_cost_before_eur",
+          "key": "driver_cost_before_eur",
           "value": 0.55,
           "unit": "eur",
           "label": "Butter per Franzbrötchen, before"
@@ -214,7 +220,7 @@
         },
         {
           "key": "impact_eur_weekly",
-          "value": 72.0,
+          "value": 86.8,
           "unit": "eur",
           "label": "Weekly margin recovered"
         }

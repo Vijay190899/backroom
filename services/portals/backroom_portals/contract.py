@@ -153,7 +153,7 @@ GRAINLINE_SKUS: dict[str, str] = {
     "CUP-12OZ-50": "Paper cups 12 oz, 50 pcs",
 }
 DEMO_PRICES_EUR = {
-    "OAT-1L": 1.59,  # 24 x 1.59 = 38.16 (PRD F2 summary)
+    "OAT-1L": 1.59,  # the detector reorders a week of cover (28 x 1.59 = 44.52)
     "BUTTER-1KG.before": 7.10,  # invoice before day -9
     "BUTTER-1KG": 8.24,  # +16% from day -9 (DATA.md)
     "franzbroetchen.menu": 3.20,  # TillDesk price before the demo

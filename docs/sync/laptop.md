@@ -14,6 +14,25 @@ Notes: surprises, shortcuts, things left undone.
 
 ---
 
+## Fri 13 Nov 2026 00:40 · L6 · branch laptop/l6-detectors (stacked on laptop/l4-data)
+Done:
+- `backroom_api/analytics/detectors.py`: stock-out, margin erosion and weather demand as DuckDB SQL over the L4 Parquet files. Each emits contract `Candidate`s with every quotable number and inline SQL evidence. `run_all(max_price_increase_pct=…)` re-proposes within an owner's cap.
+- `backroom_api/analytics/pricing.py`: deterministic prices, rounded half-up.
+- On today's real data:
+  - Franzbrötchen: butter +16.1%, €0.55 → €0.64; cost €0.93 → €1.02; margin 71% → 68% (target 70%); proposes €3.20 → €3.60 (+12.5%, margin 72%). With an 8% cap: €3.45, +7.8%, 70%.
+  - Oat milk: 2.0 days left; 28 cartons, €44.52.
+  - Rainy Saturday: 9 mm forecast, −14%, trim one of three 4-hour shifts, €58.
+- Shared fixtures regenerated to match (driver_* keys, 28 cartons).
+Verify:
+- `uv run python -c "from backroom_api.analytics.detectors import run_all; [print(c.kind, c.impact_eur_weekly) for c in run_all()]"` (needs `uv run backroom-data all` first).
+- `uv run pytest services/api/tests/test_detectors.py`: 14 tests. `pnpm check`: 232 pass.
+Needs from PC:
+- `uv sync --all-packages` (duckdb in backroom-api).
+- The reorder is 28 cartons / €44.52 now (L-43); demo lines that say 24 / €38.16 need updating.
+Notes:
+- Deviations are logged as L-43…L-49.
+- The audit found no blockers and 11 issues worth fixing; all are fixed. For L7: the number guard must check that units agree (CONTRACTS §6 rule 6).
+
 ## Thu 12 Nov 2026 23:30 · L4 · branch laptop/l4-data (stacked on laptop/l3-tilldesk)
 Done:
 - `uv run backroom-data all` (`pnpm seed`'s data step) builds `data/out/`:
