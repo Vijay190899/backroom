@@ -63,6 +63,7 @@ backroom/
 | `pnpm seed` | `uv run backroom-data all` (download → transform → load Postgres + Parquet) |
 | `pnpm bench` | `uv run backroom-bench all` (B1–B5 → `bench/results/*.json`) |
 | `pnpm probe:llm` | `uv run backroom-bench probe` (provider capability probe → `bench/results/provider_probe.json`) |
+| `pnpm dev:lite` | the same three processes without Docker and without a database (the API reports "degraded"). For light machines |
 | `pnpm dev` | `docker compose -f infra/docker-compose.yml up -d postgres` + api, portals (`uv run uvicorn --reload`) + `next dev`, in parallel |
 | `pnpm e2e` | Playwright e2e of the demo path (390 px + 1440 px) |
 
@@ -222,7 +223,7 @@ create index on fact (subject_id, predicate, valid_from desc);
 | Traces (P1) | Langfuse Cloud Hobby | $0 |
 | CI | GitHub Actions: lint, typecheck, unit tests, compose-based e2e | $0 |
 
-- **Deploy:** `infra/deploy.sh`: ssh → `git pull` → `docker compose up -d --build` → wait for health → smoke test. Take a Lightsail snapshot before the final deploy (rollback in 2 minutes).
+- **Deploy:** a GitHub Actions workflow builds the api and portals images and pushes them to GHCR (the api image is 4.3 GB, too heavy to build on a 2 GB server or a light laptop). `infra/deploy.sh`: ssh → `docker compose pull` → `docker compose up -d` → wait for health → smoke test. Take a Lightsail snapshot before the final deploy (rollback in 2 minutes). See ADR-14.
 - **Guards:** daily LLM budget cap, per-IP rate limit on mutation endpoints, live mode behind `DEMO_ACCESS_CODE`, CORS restricted to the Vercel domain.
 - **Fallback:** no AWS account or quota issue → the same compose file runs on Hetzner CX22 (~€4/mo) or Fly.io. Keep compose portable.
 - **Freeze:** no deploys after Fri 11:30.

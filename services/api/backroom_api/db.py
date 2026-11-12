@@ -22,6 +22,7 @@ def make_pool(settings: Settings) -> ConnectionPool:
 
 
 def ping(pool: ConnectionPool) -> bool:
-    with pool.connection() as conn:
+    # A short wait keeps /health fast (and the UI status live) when Postgres is down.
+    with pool.connection(timeout=1.0) as conn:
         row = conn.execute("select 1").fetchone()
     return row is not None and row[0] == 1

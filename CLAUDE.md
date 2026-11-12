@@ -40,7 +40,8 @@ Rules:
 ## Stack and commands
 - Python 3.12 uv workspace (root `pyproject.toml`; members `services/api`, `services/portals`, `data`, `bench`): FastAPI, Pydantic v2, psycopg 3, DuckDB, Playwright.
 - Next.js + TS strict + pnpm (`apps/web`): Tailwind v4, shadcn/ui, Motion, TanStack Query.
-- Root scripts (the only entry points): `pnpm check` · `pnpm seed` · `pnpm bench` · `pnpm probe:llm` · `pnpm dev` · `pnpm e2e`. See ARCHITECTURE §2.
+- Root scripts (the only entry points): `pnpm check` · `pnpm seed` · `pnpm bench` · `pnpm probe:llm` · `pnpm dev` · `pnpm dev:lite` · `pnpm e2e`. See ARCHITECTURE §2.
+- **Two machines:** a light laptop (no Docker, no Chromium) and the main PC. Which tasks belong to which, the ownership table and the merge rules are in `docs/HANDOVER.md` §9. On the laptop, run `pnpm dev:lite`, never `pnpm dev`, and never start a browser agent.
 - Infra: `infra/docker-compose.yml` (postgres+pgvector, api, portals, caddy). Locally only Postgres runs in Docker.
 
 ## Non-negotiables

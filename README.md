@@ -77,6 +77,7 @@ Needs Node 24, pnpm 9, [uv](https://docs.astral.sh/uv/) and Docker.
 cp .env.example .env            # add OPENROUTER_API_KEY
 pnpm install && uv sync --all-packages
 pnpm dev                        # Postgres (Docker) + API :8000 + portals :8001 + web :3000
+pnpm dev:lite                   # the same without Docker or a database (API shows "degraded")
 pnpm check                      # ruff, pyright, pytest, eslint, tsc
 pnpm probe:llm                  # confirms which LLM features the provider supports
 ```
