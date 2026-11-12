@@ -13,6 +13,7 @@ The shapes the PC and the laptop build against in parallel ([HANDOVER §9](HANDO
 | Memory schema | `services/api/migrations/0001_memory.sql` | [§8](#8-memory) |
 | Web mirror (zod) | `apps/web/src/lib/contracts.ts` | [§9](#9-fixtures-and-the-drift-check) |
 | Shared fixtures | `apps/web/src/fixtures/*.json` | [§9](#9-fixtures-and-the-drift-check) |
+| Data tables (Parquet) | `data/backroom_data/cli.py` (`SCHEMAS`) | [§10](#10-data-tables) |
 
 ## 1. Changing a contract
 
@@ -116,3 +117,21 @@ The models in `contracts/api.py` are the bodies of the ARCHITECTURE §3 routes: 
 - Regenerate them from the models with `uv run python services/api/scripts/gen_fixtures.py`; don't edit them by hand.
 - `pnpm check` validates every fixture on both sides: pytest with pydantic (`services/api/tests/test_contracts.py`) and node with zod (`pnpm -C apps/web contracts`). Both also check that invalid input is rejected.
 - The fixtures are illustrative. Real runs on chaos seed 7 will heal more steps (every label is German); the shapes are what matter.
+
+## 10. Data tables
+
+`uv run backroom-data all` (L4) writes `data/out/<table>.parquet`, `preferences.json` and `manifest.json`. Column types are fixed in `cli.SCHEMAS`, whatever the source. The detectors (L6) and the B3 ground truth read these tables with DuckDB; the PC's `pnpm seed` (H1) loads them into Postgres.
+
+| Table | Grain | Notes |
+|---|---|---|
+| `sales` | one line item (`transaction_id`) | `ts` is naive Bonn wall-clock time (store it as `timestamp`, not `timestamptz`). `unit_price_eur` is the TillDesk menu price, VAT included. `source`: `maven` or `synthetic`. "Footfall" means line items |
+| `weather` | day, window start to today + 7 | `source`: `archive`, `forecast`, `synthetic`, with `+demo_override` on next Saturday (9 mm). Rainy means `precip_mm >= 2.0` (`sales.RAIN_MM`) |
+| `holidays` | day | DE-NW public holidays; `source`: `nager` or `computed` |
+| `menu`, `recipes` | item; item × SKU | `recipes.amount` is in the SKU's unit (kg, l, pcs) |
+| `unit_costs` | day × item | EUR to make one item at that day's Grainline prices |
+| `supplier_prices` | day × SKU | the price history (butter from day −9, oat milk from day −3) |
+| `grainline_orders` | order line | the same orders and invoices the Grainline portal shows |
+| `inventory` | day × SKU, last 28 days | opening + delivered − used = closing; oat milk ends at 2.0 days of 7-day velocity |
+| `staff`, `rota` | person; shift | 06:00–20:00 coverage; Saturday has three 14:00–18:00 shifts |
+
+Everything is relative to `today`: rebuild on the day you demo (or pin `PORTALS_TODAY` for both the portals and the data).

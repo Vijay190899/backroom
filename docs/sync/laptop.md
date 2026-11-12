@@ -14,6 +14,30 @@ Notes: surprises, shortcuts, things left undone.
 
 ---
 
+## Thu 12 Nov 2026 23:30 · L4 · branch laptop/l4-data (stacked on laptop/l3-tilldesk)
+Done:
+- `uv run backroom-data all` (`pnpm seed`'s data step) builds `data/out/`:
+  - Parquet tables: sales, weather, holidays, menu, recipes, unit_costs, supplier_prices, grainline_orders, inventory, staff, rota;
+  - `preferences.json` (Tue/Fri ordering and the 70% margin target; no price cap) and `manifest.json` (sources, row counts, honest notes).
+- Sources: Maven Coffee Shop Sales (Hell's Kitchen store, mapped onto the TillDesk menu), Open-Meteo archive + forecast for Bonn, Nager.Date DE-NW. Downloads are cached in `data/raw/`; every one has a fallback (synthetic sales and weather, computed holidays).
+- Story numbers come out of the data:
+  - Franzbrötchen unit cost €0.93 → €1.02 (butter €0.55 at €7.10/kg);
+  - oat milk exactly 2.0 days left;
+  - rainy Saturdays −13.9% against nearby dry ones;
+  - next Saturday 9 mm (`demo_override`);
+  - three 14:00–18:00 shifts on Saturday.
+Verify:
+- `uv run backroom-data all` (≈4 s), then run it again: every file in `data/out/` is byte-identical.
+- `uv run pytest data/tests`: 18 tests on tiny fixtures, offline.
+- `pnpm check`: 218 pass.
+Needs from PC:
+- `uv sync --all-packages` (new deps: duckdb, pyyaml; data depends on portals).
+- H1 loads the tables into Postgres (column types in `cli.SCHEMAS`; CONTRACTS §10).
+- Rebuild the data on demo day, or pin `PORTALS_TODAY`, so data and portal agree.
+Notes:
+- Deviations are logged as L-32…L-42 in `docs/DECISIONS.md`. The Grainline usual oat order is now 10 cartons (L-37).
+- The audit found 1 blocker (hard-coded "Maven/Open-Meteo" notes in fallback builds) and 8 issues worth fixing; all are fixed and tested.
+
 ## Thu 12 Nov 2026 21:40 · L3 · branch laptop/l3-tilldesk (stacked on laptop/l2-chaos)
 Done:
 - The TillDesk portal at `/tilldesk`: login (username + password, no TOTP), menu list (8 items), edit price (a draft), and "Publish menu".
