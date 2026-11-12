@@ -6,6 +6,8 @@ from backroom_portals.config import Settings, get_settings
 from backroom_portals.grainline import routes as grainline
 from backroom_portals.grainline.store import GrainlineStore
 from backroom_portals.rendering import ChaosSeeds
+from backroom_portals.tilldesk import routes as tilldesk
+from backroom_portals.tilldesk.store import TillDeskStore
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -16,7 +18,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.grainline = GrainlineStore(
         today_fn=lambda: settings.today, data_seed=settings.data_seed
     )
+    app.state.tilldesk = TillDeskStore()
     app.include_router(grainline.router)
+    app.include_router(tilldesk.router)
     app.include_router(admin.router)
 
     @app.get("/health")

@@ -14,6 +14,7 @@ from backroom_portals.contract import (
     ChaosState,
     GrainlineState,
     PortalName,
+    TillDeskState,
 )
 from backroom_portals.rendering import ChaosSeeds
 
@@ -47,13 +48,16 @@ def chaos_set(request: Request, body: ChaosRequest) -> ChaosState:
 
 
 @router.get("/state/{portal}")
-def state(request: Request, portal: PortalName) -> GrainlineState:
+def state(request: Request, portal: PortalName) -> GrainlineState | TillDeskState:
     if portal == "grainline":
         return request.app.state.grainline.state()
+    if portal == "tilldesk":
+        return request.app.state.tilldesk.state()
     raise HTTPException(404, f"{portal} has no state yet")
 
 
 @router.post("/reset", status_code=204)
 def reset(request: Request) -> None:
     request.app.state.grainline.reset()
+    request.app.state.tilldesk.reset()
     request.app.state.chaos.seeds.clear()

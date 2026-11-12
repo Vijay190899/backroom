@@ -31,6 +31,7 @@ The shapes the PC and the laptop build against in parallel ([HANDOVER §9](HANDO
 - **Test ids** (`data-testid`, built by `testid()`): `gl-` / `td-` / `lb-` + label key with `-`, plus a row key for list rows (`gl-add-to-cart-OAT-1L`, `td-edit-franzbroetchen`). They **never change under chaos** and are for our tests and fixtures only. The agent never sees them (they are not in the ARIA snapshot), and a skill must never use them as a locator.
 - **Non-label test ids** (structure, not controls): Grainline uses `gl-nav`, `gl-row-<SKU>`, `gl-cart`, `gl-cart-line-<SKU>`, `gl-cart-qty-<SKU>`, `gl-cart-total`, `gl-checkout-total`, `gl-order-<id>`, `gl-order-status`, `gl-order-total`, `gl-invoice-<id>`, `gl-download-invoice-<invoice id>`, and one per message (`gl-login-error`, `gl-totp-error`, `gl-cart-error`, `gl-checkout-error`, `gl-cancel-error`, `gl-added-notice`, `gl-order-placed`, `gl-order-cancelled`).
 - **Visible copy:** only control labels (the `*_LABELS` tables) vary with chaos. Headings and messages stay English at every seed.
+- **TillDesk** has no TOTP (username + password only; `SECRET_KEYS` has no TillDesk TOTP). Editing a price saves a **draft**; "Publish menu" makes every draft live. A fresh login drops unpublished drafts, so a failed run can't leak one into the next run.
 - **Signing in by hand:** `uv run python -m backroom_portals.totp` prints the TOTP secret and the current code.
 - **Ids and demo prices:** order ids `GW-\d{5}`, invoice ids `INV-\d{6}`; SKUs in `GRAINLINE_SKUS`, TillDesk item ids in `TILLDESK_ITEM_IDS`. The demo-story prices (`DEMO_PRICES_EUR`: oat milk €1.59, butter €7.10 → €8.24/kg, Franzbrötchen €3.20) are fixed here so the portal (L1), the data pipeline (L4) and the detectors (L6) agree.
 - **Admin API** (header `X-Admin-Token: $PORTALS_ADMIN_TOKEN`; only the api and the bench call it):
@@ -58,6 +59,7 @@ Nine families, the first variant of each canonical: `language` (en, en_alt, de),
   2. After every navigation, **wait until no `[aria-busy]` element is left** before taking the ARIA snapshot. With `delayed_render`, the page is a "Loading…" skeleton for up to 1.5 s.
   3. The hamburger nav is a closed `<details>`: open it with its summary ("Open menu" / "Menü öffnen") before clicking a nav link.
   4. With `control_kind=link`, primary actions are links (`<a href="#">`, role `link`) that submit their form via JS. A hidden `aria-hidden` submit button keeps Enter-to-submit working.
+  5. Match accessible names **exactly** (`exact=True`). Substring matching collides: "Menu" vs "Publish menu", "Speisekarte" vs "Speisekarte veröffentlichen".
 
 ## 4. Skills
 
@@ -67,6 +69,7 @@ Nine families, the first variant of each canonical: `language` (en, en_alt, de),
 - Locator order: `target` (ARIA role + name), then `fallbacks` in order (`{label}`, `{text}`, `{css}`).
 - `value_template`: `{{param}}` must be declared in `params_schema.properties`; `{{secret:key}}` is resolved by the vault and is allowed only in `fill_secret` and `totp` steps (the schema enforces both).
 - `goto` and `press` need a `value_template` (the path or the key).
+- **Row-scoped links:** TillDesk's edit links and Grainline's invoice links carry an `aria-label` of "<label> <row name>" ("Edit Franzbrötchen", "Bearbeiten Franzbrötchen", "Download PDF INV-204107"). The label part follows chaos; the row name doesn't. `tilldesk.change_price {item_id, price_eur}` may reach the edit page by `goto /tilldesk/menu/{{item_id}}/edit` (a stable URL). The Publish step still runs on the chaos-rendered menu page, where **Publish is always present**.
 - Postconditions: `url_matches`, `text_visible`, or `portal_state` with a dotted path into the admin state (`orders.last.status` equals `placed`; `items.franzbroetchen.published_price_eur` equals `{{price_eur}}`). `equals` is rendered, then parsed as JSON when it parses, so `"3.6"` equals `3.60`. A run without passing postconditions never reports success.
 - A heal produces a **new version** (`parent_version` = the old one). A run that heals several steps produces **one** new version. It is **stored only if the run finishes `succeeded` with every postcondition passing**; until then `heal.succeeded.new_version` is provisional.
 - `SkillDiff.changes` are `StepChange`s with `op`: `update` (one field of a step), `insert` (a new step, e.g. dismissing a cookie banner) or `delete` (`field` is `"step"` for both). `step_index` is in the newer version for update and insert, in the older one for delete.
