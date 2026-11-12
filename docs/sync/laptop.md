@@ -27,7 +27,7 @@ Needs from PC:
   - `POST /runs/{id}/undo` and `POST /runs/{id}/human`;
   - `ContextPack` on `RunSummary`.
 Notes, files outside the laptop's ownership (all small, needed to wire the contract check):
-- **PC: please add one CI step** after typecheck in `.github/workflows/ci.yml`: `run: pnpm -C apps/web contracts`. I couldn't push it: the laptop's GitHub token has no `workflow` scope;
+- `.github/workflows/ci.yml`: one step after typecheck, `pnpm -C apps/web contracts` (the laptop's gh token now has the `workflow` scope);
 - the root `package.json` `check:web` runs that step too;
 - an `apps/web/package.json` `contracts` script;
 - `apps/web/tsconfig.json` gains `allowImportingTsExtensions`, so node can run the check without a build step.
