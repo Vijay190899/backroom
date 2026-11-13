@@ -117,6 +117,22 @@ The models in `contracts/api.py` are the bodies of the ARCHITECTURE §3 routes: 
 - Facts are bitemporal: valid time (`valid_from`, `valid_to`) and transaction time (`recorded_at`, `invalidated_at`). The "as we knew it at :r" query is in the migration header.
 - Facts are only ever inserted. Supersession sets the old row's `valid_to`, `invalidated_at` and `superseded_by` in the same transaction as the insert. The writer locks the open rows first (`select … for update`), so two writers can't leave two open facts on a one-valued predicate. One-valued predicates supersede on `(subject, predicate)`, many-valued ones on `(subject, predicate, object)`.
 - Starting predicate vocabulary (snake_case; extend as needed and note it in the sync log): one-valued `unit_price_eur_per_kg`, `unit_price_eur_per_l`, `menu_price_eur`, `stock_on_hand`, `supplied_by`; many-valued `uses_ingredient` (value `{grams}` or `{ml}`), `has_preference` (value holds the rule, e.g. `{"max_price_increase_pct": 8}`).
+- Writers (L5, `backroom_api/memory/`):
+  - `store.assert_fact` serialises writers of one key with `pg_advisory_xact_lock`, and refuses back-dated facts.
+  - Re-asserting a value that is already known (open or superseded) is a no-op.
+  - Many-valued predicates: `uses_ingredient`, `has_preference`, `has_rule`, `works_at`.
+  - Recipe amounts: `{"grams": 77.5}`, `{"ml": 220}` or `{"pcs": 0.4}`.
+  - Extra predicates beyond the starting vocabulary:
+    - `orders_via` and `sells_via` (to portals);
+    - `has_rule` (business rules such as the 70% margin target, on `preference` entities);
+    - `unit_price_eur_each` (for pieces);
+    - `weather` (on `weather_day:<date>`) and `observed_in` (on `holiday:<date>`).
+- `memory.writers.write_world(conn, data_dir, hold_back=...)` loads the L4 world; `write_invoice(...)` ingests one invoice and returns an `InvoiceIngestResponse`. For the live demo, hold back `invoices_from_price_change(data_dir, "BUTTER-1KG")`, then ingest the first of them.
+- `memory.packer.pack(conn, seeds, as_of)` returns a `ContextPack`:
+  - the business's standing preferences and rules always come first;
+  - then facts within 2 hops of the seeds;
+  - tokens are estimated at 3 characters per token;
+  - `seeds_for(conn, task_text)` picks seed entities from a task's words.
 - Runs and skills tables belong to the PC (H4) and come in later migrations.
 
 ## 9. Fixtures and the drift check

@@ -14,6 +14,24 @@ Notes: surprises, shortcuts, things left undone.
 
 ---
 
+## Fri 13 Nov 2026 · L5 · branch laptop/l5-memory (stacked on laptop/l6-detectors)
+Done:
+- `backroom_api/memory/`:
+  - `store.py`: entities, episodes, bitemporal facts. Supersession runs under a per-key advisory lock, the "as we knew it at r" query is in place, `graph()` returns `MemoryGraph` and `fact_detail()` returns `FactDetail`.
+  - `writers.py`: deterministic L4-world loader; `write_invoice` for one invoice; `record_preference` for learned rules.
+  - `packer.py`: `ContextPack` under a 1,200-token budget; standing rules first; `seeds_for(task)`.
+- `0001_memory.sql` ran for real on Neon (Postgres 18.6 + pgvector 0.8.6): all checks reject bad rows and the as-of queries give the right answers.
+Verify:
+- With a Neon `DATABASE_URL` in `.env`: `uv run pytest services/api/tests/test_memory.py`, 14 tests. They cover supersession, as-of, known_at, provenance, a two-connection race, the held-back invoice ingest and the 8% → 10% preference change. Each run uses its own schema and drops it.
+- `pnpm check`: 246 pass. Without a database the memory tests skip.
+Needs from PC:
+- H1 runs `0001_memory.sql` through the runner, then `memory.writers.write_world(conn, Path("data/out"))` after `pnpm seed`'s Parquet step.
+- For the F4 demo, hold back `invoices_from_price_change(out, "BUTTER-1KG")` and ingest the first via `POST /memory/ingest/invoice`.
+- Time slider: call `store.graph(conn, as_of)` without `known_at`; seed facts are recorded "now".
+Notes:
+- Deviations are logged as L-50…L-57.
+- The audit found 1 blocker (concurrent writers could leave two open facts) and 9 issues worth fixing; all are fixed and tested.
+
 ## Fri 13 Nov 2026 00:40 · L6 · branch laptop/l6-detectors (stacked on laptop/l4-data)
 Done:
 - `backroom_api/analytics/detectors.py`: stock-out, margin erosion and weather demand as DuckDB SQL over the L4 Parquet files. Each emits contract `Candidate`s with every quotable number and inline SQL evidence. `run_all(max_price_increase_pct=…)` re-proposes within an owner's cap.
