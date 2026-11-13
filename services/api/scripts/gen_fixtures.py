@@ -104,7 +104,7 @@ cards = [
         params={"sku": "OAT-1L", "qty": 28},
         executable=True,
         status="proposed",
-        preference_note="Scheduled for Friday, your next Grainline order day",
+        preference_note="Ordering today, Friday, a Grainline order day",
         copy_source="llm",
         guard=ok_guard(),
     ),
@@ -189,7 +189,7 @@ cards = [
         executable=False,
         status="proposed",
         copy_source="template",
-        guard=GuardResult(passed=True, regenerations=1),
+        guard=GuardResult(passed=False, regenerations=1, unmatched=["€60.00"]),
     ),
 ]
 brief = Brief(id="brief_2026-11-13", generated_at=NOW, as_of=NOW, cards=cards, cached=True)

@@ -91,7 +91,7 @@
       },
       "executable": true,
       "status": "proposed",
-      "preference_note": "Scheduled for Friday, your next Grainline order day",
+      "preference_note": "Ordering today, Friday, a Grainline order day",
       "copy_source": "llm",
       "guard": {
         "passed": true,
@@ -307,9 +307,11 @@
       "preference_note": null,
       "copy_source": "template",
       "guard": {
-        "passed": true,
+        "passed": false,
         "regenerations": 1,
-        "unmatched": []
+        "unmatched": [
+          "€60.00"
+        ]
       }
     }
   ],

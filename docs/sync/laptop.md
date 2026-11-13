@@ -14,6 +14,28 @@ Notes: surprises, shortcuts, things left undone.
 
 ---
 
+## Fri 13 Nov 2026 · L7 · branch laptop/l7-brief (stacked on laptop/l5-memory)
+Done:
+- `backroom_api/brief/`:
+  - `guard.py`: deterministic number guard; units, cents, signs and number words are checked (CONTRACTS §6 rules 1–9).
+  - `templates.py`: copy that passes the guard by construction.
+  - `rules.py`: preferences and business rules from memory, plus the code-enforced checks.
+  - `agents.py`: the Sonnet planner and Haiku verifier, through `llm/client.py`. Structured outputs, cached frozen prompts with worked examples, `stop_reason` checked, time limits.
+  - `pipeline.py`: `generate` / `stream_today` / `brief_for_today`.
+- `memory/extractor.py`: rejection reason → checked `Preference` (`extract` + `record_rejection`).
+- Real runs on today's data (OpenRouter, about 2 cents per brief): all copy passed the guard first try. The full F4 loop worked: reject €3.60 with "too steep, max 8%" → extracted cap 8 → regenerated card €3.20 → €3.45, "Kept under your 8% cap", new action id.
+Verify:
+- `uv run pytest services/api/tests/test_brief.py`: 66 tests. The F4 loop runs on Neon when `DATABASE_URL` is set.
+- `pnpm check`: 312 pass.
+Needs from PC (H4/H5 wiring):
+- `GET /brief/today[?regenerate=1]`: `rules_from_memory(conn, now)`, a context pack from `memory.packer`, then `pipeline.stream_today(...)` as SSE. Persist the final `BriefResult`: brief, decisions, vetoes. Serve it cached, with `cached: true`.
+- `POST /actions/{id}/reject`: look the card up by action id, then `extractor.extract(llm, reason, card)` + `record_rejection(conn, ...)`, then commit.
+- Pass `run_id` / brief id into `LLMPlanner` / `LLMVerifier` for the ledger.
+- Consider pinning OpenRouter provider routing for reliable caching (L-66).
+Notes:
+- Deviations are logged as L-58…L-66.
+- The audit found 2 blockers (non-LLM errors crashed the brief; stale action ids after a cap) and 9 issues worth fixing; all are fixed and tested.
+
 ## Fri 13 Nov 2026 · L5 · branch laptop/l5-memory (stacked on laptop/l6-detectors)
 Done:
 - `backroom_api/memory/`:
