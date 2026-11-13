@@ -29,6 +29,10 @@ class ErrorResponse(Contract):
 
 
 class GuardResult(Contract):
+    """Every number shown on a card is verified, whatever these fields say. `passed`
+    tells whether the model's copy passed (first try or after its one regeneration);
+    False means the card shows template copy instead. B5 reports these."""
+
     passed: bool
     regenerations: int  # 0 or 1; after that the card falls back to template copy
     unmatched: list[str] = Field(default_factory=list[str])  # numbers that had no evidence
@@ -38,7 +42,7 @@ class ActionCard(Contract):
     id: str  # action id, used by approve/reject
     candidate_id: str
     kind: CandidateKind
-    rank: int  # 1..3, by impact
+    rank: int  # 1..3, in the planner's order (by impact when the planner is unavailable)
     title: str
     impact_eur_weekly: float
     why: str  # one sentence, owner voice
@@ -49,7 +53,7 @@ class ActionCard(Contract):
     params: dict[str, Any] = Field(default_factory=dict[str, Any])
     executable: bool
     status: Literal["proposed", "approved", "rejected", "running", "done", "failed"]
-    # Set when the verifier adjusted the card for a preference: "Kept under your 8% cap".
+    # Set when code applied a preference to the card: "Kept under your 8% cap".
     preference_note: str | None = None
     copy_source: Literal["llm", "template"]
     guard: GuardResult

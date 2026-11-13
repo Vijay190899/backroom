@@ -96,7 +96,17 @@ Number guard rules (L7 implements them; deterministic, no LLM):
 4. Any unmatched number fails the card: one regeneration, then template copy from `title_hint` and `numbers`. `GuardResult` records the outcome.
 5. Copy avoids clock times and dates written as numbers ("Friday", not "13.11.").
 6. **Units must agree** (L7): a number written with `€` only matches an `eur` value, one written with `%` only a `pct` value. Without this check "8%" would match 8.24 (butter €/kg).
+8. Money keeps its cents: a euro amount is written with two decimals, or none when the value is whole. "/kg" and "/l" prices need their suffix. A bare number followed by a unit word ("2 days", "4-hour") must have that unit. A written + or − must agree with the value's sign. Number words ("two", "dozen") count as numbers, and fractions in words ("half") never match.
+9. **Limitation:** the guard proves no number is invented. It can't prove a correct number is used for the right thing ("margin 70%" when 70% is the target) or in the right direction ("14% more" when sales fell 14%). The planner prompt carries those rules, and the template fallback is correct by construction.
 7. Rounding is **half-up** (`analytics.pricing.round_half_up`; 70.5 → 71, as JS `Math.round` does), never Python's half-to-even `round`.
+
+Brief pipeline (L7, `backroom_api/brief/`):
+- `pipeline.stream_today(...)` yields `BriefSkeleton` before any model call, then one `BriefCardEvent` per verified card, then `BriefDone`, then a `BriefResult` for the caller to persist.
+- `BriefResult` carries the brief, the decisions (planner, guard, rewrite, template, rules, verifier) and the vetoed ids.
+- Action ids hash the candidate and its final params, so a re-proposal under a learned cap gets a new id.
+- The verifier only keeps or vetoes. A veto must cite a known preference or business rule, and is overruled when it cites a rule code already applies and the card satisfies. With no rules, the verifier isn't called.
+- Any model failure degrades to template copy, or to keeping the card unverified.
+- `memory.extractor.extract` + `record_rejection` turn a rejection reason into a `Preference`, but only with numbers and weekdays the owner wrote herself.
 
 Detectors (L6, `backroom_api/analytics/detectors.py`) compute every number, over the 7 full days before `as_of`. `run_all()` refuses an `as_of` the data wasn't built for. Weekly impact means something different per kind (cards are ranked by it):
 - **stock-out:** last week's sales of every item that needs the ingredient;

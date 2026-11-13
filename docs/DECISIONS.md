@@ -88,3 +88,24 @@ Written on the laptop. Every place where the laptop's work departs from the PRD,
 - **L-55 (L5). The demo's live invoice ingest works by holding back every invoice from the butter price change on (`invoices_from_price_change`) and then ingesting the first (`write_invoice`).** *Why:* PRD F4's acceptance ("ingesting a Grainline invoice creates superseding price facts") needs an invoice that memory hasn't seen yet. The PC wires it to `POST /memory/ingest/invoice`; PDF text extraction (the LLM extractor) is separate.
 - **L-56 (L5). The laptop has no migration runner; the tests apply `0001_memory.sql` themselves into a throwaway schema on Neon, and skip when no database is reachable (so CI doesn't run them).** *Why:* the runner is the PC's (H1), and CI has no Postgres. The tests ran green on Neon (Postgres 18.6, pgvector 0.8.6) and leave no schemas behind.
 - **L-57 (L5). The memory graph holds ~60 nodes (business, menu, ingredients, staff, preferences, recent weather, holidays), not the ~300 PRD §12 benchmarks the graph library against.** *Why:* that's the real size of the demo world. The UI can still benchmark at 300 with generated nodes; shifts, skills and insights join the graph when runs and briefs write them.
+- **L-58 (L7). The verifier only keeps or vetoes; code does every adjustment.** PRD §8.4 lets it "veto or adjust within the rules". Code re-proposes prices under a learned cap and schedules orders on allowed days, so no model ever produces a number.
+  - A veto must cite a known preference or business rule.
+  - A veto citing a rule code already enforces, and the card satisfies, is overruled and logged.
+  - With no rules the verifier isn't called.
+  *Why:* in a real run, Haiku vetoed a Friday reorder under the Tue/Fri rule; model judgment must not override checked arithmetic.
+- **L-59 (L7). Number-guard rules go beyond CONTRACTS §6's first draft:**
+  - euro amounts keep their cents;
+  - "/kg" and "/l" must match per-unit prices;
+  - unit words after bare numbers are enforced;
+  - a written sign must agree;
+  - number words count, fractions in words never match;
+  - clock times and years always fail.
+
+  *Why:* each closes a false accept the audit found. The remaining limitation (correct numbers used for the wrong thing or direction) is written into CONTRACTS §6.
+- **L-60 (L7). When the planner is unusable (refusal, timeout, API error, spent budget), the brief shows the top 3 candidates by impact in template copy; when the verifier is unusable, cards are kept unverified.** Rank otherwise follows the planner's order. *Why:* PRD G6 "doesn't break"; a brief must always load, and the template copy passes the guard by construction.
+- **L-61 (L7). `GuardResult.passed` means "the model's copy passed" (first try or after its one regeneration); False means the card shows template copy.** *Why:* every shown number is verified either way, so a field that was always True would make B5's pass rate 100% by construction.
+- **L-62 (L7). Brief streaming: `BriefSkeleton` is sent before any model call, and cards are sent after the verifier, not one by one as each passes the guard.** *Why:* the verifier may still veto a card, so streaming it earlier could show a card that then disappears. The planner call itself is one structured-output request, not streamed.
+- **L-63 (L7). Action ids hash the candidate and its final params (`action_id(candidate_id, params)`).** *Why:* after "max 8%" the €3.45 card must not reuse the €3.60 card's id, or approve and reject idempotency would hit the stale action.
+- **L-64 (L7). The preference extractor (`memory/extractor.py`) was built on the laptop as part of the F4 path.** The worker model proposes a rule in a fixed shape; code keeps a number only if it appears in the owner's reason, and weekdays only if she named them. *Why:* no task covered "rejection → Preference", and memory/ is laptop-owned. Invoice PDF extraction is still separate.
+- **L-65 (L7). Planner calls are limited to 30 s and verifier and extractor calls to 15 s (`asyncio.wait_for`), on top of the SDK defaults.** *Why:* the SDK would otherwise wait up to 10 minutes per call, with retries; PRD F1 wants a cold brief in under 15 s.
+- **L-66 (L7). Finding for the PC, not a laptop change: OpenRouter serves prompt-cache hits only intermittently** (2 of 3 repeat planner calls read the cache; misses land on another upstream). Pinning OpenRouter provider routing in `llm/registry.py` (PC-owned) should make caching reliable. Below about 1,024 tokens a cache write is reported but nothing is cached, which is why the planner prompt now carries worked examples.
