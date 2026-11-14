@@ -13,7 +13,9 @@ import { Wordmark } from "./wordmark";
 export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="sticky top-0 z-20 border-b border-line bg-background/92 px-4 backdrop-blur-sm sm:px-6 lg:px-10">
+      <header
+        style={{ viewTransitionName: "site-header" }}
+        className="sticky top-0 z-20 border-b border-line bg-background/92 px-4 backdrop-blur-sm sm:px-6 lg:px-10">
         <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-8">
           <Wordmark />
           <nav aria-label="Main" className="hidden flex-1 lg:block">
@@ -38,6 +40,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <nav
         aria-label="Main"
+        style={{ viewTransitionName: "tab-bar" }}
         className="fixed inset-x-0 bottom-0 z-30 border-t border-line bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-sm lg:hidden"
       >
         <Suspense fallback={<div className="h-16" />}>

@@ -28,7 +28,7 @@ export function PageHeader({
           {meta ? <p className="text-sm text-muted-foreground tabular">{meta}</p> : null}
         </div>
       ) : null}
-      <h1 className="mt-3 font-display text-[2.75rem] leading-[0.95] font-medium tracking-[-0.02em] text-ink sm:text-6xl lg:text-7xl">
+      <h1 className="impress mt-3 font-display text-[2.75rem] leading-[0.95] font-medium tracking-[-0.02em] text-ink sm:text-6xl lg:text-7xl">
         {title}
       </h1>
       <div aria-hidden className="enter-rule rule-double mt-5" style={enterDelay(60)} />

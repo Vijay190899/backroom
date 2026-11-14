@@ -4,14 +4,14 @@ import { useQuery } from "@tanstack/react-query";
 
 import { API_URL } from "@/lib/api";
 import type { ActionCard, Brief } from "@/lib/contracts";
+import type { Source } from "@/lib/data";
 
 /**
  * Where a brief came from. "sample" is the committed fixture, shown with a visible
  * badge whenever the API has no brief to give (PRD §7: never present anything as live
  * when it isn't).
  */
-export type BriefSource = "live" | "sample";
-export type LoadedBrief = { brief: Brief; source: BriefSource };
+export type LoadedBrief = { brief: Brief; source: Source };
 
 // The schemas (and zod) load alongside the first request instead of in the startup
 // bundle; every response and fixture is still parsed before use.

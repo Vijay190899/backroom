@@ -1,10 +1,11 @@
 "use client";
 
-import { FlaskConical, ListChecks, Loader2, Sunrise } from "lucide-react";
-import { useState } from "react";
+import { ListChecks, Loader2, Sunrise } from "lucide-react";
+import { startTransition, useState, ViewTransition } from "react";
 
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
+import { BadgeSlot, SampleBadge } from "@/components/sample-badge";
 import { ActionCard, type CardStatus } from "@/components/today/action-card";
 import { Button } from "@/components/ui/button";
 import { approve, reject, sampleAfterReject, useBrief, type LoadedBrief } from "@/lib/brief";
@@ -82,6 +83,7 @@ export function TodayBrief() {
           kicker={PLACE}
           title="The Morning Brief"
           subtitle="Reading the till, the invoices and the forecast…"
+          actions={<BadgeSlot />}
         />
         <BriefSkeleton />
       </>
@@ -137,35 +139,56 @@ export function TodayBrief() {
   async function rejectOne(card: Card, reason: string) {
     if (sample) {
       const rebuilt = await sampleAfterReject(card, reason);
-      if (rebuilt) {
-        setRegenerated({ brief: rebuilt, source: "sample" });
-        setStatus({});
-        setMessage("Noted. The brief was rebuilt with your rule.");
-      } else {
-        setOne(card.id, "rejected");
-        setMessage(`${card.title}: skipped. Backroom will remember why.`);
-      }
+      // Transitions, so the stories animate: a rebuilt card stays the same story (its
+      // figures roll, its new words are marked); a skipped one leaves and the rest close up.
+      startTransition(() => {
+        if (rebuilt) {
+          setRegenerated({ brief: rebuilt, source: "sample" });
+          // Cards that survive the rebuild keep their state (an approved card's run keeps playing).
+          const kept = new Set(rebuilt.cards.map((c) => c.id));
+          setStatus((st) => Object.fromEntries(Object.entries(st).filter(([id]) => kept.has(id))));
+          setMessage("Noted. The brief was rebuilt with your rule.");
+        } else {
+          setOne(card.id, "rejected");
+          setMessage(`${card.title}: skipped. Backroom will remember why.`);
+        }
+      });
       refocus();
       return;
     }
     await reject(card, reason);
-    setOne(card.id, "rejected");
-    setMessage("Noted. Backroom will remember why.");
+    startTransition(() => {
+      setOne(card.id, "rejected");
+      setMessage("Noted. Backroom will remember why.");
+    });
     refocus();
     void query.refetch();
   }
 
+  // Identity is the candidate (stock-out of oat milk, margin of Franzbrötchen…), not the
+  // card id, which changes when a rebuilt brief re-prices the same story.
   const story = (card: Card, variant: "lead" | "column", index: number) => (
-    <ActionCard
-      key={card.id}
-      card={card}
-      variant={variant}
-      index={index}
-      sample={sample}
-      status={status[card.id] ?? "proposed"}
-      onApprove={() => void approveOne(card)}
-      onReject={(reason) => rejectOne(card, reason)}
-    />
+    <ViewTransition
+      key={card.candidate_id}
+      name={`story-${card.candidate_id.replace(/[^a-zA-Z0-9_-]/g, "-")}`}
+      share="story"
+      update="story"
+      enter="story-enter"
+      exit="story-exit"
+      default="none"
+    >
+      <div>
+        <ActionCard
+          card={card}
+          variant={variant}
+          index={index}
+          sample={sample}
+          status={status[card.id] ?? "proposed"}
+          onApprove={() => void approveOne(card)}
+          onReject={(reason) => rejectOne(card, reason)}
+        />
+      </div>
+    </ViewTransition>
   );
 
   return (
@@ -178,13 +201,10 @@ export function TodayBrief() {
         actions={
           <div className="flex flex-wrap items-center gap-2">
             {sample ? (
-              <span
-                className="kicker inline-flex h-11 items-center gap-1.5 border border-dashed border-ink/30 px-3 text-muted-foreground sm:h-10"
-                title="The API has no brief yet, so this is the committed sample. Nothing here touches a portal."
-              >
-                <FlaskConical aria-hidden className="size-3.5" />
-                Sample brief
-              </span>
+              <SampleBadge
+                label="Sample brief"
+                why="The API has no brief yet, so this is the committed sample. Nothing here touches a portal."
+              />
             ) : null}
             {pending.length > 1 ? (
               <Button size="lg" onClick={approveAll} disabled={approvingAll}>
@@ -220,7 +240,7 @@ export function TodayBrief() {
               <div className="mt-8 grid divide-y divide-line sm:grid-cols-2 sm:divide-x sm:divide-y-0">
                 {rest.map((card, i) => (
                   <div
-                    key={card.id}
+                    key={card.candidate_id}
                     className="py-8 first:pt-0 last:pb-0 sm:px-8 sm:py-0 sm:first:pl-0 sm:last:pr-0"
                   >
                     {story(card, "column", i + 1)}

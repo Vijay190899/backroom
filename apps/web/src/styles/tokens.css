@@ -20,6 +20,8 @@
   --t-explore: #8a5a00;
   --t-replay: #2b6e4b;
   --t-heal: #6a48b8;
+  /* Single-series chart marks (dataviz validator: light and dark pass, see L-73) */
+  --t-chart-1: #a8321c;
 
   --t-radius-card: 0.375rem; /* 6px: print has corners */
   --t-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -42,4 +44,5 @@
   --t-explore: #e0a84a;
   --t-replay: #6cc495;
   --t-heal: #b09aea;
+  --t-chart-1: #e46c47;
 }

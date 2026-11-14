@@ -14,6 +14,32 @@ Notes: surprises, shortcuts, things left undone.
 
 ---
 
+## Sat 14 Nov 2026 · L8 (part 2: Skills, Memory, Bench, About + motion) · branch laptop/l8-today
+Done:
+- Motion layer (DECISIONS L-71), on View Transitions, CSS and NumberFlow:
+  - route slides with an anchored header and a gliding nav indicator;
+  - a masthead impression; € figures roll like an odometer;
+  - reject → rebuilt brief: the figures roll and the changed words get a marker;
+  - promoted stories morph into the lead slot;
+  - the evidence drawer is a Base UI Drawer: a swipe-down sheet on phones, a swipe-right panel on desktop.
+- Today: approving the oat card plays the sample run on the card (L-74).
+- Skills: registry, version timeline (v1 ↔ v2), and steps shown like a code review, with healed lines wiping in and stats rolling; `?skill=` in the URL.
+- Memory: an as-of slider with change ticks, replay, keyboard steps and `?as_of=` in the URL. The graph's edges draw in as facts become true; the record shows superseded values ("was €7.10/kg until 4 Nov") and each fact's confidence. The slider works in whole days, read as of the end of the day.
+- Bench: the real provider probe (6/6, $0.002, latency bars with tooltips, raw table) and B1–B5 marked "Not run yet" (L-73).
+- About: a numbered explainer with a pausable flow diagram whose pulse waits at "You approve".
+Verify:
+- `pnpm check`: green (312 pytest, eslint, tsc, contracts).
+- Headless-Chrome checks (L-67) at 390 and 1440 px, light and dark, cover every page and interaction. Console errors are only 404s for unwired routes.
+- Lighthouse on a production build (phones / desktop): `/` 95 / 100; `/skills` and `/memory` 95; `/bench` 91 / 100; `/about` 91. Accessibility 100, CLS ≤ 0.023.
+Needs from PC:
+- Wire `GET /skills`, `GET /skills/{id}/versions` and `GET /memory/graph` (shapes in `contracts.ts` / `contracts/api.py`), with CORS for the web origin.
+- `/memory/graph` should include superseded facts (L-72).
+- Live approve: when H4 lands, feed the run SSE into `RunTicker` (`components/today/run-ticker.tsx` takes `RunEvent[]`).
+Notes:
+- Independent audit: 1 blocker (the slider snapped to midnight UTC while facts change at 07:30, so 4 Nov showed the old price), 10 should-fix items and the nits, all fixed and re-checked in the browser.
+- `/bench` imports `bench/results/provider_probe.json` from outside `apps/web`. The L12 deploy must build with files outside the app root available (Vercel's monorepo default).
+- The long-running `next dev` (Turbopack) sometimes keeps serving an old `globals.css` after edits; restarting it fixes that. Production builds are unaffected.
+
 ## Fri 13 Nov 2026 · L8 (part 1: Today + redesign) · branch laptop/l8-today
 Done:
 - Today screen on the "Morning edition" design (DECISIONS L-69):

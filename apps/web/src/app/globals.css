@@ -24,6 +24,7 @@
   --color-explore: var(--t-explore);
   --color-replay: var(--t-replay);
   --color-heal: var(--t-heal);
+  --color-chart-mark: var(--t-chart-1);
   --ease-out-soft: var(--t-ease-out);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -178,6 +179,272 @@
   }
 }
 
+/* ---------------------------------------------------------------------------------
+ * Motion layer ("Morning edition", DECISIONS L-71). Every motion shows a state, a step
+ * or real data. Transform and opacity by default; a few one-off moments also animate
+ * paint-only properties (blur, background-size, stroke-dashoffset, clip-path), never
+ * layout. UI under 300 ms, one-off entrances about 1 s.
+ * --------------------------------------------------------------------------------- */
+:root {
+  --t-ease-settle: cubic-bezier(0.22, 1, 0.36, 1); /* entrances settling, no overshoot */
+  --t-ease-sheet: cubic-bezier(0.32, 0.72, 0, 1); /* sheets and drawers */
+  --t-vt-exit: 150ms;
+  --t-vt-enter: 220ms;
+  --t-vt-move: 380ms;
+}
+
+/* The masthead "impression": painted from the first frame (so it is the LCP at once),
+ * it inks in from a soft blur like type pressed onto paper. */
+.impress {
+  animation: impress 900ms var(--t-ease-settle) both;
+}
+@keyframes impress {
+  from {
+    filter: blur(6px);
+  }
+}
+
+/* A marker sweep under words Backroom just changed (the rebuilt brief). */
+.marker {
+  --marker: color-mix(in oklch, var(--t-accent) 28%, transparent);
+  background: linear-gradient(var(--marker), var(--marker)) 0 90% / 100% 0.5em no-repeat;
+  animation: marker 1100ms var(--t-ease-settle) both;
+  animation-delay: var(--enter-delay, 0ms);
+  border-radius: 1px;
+}
+.dark .marker {
+  --marker: color-mix(in oklch, var(--t-accent) 40%, transparent);
+}
+@keyframes marker {
+  from {
+    background-size: 0% 0.5em;
+  }
+}
+
+/* Route changes: the content slides by direction, the header stays put. */
+::view-transition {
+  pointer-events: none;
+}
+::view-transition-group(site-header),
+::view-transition-group(tab-bar) {
+  animation: none;
+  z-index: 100;
+}
+::view-transition-old(site-header),
+::view-transition-old(tab-bar) {
+  display: none;
+}
+::view-transition-new(site-header),
+::view-transition-new(tab-bar) {
+  animation: none;
+}
+::view-transition-group(nav-indicator),
+::view-transition-group(tab-indicator) {
+  z-index: 101;
+  animation-duration: 260ms;
+  animation-timing-function: var(--t-ease-settle);
+}
+::view-transition-old(.nav-forward) {
+  --slide: -48px;
+  animation:
+    var(--t-vt-exit) ease-in both vt-fade reverse,
+    var(--t-vt-move) var(--t-ease-settle) both vt-slide reverse;
+}
+::view-transition-new(.nav-forward) {
+  --slide: 48px;
+  animation:
+    var(--t-vt-enter) ease-out var(--t-vt-exit) both vt-fade,
+    var(--t-vt-move) var(--t-ease-settle) both vt-slide;
+}
+::view-transition-old(.nav-back) {
+  --slide: 48px;
+  animation:
+    var(--t-vt-exit) ease-in both vt-fade reverse,
+    var(--t-vt-move) var(--t-ease-settle) both vt-slide reverse;
+}
+::view-transition-new(.nav-back) {
+  --slide: -48px;
+  animation:
+    var(--t-vt-enter) ease-out var(--t-vt-exit) both vt-fade,
+    var(--t-vt-move) var(--t-ease-settle) both vt-slide;
+}
+/* A story that moves (promoted to lead, columns closing up) glides to its new place. */
+::view-transition-group(.story) {
+  animation-duration: var(--t-vt-move);
+  animation-timing-function: var(--t-ease-settle);
+}
+::view-transition-old(.story-exit) {
+  animation: 180ms ease-in both vt-fade reverse, 180ms ease-in both vt-drop;
+}
+::view-transition-new(.story-enter) {
+  animation: var(--t-vt-enter) ease-out 120ms both vt-fade;
+}
+/* A fact that becomes true draws its edge in. */
+.edge-draw {
+  stroke-dasharray: 1;
+  animation: edge-draw 700ms var(--t-ease-settle) both;
+}
+@keyframes edge-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+
+/* The as-of slider: a hairline track with a press-red square thumb (44 px hit area). */
+.timeline-range {
+  appearance: none;
+  height: 2.75rem;
+  background: transparent;
+  cursor: pointer;
+  touch-action: pan-y;
+}
+.timeline-range::-webkit-slider-runnable-track {
+  height: 2px;
+  background: var(--t-ink);
+}
+.timeline-range::-moz-range-track {
+  height: 2px;
+  background: var(--t-ink);
+}
+.timeline-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -6px;
+  background: var(--t-accent);
+  border: 2px solid var(--t-bg);
+  box-shadow: 0 0 0 1px var(--t-accent);
+}
+.timeline-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 0;
+  background: var(--t-accent);
+  border: 2px solid var(--t-bg);
+}
+
+/* A bar grows from its baseline once, on first show. */
+.bar-grow {
+  transform-origin: left center;
+  animation: bar-grow 760ms var(--t-ease-settle) both;
+  animation-delay: var(--enter-delay, 0ms);
+}
+@keyframes bar-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* The About flow: one line through six steps, a pulse that waits at "You approve".
+ * Phones: a vertical line at the left; wider: a horizontal line through the dots. */
+.flow-track {
+  container-type: size;
+  height: 27rem;
+}
+.flow-line {
+  left: 0.3125rem;
+  top: 0.625rem;
+  bottom: 3.875rem;
+  width: 1px;
+}
+.flow-pulse {
+  left: 0;
+  top: 0.25rem;
+  z-index: 20;
+  animation: flow-down 7s linear infinite;
+}
+@keyframes flow-down {
+  0% { translate: 0 0; opacity: 0; }
+  6% { opacity: 1; }
+  45%, 62% { translate: 0 calc((100cqh - 4.5rem) * 0.8); }
+  94% { opacity: 1; }
+  100% { translate: 0 calc(100cqh - 4.5rem); opacity: 0; }
+}
+@media (width >= 40rem) {
+  .flow-track {
+    container-type: inline-size;
+    height: auto;
+  }
+  .flow-line {
+    left: calc(100% / 12);
+    right: calc(100% / 12);
+    top: 0.375rem;
+    bottom: auto;
+    width: auto;
+    height: 1px;
+  }
+  .flow-pulse {
+    left: calc(100% / 12 - 0.375rem);
+    top: 0;
+    animation-name: flow-across;
+  }
+  @keyframes flow-across {
+    0% { translate: 0 0; opacity: 0; }
+    6% { opacity: 1; }
+    45%, 62% { translate: calc(100cqw * 4 / 6) 0; }
+    94% { opacity: 1; }
+    100% { translate: calc(100cqw * 5 / 6) 0; opacity: 0; }
+  }
+}
+.flow[data-paused] .flow-pulse {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  /* At rest on "You approve" (the fifth of six steps). */
+  .flow-pulse {
+    animation: none;
+    translate: 0 calc((100cqh - 4.5rem) * 0.8);
+  }
+}
+@media (prefers-reduced-motion: reduce) and (width >= 40rem) {
+  .flow-pulse {
+    translate: calc(100cqw * 4 / 6) 0;
+  }
+}
+
+/* A healed line re-typed: the new text wipes in left to right. */
+.wipe {
+  animation: wipe 760ms var(--t-ease-settle) both;
+  animation-delay: var(--enter-delay, 0ms);
+}
+@keyframes wipe {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+}
+::view-transition-old(.swap-out) {
+  animation: 140ms ease-in both vt-fade reverse;
+}
+::view-transition-new(.swap-in) {
+  animation: 260ms var(--t-ease-settle) 90ms both vt-fade, 260ms var(--t-ease-settle) 90ms both vt-rise;
+}
+::view-transition-group(skill-pick),
+::view-transition-group(version-pick) {
+  animation-duration: 280ms;
+  animation-timing-function: var(--t-ease-settle);
+}
+@keyframes vt-rise {
+  from {
+    translate: 0 6px;
+  }
+}
+@keyframes vt-fade {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+  }
+}
+@keyframes vt-slide {
+  from {
+    translate: var(--slide) 0;
+  }
+}
+@keyframes vt-drop {
+  to {
+    translate: 0 8px;
+  }
+}
+
 @keyframes enter-rise {
   from {
     opacity: 0;
@@ -197,6 +464,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
   *,
   *::before,
   *::after {

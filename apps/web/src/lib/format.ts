@@ -22,7 +22,7 @@ function short(value: number): string {
   return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
 }
 
-const UNIT_SUFFIX: Record<string, string> = {
+export const UNIT_SUFFIX: Record<string, string> = {
   days: " days",
   hours: " hours",
   mm: " mm",

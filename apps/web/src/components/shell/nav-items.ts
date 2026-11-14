@@ -13,3 +13,10 @@ export const NAV_ITEMS: NavItem[] = [
 export function isActive(pathname: string, href: string): boolean {
   return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
 }
+
+/** Forward when the target sits right of (after) the current section, else back. */
+export function navDirection(pathname: string, href: string): "nav-forward" | "nav-back" {
+  const at = NAV_ITEMS.findIndex((item) => isActive(pathname, item.href));
+  const to = NAV_ITEMS.findIndex((item) => item.href === href);
+  return to > at ? "nav-forward" : "nav-back";
+}

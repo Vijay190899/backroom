@@ -2,24 +2,22 @@
 
 import { Check, Loader2 } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { TickingEur } from "@/components/today/ticking-eur";
+import { Figure, FigureValue } from "@/components/motion/figure";
+import { RunTicker } from "@/components/today/run-ticker";
 import { Button } from "@/components/ui/button";
-import type { ActionCard as Card, EvidenceNumber } from "@/lib/contracts";
-import { displayFigure } from "@/lib/format";
+import type { ActionCard as Card, EvidenceNumber, RunEvent } from "@/lib/contracts";
+import { changedWords } from "@/lib/diff";
+import { PORTAL_LABEL as PORTAL } from "@/lib/labels";
 import { enterDelay } from "@/lib/motion";
+import { loadSampleRun } from "@/lib/runs";
 import { cn } from "@/lib/utils";
 
 const KIND: Record<Card["kind"], string> = {
   stockout: "Stock",
   margin_erosion: "Margin",
   weather_demand: "Weather",
-};
-const PORTAL: Record<string, string> = {
-  grainline: "Grainline",
-  tilldesk: "TillDesk",
-  localboard: "Localboard",
 };
 /** The figures worth printing beside the lead story, per kind, in reading order. */
 const KEY_FIGURES: Record<Card["kind"], string[]> = {
@@ -67,10 +65,56 @@ function Kicker({ card }: { card: Card }) {
   );
 }
 
+/**
+ * The deck, with the words Backroom just changed marked when a rebuilt brief swaps the
+ * card's text (same story, new wording): the marker sweeps in once under the new words.
+ */
+function Deck({ text, className }: { text: string; className: string }) {
+  const [seen, setSeen] = useState(text);
+  const [before, setBefore] = useState<string | null>(null);
+  if (seen !== text) {
+    // Adjusting state on a prop change during render (React's sanctioned pattern).
+    setBefore(seen);
+    setSeen(text);
+  }
+  if (!before) return <p className={className}>{text}</p>;
+  let marked = 0;
+  return (
+    <p className={className}>
+      {changedWords(before, text).map((part, i) =>
+        part.changed ? (
+          <mark key={i} className="marker bg-transparent text-inherit" style={enterDelay(250 + marked++ * 140)}>
+            {part.text}
+          </mark>
+        ) : (
+          <span key={i}>{part.text}</span>
+        ),
+      )}
+    </p>
+  );
+}
+
+/** The recorded run for an approved sample card, when the fixture has one for it. */
+function useSampleRun(card: Card, active: boolean): RunEvent[] | null {
+  const [run, setRun] = useState<RunEvent[] | null>(null);
+  useEffect(() => {
+    if (!active) return;
+    let live = true;
+    void loadSampleRun(card.id).then((events) => {
+      if (live) setRun(events);
+    });
+    return () => {
+      live = false;
+    };
+  }, [active, card.id]);
+  return active ? run : null;
+}
+
 function Actions({
   card,
   status,
   sample,
+  hasRun,
   onApprove,
   onEvidence,
   onReject,
@@ -78,6 +122,7 @@ function Actions({
   card: Card;
   status: CardStatus;
   sample: boolean;
+  hasRun: boolean;
   onApprove: () => void;
   onEvidence: () => void;
   onReject: () => void;
@@ -94,7 +139,9 @@ function Actions({
         </p>
         <p className="text-sm text-muted-foreground">
           {sample
-            ? "Sample brief: nothing was sent to a portal."
+            ? hasRun
+              ? "Sample brief: replaying the recorded run, no portal touched."
+              : "Sample brief: nothing was sent to a portal."
             : `The agent is on it in ${PORTAL[card.portal ?? ""] ?? "the portal"}.`}
         </p>
         <Button size="lg" variant="ghost" onClick={onEvidence}>
@@ -148,12 +195,14 @@ export function ActionCard({
   const titleId = `${card.id}-title`;
   // The lead is the page's first story (h2); columns sit under "Also in this edition".
   const Heading = lead ? "h2" : "h3";
+  const run = useSampleRun(card, sample && status === "approved");
 
   const actions = (
     <Actions
       card={card}
       status={status}
       sample={sample}
+      hasRun={run !== null}
       onApprove={onApprove}
       onEvidence={() => {
         setUsed((u) => ({ ...u, evidence: true }));
@@ -194,7 +243,7 @@ export function ActionCard({
         </Heading>
         {!lead ? (
           <p className="mt-3 flex flex-wrap items-baseline gap-x-2">
-            <TickingEur
+            <Figure
               value={card.impact_eur_weekly}
               className="font-display text-2xl font-medium text-ink"
             />
@@ -203,16 +252,16 @@ export function ActionCard({
             </span>
           </p>
         ) : null}
-        <p
+        <Deck
+          text={card.why}
           className={cn(
             "mt-4 max-w-[40rem] font-serif text-ink/85",
             lead ? "text-xl leading-[1.5]" : "text-[1.0625rem] leading-[1.55]",
           )}
-        >
-          {card.why}
-        </p>
+        />
         {note}
         {actions}
+        {run ? <RunTicker events={run} label="Sample run" /> : null}
       </div>
 
       {lead ? (
@@ -222,7 +271,7 @@ export function ActionCard({
         >
           <p className="kicker text-muted-foreground">{impact?.label ?? "Weekly impact"}</p>
           <p className="mt-2 flex items-baseline gap-2">
-            <TickingEur
+            <Figure
               value={card.impact_eur_weekly}
               className="font-display text-6xl leading-none font-medium tracking-[-0.02em] text-ink"
             />
@@ -238,7 +287,9 @@ export function ActionCard({
                   <span className="shrink-0">{n.label}</span>
                   <span aria-hidden className="mb-1 min-w-4 flex-1 border-b border-dotted border-line" />
                 </dt>
-                <dd className="font-medium text-ink tabular">{displayFigure(n)}</dd>
+                <dd className="font-medium text-ink tabular">
+                  <FigureValue n={n} />
+                </dd>
               </div>
             ))}
           </dl>

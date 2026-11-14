@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/utils";
 
-import { isActive, NAV_ITEMS } from "./nav-items";
+import { isActive, NAV_ITEMS, navDirection } from "./nav-items";
 
 /** Section links in the desktop top bar; the current one is underlined in press red. */
 export function TopBarLinks() {
@@ -19,19 +19,21 @@ export function TopBarLinks() {
             <Link
               href={href}
               aria-current={active ? "page" : undefined}
+              transitionTypes={active ? undefined : [navDirection(pathname, href)]}
               className={cn(
                 "relative flex h-14 items-center text-sm transition-colors duration-150",
                 active ? "font-medium text-ink" : "text-muted-foreground hover:text-ink",
               )}
             >
               {label}
-              <span
-                aria-hidden
-                className={cn(
-                  "absolute inset-x-0 -bottom-px h-0.5 origin-left bg-press transition-transform duration-200 ease-[var(--t-ease-out)]",
-                  active ? "scale-x-100" : "scale-x-0",
-                )}
-              />
+              {/* One indicator, named for the view transition, so it glides to the new section. */}
+              {active ? (
+                <span
+                  aria-hidden
+                  style={{ viewTransitionName: "nav-indicator" }}
+                  className="absolute inset-x-0 -bottom-px h-0.5 bg-press"
+                />
+              ) : null}
             </Link>
           </li>
         );
@@ -52,18 +54,19 @@ export function TabBarLinks() {
             <Link
               href={href}
               aria-current={active ? "page" : undefined}
+              transitionTypes={active ? undefined : [navDirection(pathname, href)]}
               className={cn(
                 "relative flex min-h-16 flex-col items-center justify-center gap-1 text-[11px] transition-colors duration-150",
                 active ? "font-medium text-ink" : "text-muted-foreground",
               )}
             >
-              <span
-                aria-hidden
-                className={cn(
-                  "absolute top-0 h-0.5 w-8 origin-center bg-press transition-transform duration-200 ease-[var(--t-ease-out)]",
-                  active ? "scale-x-100" : "scale-x-0",
-                )}
-              />
+              {active ? (
+                <span
+                  aria-hidden
+                  style={{ viewTransitionName: "tab-indicator" }}
+                  className="absolute top-0 h-0.5 w-8 bg-press"
+                />
+              ) : null}
               <Icon
                 aria-hidden
                 className={cn("size-5", active && "text-press-ink")}
