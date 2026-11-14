@@ -14,6 +14,40 @@ Notes: surprises, shortcuts, things left undone.
 
 ---
 
+## Fri 13 Nov 2026 · L8 (part 1: Today + redesign) · branch laptop/l8-today
+Done:
+- Today screen on the "Morning edition" design (DECISIONS L-69):
+  - masthead and lead story with a figures column, "Also in this edition" columns;
+  - evidence drawer laid out as a fact box;
+  - reject dialog with ⌘/Ctrl+Enter;
+  - Approve, Approve all, the sample-brief fallback (L-68) and the reject → rebuilt brief loop.
+- Design system: `styles/tokens.css`, Newsreader display/text cuts, Geist, motion utilities (`.enter`, `.enter-rule`, `.stamp-in`, `.link-draw`), a newspaper top bar, and the section-front `PageHeader` on every route.
+- Performance work (L-70): a self-hosted display-cut subset, a first-frame masthead, and lazy dialogs and schemas.
+- graphify graph refreshed for L0–L8, code and docs (commit 96a9057).
+Verify:
+- `pnpm check`: green (312 pytest, eslint, tsc, contracts).
+- UI: headless-Chrome tour (L-67) at 390×844 and 1440×900, light and dark. Every flow passes; the only console entries are the `/brief/today` 404s.
+- Lighthouse 12.6.1 on `next build` + `next start`:
+  - `/`: mobile 94–98, desktop 100;
+  - `/bench`: mobile 99, desktop 100;
+  - accessibility 100 everywhere; best practices 96 (404 only).
+Needs from PC:
+- Wire `GET /brief/today` (with CORS for the web origin) so the sample badge and the 404 disappear.
+- The Playwright 390/1440 screenshots stay the formal record (H5).
+Notes:
+- Independent audit: 0 blockers, 8 should-fix items and the nits, all fixed:
+  - error state with retry, plus `app/error.tsx` for a failed lazy chunk;
+  - negative figures keep their sign ("−14%");
+  - the decision count excludes approved cards;
+  - no double reject via ⌘/Ctrl+Enter;
+  - focus moves to `main` after a reject;
+  - 44 px wordmark target; h3 for column stories;
+  - "Plain wording" (not "Fact-checked") when the guard fell back to template text;
+  - motion and shadow deviations added to L-69.
+- `docs/ARCHITECTURE.md` font row updated to match (shared doc, one line).
+- Skills, Memory, Bench and About are still placeholders on the new design (L8 part 2).
+- A long-running `next dev` served stale CSS after the `@theme` font change; restarting it fixed that. Production builds were unaffected.
+
 ## Fri 13 Nov 2026 · L7 · branch laptop/l7-brief (stacked on laptop/l5-memory)
 Done:
 - `backroom_api/brief/`:

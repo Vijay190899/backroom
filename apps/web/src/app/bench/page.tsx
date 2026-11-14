@@ -8,6 +8,7 @@ export const metadata: Metadata = { title: "Benchmarks" };
 export default function BenchPage() {
   return (
     <PlaceholderPage
+      kicker="How well it works"
       title="Benchmarks"
       subtitle="Measured, reproducible numbers: success under change, speed, cost and memory accuracy."
       icon={Gauge}

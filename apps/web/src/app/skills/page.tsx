@@ -8,6 +8,7 @@ export const metadata: Metadata = { title: "Skills" };
 export default function SkillsPage() {
   return (
     <PlaceholderPage
+      kicker="What Backroom can do"
       title="Skills"
       subtitle="Tasks the agent has learned to do in your web tools, and every repair it has made."
       icon={Workflow}

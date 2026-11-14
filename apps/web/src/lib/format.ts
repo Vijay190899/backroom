@@ -42,13 +42,37 @@ export function displayNumber(n: EvidenceNumber): string {
   return short(n.value) + (UNIT_SUFFIX[n.unit] ?? "");
 }
 
-const dayFormat = new Intl.DateTimeFormat("en-GB", {
+const UNSIGNED_UNITS = new Set(["eur", "eur_per_kg", "eur_per_l", "pct"]);
+
+/**
+ * A computed number for a figures table, where no sentence carries the direction:
+ * like `displayNumber`, but a negative euro or percent keeps its minus sign ("−14%").
+ */
+export function displayFigure(n: EvidenceNumber): string {
+  const signed = n.value < 0 && UNSIGNED_UNITS.has(n.unit);
+  return (signed ? "\u2212" : "") + displayNumber(n);
+}
+
+const datelineFormat = new Intl.DateTimeFormat("en-GB", {
   weekday: "long",
   day: "numeric",
   month: "long",
+  year: "numeric",
   timeZone: "Europe/Berlin",
 });
 
-export function formatDay(iso: string): string {
-  return dayFormat.format(new Date(iso));
+/** "Friday 13 November 2026", the masthead's dateline (café time). */
+export function formatDateline(iso: string): string {
+  return datelineFormat.format(new Date(iso));
+}
+
+const timeFormat = new Intl.DateTimeFormat("en-GB", {
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "Europe/Berlin",
+});
+
+/** "08:30" in café time. */
+export function formatTime(iso: string): string {
+  return timeFormat.format(new Date(iso));
 }

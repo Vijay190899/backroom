@@ -8,6 +8,7 @@ export const metadata: Metadata = { title: "About" };
 export default function AboutPage() {
   return (
     <PlaceholderPage
+      kicker="How it is built"
       title="About"
       subtitle="How Backroom works, and what it would take to run on real merchant tools."
       icon={Info}

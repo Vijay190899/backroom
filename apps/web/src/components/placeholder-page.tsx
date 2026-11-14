@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/page-header";
 /** A route whose real content lands in a later milestone. */
 export function PlaceholderPage(props: {
   title: string;
+  kicker: string;
   subtitle: string;
   icon: LucideIcon;
   emptyTitle: string;
@@ -14,7 +15,7 @@ export function PlaceholderPage(props: {
 }) {
   return (
     <>
-      <PageHeader title={props.title} subtitle={props.subtitle} />
+      <PageHeader kicker={props.kicker} title={props.title} subtitle={props.subtitle} />
       <EmptyState
         icon={props.icon}
         title={props.emptyTitle}

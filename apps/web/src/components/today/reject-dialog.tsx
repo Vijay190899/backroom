@@ -26,6 +26,7 @@ export function RejectDialog({
 
   async function submit(event: FormEvent) {
     event.preventDefault();
+    if (busy) return; // ⌘/Ctrl+Enter bypasses the disabled button
     const text = reason.trim();
     if (!text) {
       setError("Tell Backroom why, in a few words: it learns from this.");
@@ -47,24 +48,34 @@ export function RejectDialog({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Backdrop className="fixed inset-0 z-40 bg-ink/30 transition-opacity duration-200 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
-        <Dialog.Popup className="fixed top-1/2 left-1/2 z-50 w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-[var(--t-radius-card)] border border-line bg-surface p-5 shadow-xl outline-none transition-[opacity,scale] duration-200 data-[ending-style]:scale-95 data-[ending-style]:opacity-0 data-[starting-style]:scale-95 data-[starting-style]:opacity-0">
-          <Dialog.Title className="font-display text-2xl text-ink">Not now</Dialog.Title>
-          <Dialog.Description className="mt-1 text-sm text-muted-foreground">
-            Why not &ldquo;{card.title}&rdquo;? Backroom remembers what you say and the next brief
-            respects it.
+        <Dialog.Backdrop className="fixed inset-0 z-40 bg-ink/35 transition-opacity duration-200 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0" />
+        <Dialog.Popup className="fixed top-1/2 left-1/2 z-50 w-[min(28rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-[var(--t-radius-card)] border border-line bg-surface p-6 shadow-[0_0_0_1px_rgb(0_0_0/0.04),0_24px_48px_-12px_rgb(0_0_0/0.25)] outline-none transition-[opacity,scale] duration-200 data-[ending-style]:scale-95 data-[ending-style]:opacity-0 data-[starting-style]:scale-95 data-[starting-style]:opacity-0">
+          <p className="kicker text-press-ink">Not now</p>
+          <Dialog.Title className="mt-2 font-display text-3xl leading-tight font-medium tracking-tight text-ink">
+            Why not this one?
+          </Dialog.Title>
+          <Dialog.Description className="mt-2 text-[0.9375rem] leading-relaxed text-muted-foreground">
+            &ldquo;{card.title}&rdquo; is skipped. Backroom remembers what you say, and the next
+            brief respects it.
           </Dialog.Description>
           <form onSubmit={submit} className="mt-4">
-            <label htmlFor={id} className="text-sm font-medium text-ink">
-              Reason
+            <label htmlFor={id} className="kicker text-ink">
+              Your reason
             </label>
             <textarea
               id={id}
               value={reason}
-              onChange={(e) => setReason(e.target.value.slice(0, MAX_REASON))}
+              onChange={(e) => {
+                setReason(e.target.value.slice(0, MAX_REASON));
+                if (error) setError(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) e.currentTarget.form?.requestSubmit();
+              }}
               rows={3}
-              placeholder="e.g. too steep, max 8%"
-              className="mt-1.5 w-full resize-none rounded-lg border border-line bg-background px-3 py-2 text-ink placeholder:text-muted-foreground/70 focus-visible:outline-2"
+              name="reason"
+              placeholder="e.g. too steep, max 8%…"
+              className="mt-2 w-full resize-none rounded-sm border border-ink/25 bg-background px-3 py-2.5 font-serif text-lg text-ink placeholder:text-muted-foreground focus-visible:border-press"
               aria-describedby={error ? `${id}-error` : undefined}
               aria-invalid={error ? true : undefined}
             />
@@ -73,7 +84,7 @@ export function RejectDialog({
                 {error}
               </p>
             ) : null}
-            <div className="mt-4 flex justify-end gap-2">
+            <div className="mt-5 flex justify-end gap-2">
               <Dialog.Close render={<Button variant="ghost" size="lg" type="button" />}>
                 Cancel
               </Dialog.Close>

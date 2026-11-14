@@ -10,14 +10,15 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-instrument-serif);
-  --font-heading: var(--font-instrument-serif);
+  --font-display: var(--font-newsreader-display), var(--font-newsreader);
+  --font-heading: var(--font-newsreader-display), var(--font-newsreader);
+  --font-serif: var(--font-newsreader);
   --color-ink: var(--t-ink);
   --color-surface: var(--t-surface);
   --color-subtle: var(--t-subtle);
   --color-line: var(--t-line);
-  --color-caramel: var(--t-accent);
-  --color-caramel-ink: var(--t-accent-ink);
+  --color-press: var(--t-accent);
+  --color-press-ink: var(--t-accent-ink);
   --color-pos: var(--t-pos);
   --color-neg: var(--t-neg);
   --color-explore: var(--t-explore);
@@ -86,7 +87,7 @@
   --chart-3: var(--t-heal);
   --chart-4: var(--t-muted);
   --chart-5: var(--t-neg);
-  --radius: 0.625rem;
+  --radius: 0.375rem;
   --sidebar: var(--t-bg);
   --sidebar-foreground: var(--t-ink);
   --sidebar-primary: var(--t-ink);
@@ -113,6 +114,17 @@
     @apply bg-background text-foreground;
     font-feature-settings: "ss01", "cv11";
   }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  ::selection {
+    background: color-mix(in oklch, var(--t-accent) 22%, transparent);
+  }
   :focus-visible {
     outline: 2px solid var(--t-accent);
     outline-offset: 2px;
@@ -126,7 +138,61 @@
 @layer utilities {
   /* Prices, timers and counters keep their width as digits change. */
   .tabular {
-    font-variant-numeric: tabular-nums;
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+  /* Newspaper section label: small, tracked capitals (colour set where used). */
+  .kicker {
+    font-family: var(--font-geist-sans);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  /* The masthead's thick-and-thin rule. */
+  .rule-double {
+    height: 5px;
+    border-top: 2px solid var(--t-ink);
+    border-bottom: 1px solid var(--t-ink);
+  }
+  /* Text link whose underline draws in from the left on hover. */
+  .link-draw {
+    background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat;
+    transition: background-size var(--t-dur) var(--t-ease-out);
+  }
+  .link-draw:hover,
+  .link-draw:focus-visible {
+    background-size: 100% 1px;
+  }
+  /* One entrance on load (never on scroll); stagger with --enter-delay. */
+  .enter {
+    animation: enter-rise 520ms var(--t-ease-out) both;
+    animation-delay: var(--enter-delay, 0ms);
+  }
+  .enter-rule {
+    transform-origin: left center;
+    animation: enter-rule 720ms var(--t-ease-out) both;
+    animation-delay: var(--enter-delay, 0ms);
+  }
+  .stamp-in {
+    animation: stamp-in 320ms var(--t-ease-out) both;
+  }
+}
+
+@keyframes enter-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@keyframes enter-rule {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes stamp-in {
+  from {
+    opacity: 0;
+    transform: scale(1.08);
   }
 }
 
@@ -136,6 +202,7 @@
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+    animation-delay: 0s !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }

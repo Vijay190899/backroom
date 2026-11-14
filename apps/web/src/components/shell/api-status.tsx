@@ -34,7 +34,7 @@ export function ApiStatus({ className }: { className?: string }) {
       role="status"
       aria-label={`Backroom API: ${status.label}`}
       className={cn(
-        "inline-flex h-7 items-center gap-2 rounded-full border border-line bg-surface px-2.5 text-xs text-muted-foreground",
+        "inline-flex h-7 items-center gap-2 px-1 text-xs text-muted-foreground",
         className,
       )}
     >

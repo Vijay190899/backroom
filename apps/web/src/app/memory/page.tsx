@@ -8,6 +8,7 @@ export const metadata: Metadata = { title: "Memory" };
 export default function MemoryPage() {
   return (
     <PlaceholderPage
+      kicker="What Backroom knows"
       title="Memory"
       subtitle="What Backroom knows about the business, and when each fact was true."
       icon={Waypoints}

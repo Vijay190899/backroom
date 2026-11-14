@@ -3,15 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { API_URL } from "@/lib/api";
-import {
-  approveResponseSchema,
-  briefSchema,
-  rejectResponseSchema,
-  type ActionCard,
-  type Brief,
-} from "@/lib/contracts";
-import afterRejectFixture from "@/fixtures/brief-after-reject.json";
-import briefFixture from "@/fixtures/brief.json";
+import type { ActionCard, Brief } from "@/lib/contracts";
 
 /**
  * Where a brief came from. "sample" is the committed fixture, shown with a visible
@@ -21,17 +13,29 @@ import briefFixture from "@/fixtures/brief.json";
 export type BriefSource = "live" | "sample";
 export type LoadedBrief = { brief: Brief; source: BriefSource };
 
-export const SAMPLE_BRIEF: Brief = briefSchema.parse(briefFixture);
-export const SAMPLE_BRIEF_AFTER_REJECT: Brief = briefSchema.parse(afterRejectFixture);
+// The schemas (and zod) load alongside the first request instead of in the startup
+// bundle; every response and fixture is still parsed before use.
+const contracts = () => import("@/lib/contracts");
+
+async function sampleBrief(): Promise<Brief> {
+  const [{ briefSchema }, fixture] = await Promise.all([
+    contracts(),
+    import("@/fixtures/brief.json"),
+  ]);
+  return briefSchema.parse(fixture.default);
+}
 
 async function fetchBrief(signal?: AbortSignal): Promise<LoadedBrief> {
   try {
-    const res = await fetch(`${API_URL}/brief/today`, { signal, cache: "no-store" });
+    const [res, { briefSchema }] = await Promise.all([
+      fetch(`${API_URL}/brief/today`, { signal, cache: "no-store" }),
+      contracts(),
+    ]);
     if (res.ok) return { brief: briefSchema.parse(await res.json()), source: "live" };
   } catch (error) {
     if (signal?.aborted) throw error;
   }
-  return { brief: SAMPLE_BRIEF, source: "sample" };
+  return { brief: await sampleBrief(), source: "sample" };
 }
 
 export function useBrief() {
@@ -44,6 +48,8 @@ export function idempotencyKey(brief: Brief, card: ActionCard): string {
 }
 
 export async function approve(brief: Brief, card: ActionCard) {
+  // Schema first: a failed chunk load must not report "couldn't start" after the POST.
+  const { approveResponseSchema } = await contracts();
   const res = await fetch(`${API_URL}/actions/${encodeURIComponent(card.id)}/approve`, {
     method: "POST",
     headers: { "Idempotency-Key": idempotencyKey(brief, card) },
@@ -53,6 +59,7 @@ export async function approve(brief: Brief, card: ActionCard) {
 }
 
 export async function reject(card: ActionCard, reason: string) {
+  const { rejectResponseSchema } = await contracts();
   const res = await fetch(`${API_URL}/actions/${encodeURIComponent(card.id)}/reject`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -67,7 +74,12 @@ export async function reject(card: ActionCard, reason: string) {
  * margin card with a reason that names a cap swaps in the regenerated sample brief.
  * The real loop runs in the API (brief pipeline + preference extractor).
  */
-export function sampleAfterReject(card: ActionCard, reason: string): Brief | null {
+export async function sampleAfterReject(card: ActionCard, reason: string): Promise<Brief | null> {
   const namesACap = /\d/.test(reason);
-  return card.kind === "margin_erosion" && namesACap ? SAMPLE_BRIEF_AFTER_REJECT : null;
+  if (card.kind !== "margin_erosion" || !namesACap) return null;
+  const [{ briefSchema }, fixture] = await Promise.all([
+    contracts(),
+    import("@/fixtures/brief-after-reject.json"),
+  ]);
+  return briefSchema.parse(fixture.default);
 }

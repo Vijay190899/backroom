@@ -184,7 +184,7 @@ LLM_PLANNER_MODEL=claude-haiku-5-5 LLM_ESCALATION_MODEL=claude-haiku-5-5
 | Data | TanStack Query; native `EventSource` for SSE; WS for frames; zod-validated API types |
 | Graph | `@xyflow/react` (React Flow) or a force-graph lib. Benchmark at ~300 nodes |
 | Charts | Recharts or visx. Follow the `dataviz` skill (palette validator, light/dark) |
-| Fonts | `next/font` (Instrument Serif, Inter/Geist, JetBrains Mono) |
+| Fonts | `next/font`: Newsreader (self-hosted display cut + text cut), Geist, Geist Mono (DECISIONS L-69, L-70) |
 | Quality | ESLint, `tsc --noEmit`, Playwright e2e (390 px + 1440 px), Lighthouse ≥ 90 |
 
 Routes: `/` Today · `/runs/[id]` Run theater · `/memory` · `/skills` · `/bench` · `/about` (architecture for the interview).
