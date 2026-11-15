@@ -133,11 +133,12 @@ export default function AboutPage() {
         <a href="https://poly.pizza" className="link-draw text-ink">
           Poly Pizza
         </a>
-        ; modified (overlapping faces separated to stop flicker). Café scene animations from{" "}
-        <a href="https://lottiefiles.com" className="link-draw text-ink">
-          LottieFiles
+        ; modified (overlapping faces separated to stop flicker, and the door rigged to open).
+        Background drawings from the{" "}
+        <a href="https://lucide.dev" className="link-draw text-ink">
+          Lucide
         </a>{" "}
-        (Lottie Simple License).
+        icon set (ISC).
       </p>
     </PageTransition>
   );

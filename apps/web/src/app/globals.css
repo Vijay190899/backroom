@@ -294,183 +294,126 @@ html[data-intro="play"] body {
  * the background (softened, veiled toward the top where headlines sit); the app drives
  * rain, the delivery van and the barista through `lib/scene.ts`.
  * --------------------------------------------------------------------------------- */
-/* The hero band (L-79): runs from under the floating header to just above the headline.
- * Its bottom fades into the page, so the café sits above the content, never behind it. */
-.cafe-hero {
-  --hero-h: clamp(190px, 30vh, 270px);
-  position: relative;
-  height: var(--hero-h);
-  margin-top: -4.25rem; /* tucks under the floating header */
-  overflow: hidden;
-  pointer-events: none;
-  mask-image: linear-gradient(180deg, #000 78%, transparent);
+/* The café behind every page (L-82): line-drawn café things at a whisper of contrast,
+ * drifting in two depths. Strongest at the screen edges, faint behind the content column,
+ * so the data always reads first. Only transforms and opacity animate. */
+.cafe-pattern {
+  color: var(--t-ink);
+  transition: color 1.2s ease;
 }
-/* The run theater is dark and focused (PRD principle 3): no café above it. Pure CSS, so
- * it holds from the server's first paint. */
-.cafe-hero:has(~ main [data-theater]) {
-  display: none;
+.cafe-pattern.is-busy {
+  color: var(--t-accent);
 }
-.cafe-scene {
-  animation: cafe-in 1.4s ease-out both;
+.cafe-field {
+  opacity: 0.075;
+  transition: opacity 1.2s ease;
+  mask-image: radial-gradient(ellipse 62% 70% at 50% 42%, rgb(0 0 0 / 0.28), #000 78%);
 }
-@keyframes cafe-in {
-  from {
-    opacity: 0;
-  }
+.dark .cafe-field {
+  opacity: 0.09;
 }
-.cafe-sky {
-  background: linear-gradient(180deg, #fbe2c4 0%, #f8eadb 55%, var(--t-bg) 100%);
-  transition: filter 1.2s ease;
+.is-busy .cafe-field {
+  opacity: 0.12;
 }
-.dark .cafe-sky {
-  background: linear-gradient(180deg, #1d1626 0%, #1a1310 55%, var(--t-bg) 100%);
-}
-.cafe-cloud {
+.cafe-layer {
   position: absolute;
-  width: 170px;
-  height: 170px;
+  top: 0;
+  left: 0;
+  width: calc(100% + var(--tile));
+  height: calc(100% + var(--tile));
+  animation: cafe-pan linear infinite;
+  will-change: transform;
+}
+.cafe-layer-near {
+  animation-duration: 110s;
+}
+.cafe-layer-far {
   opacity: 0.7;
-  animation: cafe-drift 70s linear infinite;
+  animation-duration: 170s;
+  animation-direction: reverse;
 }
-.cafe-cloud-a {
-  top: 1.5rem;
-}
-.cafe-cloud-b {
-  top: 4.5rem;
-  width: 120px;
-  height: 120px;
-  animation-duration: 95s;
-  animation-delay: -40s;
-}
-.dark .cafe-cloud {
-  opacity: 0.22;
-}
-@keyframes cafe-drift {
-  from {
-    transform: translateX(-300px);
-  }
+@keyframes cafe-pan {
   to {
-    transform: translateX(calc(100vw + 300px));
+    transform: translate(calc(var(--tile) * -1), calc(var(--tile) * -0.5));
   }
 }
-/* The stage fills the band below the header; its width follows from its height. */
-.cafe-stage {
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  height: calc(var(--hero-h) - 4.5rem);
-  aspect-ratio: 2.4;
-  transform: translateX(-50%);
-  transition: filter 1.2s ease;
+/* Fine rain over the field when the brief forecasts it. */
+.cafe-rainfall {
+  opacity: 0;
+  transition: opacity 1.5s ease;
+  background-image: repeating-linear-gradient(
+    105deg,
+    transparent 0 22px,
+    color-mix(in oklch, var(--t-ink) 7%, transparent) 22px 23px,
+    transparent 23px 46px
+  );
+  background-size: 400px 400px;
+  animation: cafe-rain 0.9s linear infinite;
+  mask-image: radial-gradient(ellipse 62% 70% at 50% 42%, rgb(0 0 0 / 0.25), #000 78%);
 }
-.dark .cafe-stage {
-  filter: saturate(0.8) brightness(0.8);
+.cafe-rainfall.is-on {
+  opacity: 1;
 }
-/* The pavement runs the full width of the band, level with the café's floor. */
-.cafe-ground {
-  position: absolute;
-  inset: auto 0 0 0;
-  height: calc((var(--hero-h) - 4.5rem) * 0.16);
-  background: linear-gradient(180deg, color-mix(in oklch, var(--t-amber) 22%, transparent), transparent);
+@keyframes cafe-rain {
+  to {
+    background-position: -100px 400px;
+  }
 }
-.cafe-shop {
+/* A supplier order: a line-drawn van crosses the foot of the screen. */
+.cafe-truck {
   position: absolute;
-  bottom: 4%;
-  left: 50%;
-  width: 46%;
-  aspect-ratio: 488 / 366;
-  transform: translateX(-50%);
+  bottom: 1.25rem;
+  left: 0;
+  width: 44px;
+  height: 44px;
+  color: var(--t-ink);
+  opacity: 0;
+  animation: cafe-truck 7s cubic-bezier(0.45, 0, 0.55, 1) forwards;
 }
-.cafe-steam {
-  position: absolute;
-  bottom: 18%;
-  right: 20%;
-  width: 6%;
-  aspect-ratio: 1;
+@keyframes cafe-truck {
+  0% {
+    opacity: 0;
+    transform: translateX(-60px);
+  }
+  12%,
+  85% {
+    opacity: 0.22;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(calc(100vw + 60px));
+  }
 }
-.cafe-served {
+/* A run finished: a cup rises and fades near the agent dock. */
+.cafe-serve {
   position: absolute;
-  bottom: 42%;
-  left: 47%;
-  width: 6%;
-  aspect-ratio: 1;
-  animation: cafe-serve 2.4s var(--t-ease-settle) forwards;
+  right: 2.5rem;
+  bottom: 8rem;
+  width: 32px;
+  height: 32px;
+  color: var(--t-accent);
+  animation: cafe-serve 2.6s var(--t-ease-settle) forwards;
 }
 @keyframes cafe-serve {
   0% {
     opacity: 0;
-    transform: translateY(30%) scale(0.6);
+    transform: translateY(16px) scale(0.7);
   }
   30% {
-    opacity: 1;
-    transform: translateY(-40%) scale(1.15);
+    opacity: 0.45;
+    transform: translateY(0) scale(1.05);
   }
   100% {
     opacity: 0;
-    transform: translateY(-180%) scale(0.9);
+    transform: translateY(-70px) scale(0.95);
   }
 }
-/* The van is people-sized: its box is ~0.85x the shop's width (the van body fills a
- * third of its frame), so it stands about as tall as the barista. */
-.cafe-van {
-  position: absolute;
-  bottom: -9%;
-  left: 0;
-  width: 39%;
-  aspect-ratio: 1404 / 1468;
-  transform: translateX(-110%);
-}
-.cafe-van.is-trip {
-  animation:
-    van-in 2.6s cubic-bezier(0.22, 1, 0.36, 1) forwards,
-    van-out 3s cubic-bezier(0.55, 0, 0.9, 0.3) 5.2s forwards;
-}
-@keyframes van-in {
-  from {
-    transform: translateX(-110%);
-  }
-  to {
-    transform: translateX(18%);
-  }
-}
-@keyframes van-out {
-  from {
-    transform: translateX(18%);
-  }
-  to {
-    transform: translateX(290%);
-  }
-}
-.cafe-rain {
-  opacity: 0;
-  background-image: repeating-linear-gradient(
-    105deg,
-    transparent 0 14px,
-    rgb(140 170 210 / 0.5) 14px 15px,
-    transparent 15px 30px
-  );
-  background-size: 300px 300px;
-  animation: cafe-rain 0.55s linear infinite;
-  transition: opacity 1s ease;
-}
-.is-raining .cafe-rain {
-  opacity: 0.4;
-}
-.cafe-hero:has(.is-raining) .cafe-sky,
-.is-raining .cafe-stage {
-  filter: saturate(0.6) brightness(0.9);
-}
-@keyframes cafe-rain {
-  to {
-    background-position: -60px 300px;
-  }
-}
-html[data-motion="calm"] .cafe-cloud,
-html[data-motion="calm"] .cafe-rain,
-html[data-motion="calm"] .cafe-van {
+html[data-motion="calm"] .cafe-layer,
+html[data-motion="calm"] .cafe-rainfall {
   animation: none;
 }
-html[data-motion="calm"] .cafe-served {
+html[data-motion="calm"] .cafe-truck,
+html[data-motion="calm"] .cafe-serve {
   display: none;
 }
 

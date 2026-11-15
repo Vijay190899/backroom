@@ -14,6 +14,25 @@ Notes: surprises, shortcuts, things left undone.
 
 ---
 
+## Sun 15 Nov 2026 · L8 follow-up (door opens; café pattern background) · branch laptop/l9-run-theater
+Done:
+- Intro: the café door swings open onto a warm, lit doorway, and the camera steps through the glow into the app (DECISIONS L-82).
+- The Lottie hero band is replaced by a subtle, drifting line-art café pattern behind every page, still driven by the data (rain, agent busy, delivery van, served cup).
+- The Lottie files and dependency are removed.
+Verify:
+- Frame-by-frame intro capture: the door opens at about 2.7 s, the glow fills the screen by about 3.9 s, and no frame flickers.
+- Headless Chrome checks:
+  - the pattern renders on every page; its fills resolve;
+  - rain is on, the approve sends the van and warms the field;
+  - a cup rises after the run;
+  - the phone has no sideways scroll; no console errors.
+- `pnpm check`: green. Lighthouse on a production build: `/` desktop 94, phone 71 (the intro on a first visit), `/bench` phone 94, accessibility 100. Audit (Sonnet): 0 blockers and 0 should-fix items; one nit applied (`useId` pattern ids).
+Needs from PC:
+- `pnpm install` after merging (one dependency removed).
+- The README on `main` still credits LottieFiles in "Asset attribution"; drop that line when this branch merges, or in L13.
+Notes:
+- `apps/web/public/intro/cafe-shop.glb` now carries the door rig and the `DoorOpen` animation.
+
 ## Sun 15 Nov 2026 · L8 follow-up (page transitions by name) + README banner · branch laptop/l9-run-theater
 Done:
 - Page changes fade through by view-transition name (`page`), so Safari gets the same no-overlap transition as Chrome (DECISIONS L-81).
