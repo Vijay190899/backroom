@@ -5,6 +5,30 @@ Only the **laptop** edits this file (the PC never does, so it cannot conflict). 
 Entry format:
 
 ```
+## Sun 15 Nov 2026 · L8 follow-up (glass panels on every page; drawings thicker again) · branch laptop/l9-run-theater
+Done:
+- Memory, Skills, Bench and About frame their sections in the same glass panels as Today's cards: a new `.panel` utility (card radius and padding) used as `glass panel`. The inner ink rules became hairlines.
+- The background café drawings are 40% thicker again (1.75 → 2.45 px on screen).
+Verify:
+- Headless Chrome on each page: the panels compute a 20 px radius, 28 px padding and the shadow (Memory 3, Skills 2, Bench 2, About 6); no sideways scroll at 390 px; screenshots checked.
+- `pnpm check` is green.
+
+## Sun 15 Nov 2026 · L8 follow-up (thicker café drawings) · branch laptop/l9-run-theater
+Done:
+- The background café drawings' lines are 40% thicker (1.25 → 1.75 px on screen); the owner found them almost invisible. The intro stays on phones too (owner's call; `/` on phones stays about 71 on a first visit).
+Verify:
+- The rendered `stroke-width` is 1.4 at 30 px and 2.33 at 18 px (absolute 1.75 px); screenshot checked. `pnpm check` is green.
+
+## Sun 15 Nov 2026 · L13 (part 1: bench page reads results; demo script) · branch laptop/l9-run-theater
+Done:
+- `/bench` reads `bench/results/b1,b2,b3,b5.json` at build time (`lib/bench-results.ts`) and shows each benchmark's measured headline with n, date and git SHA. A missing file, or one with `fake: true`, shows "Not run yet".
+- `docs/DEMO_SCRIPT.md` follows the current UI: the intro, the dock → run theater, the chaos picker in the theater, the bench headlines.
+Verify:
+- With L11's fake results copied in as non-fake, `/bench` showed every headline. Without them, "Not run yet" stays.
+- `pnpm check` is green.
+Needs from PC:
+- After H7 commits `bench/results/*.json`, a rebuild shows them; no code change needed.
+
 ## <date time> · L<id> · branch laptop/<id>-<slug>
 Done: what works now.
 Verify: the exact commands to check it (and what you should see).
@@ -13,6 +37,68 @@ Notes: surprises, shortcuts, things left undone.
 ```
 
 ---
+
+## Sun 15 Nov 2026 · L8 follow-up (door opens; café pattern background) · branch laptop/l9-run-theater
+Done:
+- Intro: the café door swings open onto a warm, lit doorway, and the camera steps through the glow into the app (DECISIONS L-82).
+- The Lottie hero band is replaced by a subtle, drifting line-art café pattern behind every page, still driven by the data (rain, agent busy, delivery van, served cup).
+- The Lottie files and dependency are removed.
+Verify:
+- Frame-by-frame intro capture: the door opens at about 2.7 s, the glow fills the screen by about 3.9 s, and no frame flickers.
+- Headless Chrome checks:
+  - the pattern renders on every page; its fills resolve;
+  - rain is on, the approve sends the van and warms the field;
+  - a cup rises after the run;
+  - the phone has no sideways scroll; no console errors.
+- `pnpm check`: green. Lighthouse on a production build: `/` desktop 94, phone 71 (the intro on a first visit), `/bench` phone 94, accessibility 100. Audit (Sonnet): 0 blockers and 0 should-fix items; one nit applied (`useId` pattern ids).
+Needs from PC:
+- `pnpm install` after merging (one dependency removed).
+- The README on `main` still credits LottieFiles in "Asset attribution"; drop that line when this branch merges, or in L13.
+Notes:
+- `apps/web/public/intro/cafe-shop.glb` now carries the door rig and the `DoorOpen` animation.
+
+## Sun 15 Nov 2026 · L8 follow-up (page transitions by name) + README banner · branch laptop/l9-run-theater
+Done:
+- Page changes fade through by view-transition name (`page`), so Safari gets the same no-overlap transition as Chrome (DECISIONS L-81).
+- README banner merged into `main` (PR #10) at the owner's request.
+Verify:
+- Headless Chrome on a production build. Navigation runs exactly `old(page) page-out 120 ms` and `new(page) page-in 380 ms @140 ms`, and the frames never show both pages. Skills → Bench: the highlight's old copy is gone in 120 ms. `pnpm check` is green.
+Needs from PC:
+- Pull `main` (it now has the README banner) before merging the laptop branches.
+Notes:
+- Safari could not be automated from the laptop; the owner should confirm by eye.
+
+## Sun 15 Nov 2026 · L9 · branch laptop/l9-run-theater (stacked on laptop/l8-today)
+Done:
+- Run theater at `/runs/[id]` (PRD F2, DECISIONS L-80):
+  - a ticker with elapsed time, model calls, tokens, $ and skill version;
+  - a step timeline with a mode, duration and cost for each step, and the heal ladder (fallback, healer model, escalation, you) with what changed;
+  - the browser panel: schematic for the recorded sample, live JPEG frames and the cursor for real runs;
+  - a chaos seed picker, the result with Undo, and an "agent needs you" panel.
+- Plays `fixtures/run-events.json` end to end with pause, restart and 1×/2×. `/runs/run_demo_seed7` is the sample.
+- The dock links to the theater (sample, or the `run_id` returned by approve). An unknown run shows a clear error state with a link to the sample.
+Verify:
+- `pnpm check`: green. `pnpm -C apps/web contracts` now also runs `run-view.check.mts`, which pins the fold on the fixture: 11 steps, 2 heals, 2 calls, $0.0031, 15.68 s, Sign in → Anmelden, the cookie banner inserted. It also covers failed runs, ask_human and secret masking.
+- Headless Chrome on a production build:
+  - mid-heal, the ladder shows fallback ✗ → healer (claude-haiku-5-5) ✓;
+  - pause holds; the result reads "Order GW-10482 placed…";
+  - the dock link opens the theater;
+  - 390 px has no sideways scroll; the light and dark stages render correctly;
+  - the cursor halo tracks the active element.
+- Lighthouse `/runs/run_demo_seed7`: desktop 96, phone 84, accessibility 100, CLS 0.001.
+- Independent audit (Sonnet): 0 blockers, 5 should-fix items, all fixed:
+  - the WS frame/header race;
+  - the halo offset;
+  - failed runs left spinning;
+  - "needs you" staying up after a resume;
+  - one reconnect treated as fatal.
+Needs from PC (H4):
+- `GET /runs/{id}/events` as SSE, with `event: <type>`, `id: <seq>` and Last-Event-ID resume.
+- `WS /runs/{id}/screen`: a frame header, then the JPEG; cursor messages.
+- `POST /runs/{id}/undo`, `POST /runs/{id}/human`, `POST /chaos`.
+- CORS for the web origin on all of these. `approve` must return `run_id`; the dock links to `/runs/{run_id}`.
+Notes:
+- The schematic is for runs without frames. Golden runs (F7: `frames.json` + `frames/*.jpg`) are not wired into the theater yet; that belongs with H4/H6.
 
 ## Sun 15 Nov 2026 · L8 (part 5: café hero band, fade-through pages, intro polish) · branch laptop/l8-today
 Done:

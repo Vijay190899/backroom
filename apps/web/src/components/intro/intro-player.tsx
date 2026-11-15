@@ -12,12 +12,15 @@ type ModelViewer = HTMLElement & {
   cameraTarget: string;
   fieldOfView: string;
   interpolationDecay: number;
+  animationName: string;
+  play: (options?: { repetitions?: number }) => void;
 };
 
 /**
  * Walks you into the café: a 3D shop (CC-BY 3.0, Shaun Glowa) seen from a three-quarter
- * view, orbiting round to its front, then the camera pushes in toward the door and the
- * scene dissolves into the app. About four seconds; a click or Esc ends it at once.
+ * view, orbiting round to its front, walking up to the door, which swings open on a warm,
+ * lit doorway (the model's `DoorOpen` animation, DECISIONS L-82), then stepping through
+ * the glow into the app. About five seconds; a click or Esc ends it at once.
  */
 export function IntroPlayer() {
   const [active] = useState(() => document.documentElement.dataset.intro === "play");
@@ -52,7 +55,7 @@ export function IntroPlayer() {
     addEventListener("pointerdown", finish);
 
     // Never hold the app hostage: if the model is slow, go straight in.
-    timers.push(setTimeout(finish, 7000));
+    timers.push(setTimeout(finish, 9000));
 
     // The page's own data goes first (it is what paints under the intro).
     afterFirstData(queryClient, 1500)
@@ -68,6 +71,10 @@ export function IntroPlayer() {
         mv.setAttribute("environment-image", "neutral");
         mv.setAttribute("interaction-prompt", "none");
         mv.setAttribute("disable-zoom", "");
+        // The walk ends inside the doorway: lift model-viewer's default close-up limits
+        // (minimum radius and a 25° field of view), which would stop the camera short.
+        mv.setAttribute("min-camera-orbit", "auto auto 0.02m");
+        mv.setAttribute("min-field-of-view", "10deg");
         mv.cameraOrbit = "105deg 68deg 115%";
         mv.fieldOfView = "30deg";
         mv.interpolationDecay = 260;
@@ -77,17 +84,34 @@ export function IntroPlayer() {
           stage.classList.add("is-ready");
           // Orbit round to the shop front…
           timers.push(setTimeout(() => (mv.cameraOrbit = "180deg 80deg 95%"), 150));
-          // …then walk up to the door (left of the lamp post, so the walk is clear)…
+          // …walk up to the door (left of the lamp post, so the walk is clear)…
           timers.push(
             setTimeout(() => {
               mv.interpolationDecay = 170;
-              mv.cameraTarget = "0.27m -0.04m 0.07m";
-              mv.cameraOrbit = "180deg 86deg 0.45m";
+              // The doorway centre, measured with positionAndNormalFromPoint on the model.
+              mv.cameraTarget = "0.374m -0.04m 0.083m";
+              mv.cameraOrbit = "180deg 85deg 0.95m";
               mv.fieldOfView = "24deg";
-            }, 1600),
+            }, 1500),
           );
-          // …and step inside.
-          timers.push(setTimeout(finish, 3700));
+          // …the door swings open (it holds open: one repetition)…
+          timers.push(
+            setTimeout(() => {
+              mv.animationName = "DoorOpen";
+              mv.play({ repetitions: 1 });
+            }, 2500),
+          );
+          // …step through into the warm light…
+          timers.push(
+            setTimeout(() => {
+              mv.interpolationDecay = 150;
+              mv.cameraTarget = "0.374m -0.06m 0.083m";
+              mv.cameraOrbit = "180deg 88deg 0.12m";
+              mv.fieldOfView = "18deg";
+            }, 3500),
+          );
+          // …and the café becomes the app.
+          timers.push(setTimeout(finish, 4800));
         });
         stage.appendChild(mv);
       })

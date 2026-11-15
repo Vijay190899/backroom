@@ -1,6 +1,6 @@
 import { Suspense, type ReactNode } from "react";
 
-import { CafeHero } from "@/components/fx/cafe-hero";
+import { CafePattern } from "@/components/fx/cafe-pattern";
 
 import { ApiStatus } from "./api-status";
 import { CommandButton } from "./command-button";
@@ -10,7 +10,7 @@ import { ThemeToggle } from "./theme-toggle";
 import { Wordmark } from "./wordmark";
 
 /**
- * A floating glass header over the café hero band; phones get a floating tab bar. The
+ * A floating glass header over the café pattern; phones get a floating tab bar. The
  * agent dock, particle canvas and ⌘K palette load after first paint (ShellExtras). The
  * nav links read the pathname, so they sit inside Suspense (Cache Components).
  */
@@ -32,9 +32,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </div>
       </header>
-      <CafeHero />
+      <CafePattern />
 
-      <main id="main" tabIndex={-1} className="flex-1 px-4 pt-6 pb-44 outline-none sm:px-6 lg:px-10 lg:pt-8 lg:pb-28">
+      <main id="main" tabIndex={-1} className="flex-1 px-4 pt-8 pb-44 outline-none sm:px-6 lg:px-10 lg:pt-12 lg:pb-28">
         <div className="mx-auto w-full max-w-6xl">{children}</div>
       </main>
 

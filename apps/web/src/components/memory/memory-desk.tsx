@@ -218,7 +218,7 @@ export function MemoryDesk() {
         />
       ) : graph && range ? (
         <>
-          <section aria-label="Time" className="border-y border-ink py-5">
+          <section aria-label="Time" className="glass panel">
             <div className="flex flex-wrap items-end justify-between gap-4">
               <div>
                 <p className="kicker text-press-ink">As of</p>
@@ -278,10 +278,10 @@ export function MemoryDesk() {
             </div>
           </section>
 
-          <div className="mt-10 grid gap-12 lg:grid-cols-12 lg:gap-10">
-            <section aria-label="Graph" className="lg:col-span-7">
+          <div className="mt-6 grid gap-6 lg:grid-cols-12">
+            <section aria-label="Graph" className="glass panel lg:col-span-7">
               <h2 className="kicker text-ink">Who and what</h2>
-              <div ref={box} className="relative mt-4 aspect-[4/5] w-full border-t border-ink sm:aspect-[16/11]">
+              <div ref={box} className="relative mt-4 aspect-[4/5] w-full border-t border-line sm:aspect-[16/11]">
                 <svg
                   aria-hidden
                   className="absolute inset-0 size-full overflow-visible"
@@ -378,11 +378,11 @@ export function MemoryDesk() {
               </div>
             </section>
 
-            <section aria-labelledby="record-heading" className="lg:col-span-5">
+            <section aria-labelledby="record-heading" className="glass panel lg:col-span-5">
               <h2 id="record-heading" className="kicker text-ink">
                 The record
               </h2>
-              <ul className="mt-4 border-t border-ink">
+              <ul className="mt-4 border-t border-line">
                 {slots.map((s) => (
                   <RecordRow key={s.key} slot={s} nodes={nodes} focus={focus} />
                 ))}

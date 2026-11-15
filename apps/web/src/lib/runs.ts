@@ -1,7 +1,8 @@
 "use client";
 
-import type { RunEvent, StepChange } from "@/lib/contracts";
-import type { Locator } from "@/lib/skills";
+import type { RunEvent } from "@/lib/contracts";
+
+export { describeChange } from "@/lib/run-view";
 
 /**
  * The committed sample run (fixtures/run-events.json), parsed like any API payload.
@@ -15,23 +16,6 @@ export async function loadSampleRun(actionId: string): Promise<RunEvent[] | null
   const events = runEventSchema.array().parse(fixture.default);
   const start = events[0];
   return start?.type === "run.started" && start.action_id === actionId ? events : null;
-}
-
-function locatorName(value: unknown): string | null {
-  const loc = value as Partial<Locator> | null;
-  return loc && typeof loc.name === "string" ? loc.name : null;
-}
-
-/** "‘Sign in’ → ‘Anmelden’" or "+ Accept the cookie banner": what a heal changed. */
-export function describeChange(change: StepChange): string {
-  if (change.op === "insert") {
-    const after = change.after as { intent?: string } | null;
-    return `+ ${after?.intent ?? "new step"}`;
-  }
-  if (change.op === "delete") return `− step ${change.step_index + 1}`;
-  const before = locatorName(change.before);
-  const after = locatorName(change.after);
-  return before && after ? `‘${before}’ → ‘${after}’` : `${change.field} updated`;
 }
 
 /** Playback pacing: about 2× real time, with failed waits (5 s timeouts) clipped. */

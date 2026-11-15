@@ -24,7 +24,7 @@ const LADDER = [
 
 function Chapter({ n, title, children }: { n: string; title: string; children: ReactNode }) {
   return (
-    <section className="grid gap-x-10 gap-y-3 border-t border-ink py-10 lg:grid-cols-12">
+    <section className="glass panel mt-6 grid gap-x-10 gap-y-3 lg:grid-cols-12">
       <p aria-hidden className="font-display text-5xl leading-none text-press-ink lg:col-span-2">
         {n}
       </p>
@@ -47,7 +47,7 @@ export default function AboutPage() {
         subtitle="An agentic back office for one café: it reads the business, proposes a few decisions with the money behind them, and carries out the ones you approve in the café's own web tools."
       />
 
-      <section aria-label="The loop" className="pt-14 pb-12">
+      <section aria-label="The loop" className="glass panel">
         <FlowDiagram />
       </section>
 
@@ -94,7 +94,7 @@ export default function AboutPage() {
         <table className="w-full font-sans text-[0.9375rem]">
           <caption className="sr-only">Model roles and their default models</caption>
           <thead>
-            <tr className="border-b border-ink text-left">
+            <tr className="border-b border-line text-left">
               <th scope="col" className="kicker py-2 pr-4 font-semibold text-ink">Role</th>
               <th scope="col" className="kicker py-2 pr-4 font-semibold text-ink">Job</th>
               <th scope="col" className="kicker py-2 font-semibold text-ink">Default</th>
@@ -125,7 +125,7 @@ export default function AboutPage() {
         </p>
       </Chapter>
 
-      <p className="border-t border-ink pt-4 text-sm text-muted-foreground">
+      <p className="mt-6 border-t border-line pt-4 text-sm text-muted-foreground">
         Hafer &amp; Bohne, Grainline, TillDesk and Localboard are fictional. The portals are mock sites
         built for this demo, and Backroom never works around bot protection.
         <br />
@@ -133,11 +133,12 @@ export default function AboutPage() {
         <a href="https://poly.pizza" className="link-draw text-ink">
           Poly Pizza
         </a>
-        ; modified (overlapping faces separated to stop flicker). Café scene animations from{" "}
-        <a href="https://lottiefiles.com" className="link-draw text-ink">
-          LottieFiles
+        ; modified (overlapping faces separated to stop flicker, and the door rigged to open).
+        Background drawings from the{" "}
+        <a href="https://lucide.dev" className="link-draw text-ink">
+          Lucide
         </a>{" "}
-        (Lottie Simple License).
+        icon set (ISC).
       </p>
     </PageTransition>
   );

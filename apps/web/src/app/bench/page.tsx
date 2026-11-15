@@ -5,6 +5,7 @@ import probeJson from "../../../../../bench/results/provider_probe.json";
 
 import { PageTransition } from "@/components/motion/page-transition";
 import { PageHeader } from "@/components/page-header";
+import { headline } from "@/lib/bench-results";
 import { enterDelay } from "@/lib/motion";
 import { probeSchema } from "@/lib/schemas/probe";
 import { cn } from "@/lib/utils";
@@ -62,6 +63,27 @@ const BENCHMARKS = [
   },
 ];
 
+/** A benchmark's measured headline, or an honest "not run yet" until its results exist. */
+function BenchHeadline({ id }: { id: string }) {
+  const h = headline(id);
+  if (!h) {
+    return (
+      <p className="self-start sm:text-right">
+        <span className="kicker inline-flex h-7 items-center border border-dashed border-ink/30 px-2 text-[0.625rem] text-muted-foreground">
+          Not run yet
+        </span>
+      </p>
+    );
+  }
+  return (
+    <div className="self-start sm:text-right">
+      <p className="font-display text-3xl text-ink tabular">{h.value}</p>
+      <p className="mt-1 text-sm text-muted-foreground">{h.detail}</p>
+      <p className="mt-1 font-mono text-[11px] text-muted-foreground">{h.meta}</p>
+    </div>
+  );
+}
+
 const ms = new Intl.NumberFormat("en-GB");
 const usd = (v: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumSignificantDigits: 2 }).format(v);
@@ -87,7 +109,7 @@ export default function BenchPage() {
         subtitle="Backroom measures itself. The provider probe below is a real run; the benchmarks run on the main machine once the whole stack is together, and stay empty until then."
       />
 
-      <section aria-labelledby="probe-heading">
+      <section aria-labelledby="probe-heading" className="glass panel">
         <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
           <h2 id="probe-heading" className="kicker text-ink">
             The provider probe
@@ -98,7 +120,7 @@ export default function BenchPage() {
           </p>
         </div>
 
-        <dl className="mt-4 grid gap-x-10 gap-y-6 border-t border-ink pt-5 sm:grid-cols-3">
+        <dl className="mt-4 grid gap-x-10 gap-y-6 border-t border-line pt-5 sm:grid-cols-3">
           <div>
             <dt className="kicker text-muted-foreground">Checks passed</dt>
             <dd className="mt-1 font-display text-6xl leading-none font-medium tracking-tight text-ink tabular">
@@ -123,7 +145,7 @@ export default function BenchPage() {
 
         <figure className="mt-12">
           <figcaption className="kicker text-ink">How long each check took</figcaption>
-          <ul className="mt-3 border-t border-ink">
+          <ul className="mt-3 border-t border-line">
             {checks.map(([id, c], i) => (
               <li
                 key={id}
@@ -155,7 +177,7 @@ export default function BenchPage() {
             <div className="mt-3 overflow-x-auto">
               <table className="w-full font-mono text-[0.8125rem] tabular">
                 <thead>
-                  <tr className="border-b border-ink text-left text-muted-foreground">
+                  <tr className="border-b border-line text-left text-muted-foreground">
                     <th scope="col" className="py-1.5 pr-4 font-normal">check</th>
                     <th scope="col" className="py-1.5 pr-4 font-normal">ok</th>
                     <th scope="col" className="py-1.5 pr-4 font-normal">ms</th>
@@ -180,11 +202,11 @@ export default function BenchPage() {
         </figure>
       </section>
 
-      <section aria-labelledby="bench-heading" className="mt-16">
+      <section aria-labelledby="bench-heading" className="glass panel mt-6">
         <h2 id="bench-heading" className="kicker text-ink">
           The benchmarks
         </h2>
-        <ol className="mt-3 border-t border-ink">
+        <ol className="mt-3 border-t border-line">
           {BENCHMARKS.map((b) => (
             <li
               key={b.id}
@@ -203,11 +225,7 @@ export default function BenchPage() {
                   {b.target}
                 </p>
               </div>
-              <p className="self-start sm:text-right">
-                <span className="kicker inline-flex h-7 items-center border border-dashed border-ink/30 px-2 text-[0.625rem] text-muted-foreground">
-                  Not run yet
-                </span>
-              </p>
+              <BenchHeadline id={b.id} />
             </li>
           ))}
         </ol>
