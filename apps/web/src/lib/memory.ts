@@ -9,14 +9,35 @@ export function validAt(fact: GraphFact, t: number): boolean {
   return from <= t && t < to;
 }
 
-/** Midnight UTC of the day `t` falls on: the slider moves in whole days. */
-export function dayOf(t: number): number {
-  return Math.floor(t / DAY) * DAY;
+// The café's days are Bonn days: a price that changes at midnight in Bonn (23:00 UTC in
+// winter) belongs to the next day, not the one UTC still shows.
+const BONN = new Intl.DateTimeFormat("en-US", {
+  timeZone: "Europe/Berlin",
+  hourCycle: "h23",
+  year: "numeric",
+  month: "numeric",
+  day: "numeric",
+  hour: "numeric",
+  minute: "numeric",
+});
+
+/** How far Bonn's clock is ahead of UTC at `t` (1 h in winter, 2 h in summer). */
+export function bonnOffset(t: number): number {
+  const p = Object.fromEntries(BONN.formatToParts(t).map((x) => [x.type, x.value]));
+  const local = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute);
+  return local - Math.floor(t / 60_000) * 60_000;
 }
 
-/** "As of a day" means as of the end of that day: a fact that starts at 07:30 counts. */
+/** The Bonn calendar day `t` falls on, as midnight UTC of that date: the slider's unit. */
+export function dayOf(t: number): number {
+  return Math.floor((t + bonnOffset(t)) / DAY) * DAY;
+}
+
+/** "As of a day" means as of the end of that day in Bonn: a fact from 07:30 counts, one
+ *  from the next midnight does not. */
 export function endOfDay(day: number): number {
-  return dayOf(day) + DAY - 1;
+  const next = dayOf(day) + DAY;
+  return next - bonnOffset(next - bonnOffset(next)) - 1;
 }
 
 /**
@@ -89,39 +110,96 @@ export const PREDICATE: Record<string, string> = {
 const TYPE_COLUMN: Record<string, number> = {
   business: 0,
   preference: 0,
-  staff: 0,
   product: 1,
   ingredient: 2,
   supplier: 3,
   portal: 3,
 };
 
+/** The graph draws the story (who the café is, what it sells, what that is made of, who
+ *  supplies it). Context rows (staff, shifts, weather days, holidays...) stay in the record:
+ *  drawn, 30-odd of them would bury the story. */
+export function isDrawn(node: GraphNode): boolean {
+  return node.type in TYPE_COLUMN;
+}
+
+export type Layout = { pos: Map<string, { x: number; y: number }>; minHeight: number };
+
+const ROW_PX = 80; // a dot, its type, a two-line name and a value, with air
+const PHONE_ROW_PX = 58;
+
 /**
- * Deterministic layout for a small graph: one band per role (the café, what it sells,
- * what that is made of, who supplies it). Wide containers lay the bands out as columns,
- * narrow ones (phones) as rows. Percent coordinates.
+ * Deterministic layout: one band per role. Wide containers lay the bands out as columns,
+ * narrow ones (phones) as rows of two. Percent coordinates, plus the height the busiest
+ * band needs, so a real café's memory never stacks labels on top of each other.
  */
-export function layout(nodes: GraphNode[], narrow = false): Map<string, { x: number; y: number }> {
+export function layout(nodes: GraphNode[], narrow = false): Layout {
   const bands = new Map<number, GraphNode[]>();
-  for (const n of nodes) {
-    const c = TYPE_COLUMN[n.type] ?? 1;
+  for (const n of nodes.filter(isDrawn)) {
+    const c = TYPE_COLUMN[n.type];
     bands.set(c, [...(bands.get(c) ?? []), n]);
   }
   const used = [...bands.keys()].sort((a, b) => a - b);
   const pos = new Map<string, { x: number; y: number }>();
+  if (narrow) {
+    const rows = used.reduce((sum, c) => sum + Math.ceil((bands.get(c) ?? []).length / 2), 0);
+    let row = 0;
+    for (const c of used) {
+      const band = bands.get(c) ?? [];
+      band.forEach((n, i) => {
+        // Labels sit right of their dot here, so two per row: left half and right half.
+        pos.set(n.id, { x: i % 2 === 0 ? 4 : 52, y: ((row + Math.floor(i / 2) + 0.35) / rows) * 100 });
+      });
+      row += Math.ceil(band.length / 2);
+    }
+    return { pos, minHeight: rows * PHONE_ROW_PX };
+  }
+  const tallest = Math.max(1, ...used.map((c) => (bands.get(c) ?? []).length));
   used.forEach((c, bi) => {
     const band = bands.get(c) ?? [];
     const along = used.length === 1 ? 50 : 12 + (bi * 76) / (used.length - 1);
     band.forEach((n, i) => {
-      if (narrow) {
-        // Labels sit right of their dot here, so dots keep to the left of each half.
-        const x = band.length === 1 ? 30 : 6 + (i * 48) / (band.length - 1);
-        pos.set(n.id, { x, y: 6 + (bi * 74) / Math.max(1, used.length - 1) });
-      } else {
-        const y = band.length === 1 ? 46 : 22 + (i * 52) / (band.length - 1);
-        pos.set(n.id, { x: along, y });
-      }
+      // Rows share one pitch across columns, centred in the box.
+      const y = 50 + ((i - (band.length - 1) / 2) * 100) / (tallest + 1);
+      pos.set(n.id, { x: along, y });
     });
   });
-  return pos;
+  return { pos, minHeight: (tallest + 1) * ROW_PX };
+}
+
+/** Which timeline ticks get a date label: never two closer than `minGapPct`. */
+export function labelledTicks(ticks: number[], pct: (v: number) => number, minGapPct = 7): Set<number> {
+  const out = new Set<number>();
+  let last = -Infinity;
+  for (const t of [...ticks].sort((a, b) => a - b)) {
+    if (pct(t) - last >= minGapPct) {
+      out.add(t);
+      last = pct(t);
+    }
+  }
+  return out;
+}
+
+const UNIT: Record<string, (v: unknown) => string> = {
+  tmax_c: (v) => `${v} °C`,
+  precip_mm: (v) => `${v} mm rain`,
+  grams: (v) => `${v} g`,
+  ml: (v) => `${v} ml`,
+  pcs: (v) => `${v} pcs`,
+  margin_target_pct: (v) => `a ${v}% margin`,
+  max_price_increase_pct: (v) => `rises of at most ${v}%`,
+  weekdays: (v) => (Array.isArray(v) ? v.map((d) => String(d).slice(0, 1).toUpperCase() + String(d).slice(1)).join(" and ") : String(v)),
+};
+
+/** A structured fact value in words ("11.1 °C, 0.3 mm rain (archive)"), never raw JSON:
+ *  real memory holds weather, amounts, roles and rules the sample never had. */
+export function describeValue(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  if (typeof value !== "object" || Array.isArray(value)) return String(value);
+  const entries = Object.entries(value as Record<string, unknown>);
+  const source = entries.find(([k]) => k === "source")?.[1];
+  const parts = entries
+    .filter(([k]) => k !== "source")
+    .map(([k, v]) => (UNIT[k] ? UNIT[k](v) : `${k.replace(/_/g, " ")} ${String(v)}`));
+  return parts.join(", ") + (source ? ` (${String(source)})` : "");
 }

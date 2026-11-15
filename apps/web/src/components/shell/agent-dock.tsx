@@ -130,6 +130,9 @@ export function AgentDock() {
       className={cn(
         "glass fixed right-3 bottom-[5.75rem] left-3 z-40 rounded-2xl glass-solid px-3 py-2.5 sm:left-auto lg:right-6 lg:bottom-6",
         open ? "sm:w-[26rem]" : "sm:w-[22rem]",
+        // Idle on a phone it is just a small mark at the right edge: a full-width empty
+        // placeholder would sit over the first card's Approve button.
+        !latest && "max-sm:left-auto max-sm:px-2",
       )}
     >
       {latest?.events ? (
@@ -139,7 +142,7 @@ export function AgentDock() {
           <span className="grid size-8 place-items-center rounded-full border border-glass-line">
             <Bot aria-hidden className="size-4 text-muted-foreground" />
           </span>
-          <span className="min-w-0 text-left">
+          <span className={cn("min-w-0 text-left", !latest && "max-sm:sr-only")}>
             <span className="block text-xs text-muted-foreground">Agent</span>
             <span role="status" className="block truncate text-sm font-medium text-ink">
               {latest ? latest.note : "Idle · approve a card to send it here"}

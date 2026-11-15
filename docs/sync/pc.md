@@ -11,6 +11,22 @@ Laptop must: pull, then run these commands (`uv sync --all-packages`, `pnpm inst
 Contract changes: anything the laptop's code must adapt to.
 ```
 
+## Mon 16 Nov 2026 · H5 integration: the demo script end to end, branch pc/h5-integration
+Every beat of `docs/DEMO_SCRIPT.md` was run in the browser on live data (real portals, Chromium, OpenRouter), starting from `pnpm demo:reset`:
+- 0:00 Today: 3 live cards, Franzbrötchen at €3.60, no cap yet. 0:30 evidence: butter +16.1%, margin 71% → 68% (target 70%).
+- 1:00 approve oat milk → replay 1.5 s, 0 calls, $0, GW-10482. 1:40 seed 7 + "Run again on seed 7" → heal 34 s, 13 calls, $0.0039 → v2 with diff on /skills.
+- 2:40 Memory at 5 Nov: Butter €7.10/kg (today €8.24). 3:20 reject "too steep, max 8%" in the dialog → €3.20 → €3.45, "Kept under your 8% cap", preference fact in memory.
+- Formal UI record: 6 pages x 390/1440 x light/dark, screenshots in `.playwright-mcp/h5/` (gitignored); an audit of console errors, horizontal overflow and covered buttons found 0 issues on all 48 views (healed run and fresh run).
+Fixed (all found by running the script; most are seams between laptop UI built on fixtures and real data):
+- Theater: no way to "approve again" after the first run (the card is done) → **Run again on seed N** button. Address bar now follows the real page (contract: `step.finished.url`). Duplicate React keys on healed runs; the phone layout overflowed; run results printed raw postconditions → order, total, delivery, "3 of 3 passed".
+- Memory: the graph with real data (55 entities) was an unreadable pile → story nodes only, height grows with the busiest column, labels clamped; overlapping date-jump buttons; weather values printed as JSON; **UTC days showed the new butter price a day early** (Bonn days now, with a check).
+- Today: an ordered card was offered again after a reload (local status ignored the server's); the idle agent dock covered the first card's buttons on phones.
+- API: after midnight every brief request regenerated (cache keyed on the clock's day; now the data's day). Skills page: heal note cut mid-word (now a short summary); a new version showed the healing run's time and cost.
+- Agent: the repeat guard reset on URL changes only, which made a cold TillDesk explore fail once; it now compares page content. Step descriptions keep parameter values templated.
+- New `pnpm demo:reset` (DECISIONS 26). Contract change: `step.finished.url` (CONTRACTS §5).
+`pnpm check`: 372 passed. Open: no fact inspector on Memory (the script's "provenance" is API-only), reorder undo (next branch), `/bench` waits for H7.
+Laptop must: `git pull`, `uv sync --all-packages`, `pnpm install`.
+
 ## Sun 15 Nov 2026 · H4 runs, briefs and the API routes, branch pc/h4-runs-api
 Done:
 - Migration `0002_runs.sql` (brief, action, run, run_event); applied by `pnpm seed` and at API start-up.

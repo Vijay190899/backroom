@@ -75,6 +75,14 @@ function BriefCommands({ pending, onApprove }: { pending: Card[]; onApprove: (ca
   return null;
 }
 
+
+/** The card status the API reports, as this screen shows it. A failed run can be retried. */
+function fromServer(status: Card["status"]): CardStatus {
+  if (status === "approved" || status === "running" || status === "done") return "approved";
+  if (status === "rejected") return "rejected";
+  return "proposed";
+}
+
 export function TodayBrief() {
   const query = useBrief();
   // A sample brief rebuilt locally after a rejection replaces what the query loaded.
@@ -116,12 +124,15 @@ export function TodayBrief() {
 
   const { brief, source } = loaded;
   const sample = source === "sample";
+  // What this screen did wins; otherwise the server's record of the card (a reload, or
+  // another tab) decides, so an ordered card is never offered, or "approved all", again.
+  const statusOf = (c: Card): CardStatus => status[c.id] ?? fromServer(c.status);
   const visible = brief.cards
-    .filter((c) => status[c.id] !== "rejected")
+    .filter((c) => statusOf(c) !== "rejected")
     .sort((a, b) => a.rank - b.rank);
-  const pending = visible.filter((c) => c.executable && (status[c.id] ?? "proposed") === "proposed");
+  const pending = visible.filter((c) => c.executable && statusOf(c) === "proposed");
   const [lead, ...rest] = visible;
-  const open = visible.filter((c) => (status[c.id] ?? "proposed") !== "approved");
+  const open = visible.filter((c) => statusOf(c) !== "approved");
 
   function setOne(id: string, value: CardStatus) {
     setStatus((s) => ({ ...s, [id]: value }));
@@ -221,7 +232,7 @@ export function TodayBrief() {
       variant={variant}
       index={index}
       sample={sample}
-      status={status[card.id] ?? "proposed"}
+      status={statusOf(card)}
       onApprove={() => void approveOne(card)}
       onReject={(reason) => rejectOne(card, reason)}
     />

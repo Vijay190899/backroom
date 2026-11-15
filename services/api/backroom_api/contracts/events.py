@@ -71,6 +71,7 @@ class StepFinished(_Event):
     tokens_out: int
     usd: float
     error: str | None = None
+    url: str | None = None  # the page's path after the step: the theater's address bar
 
 
 class ModeChanged(_Event):

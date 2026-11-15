@@ -257,3 +257,21 @@ def test_param_values_in_descriptions_are_templated_and_rendered_per_run() -> No
         PARAMS,
     )
     assert step.intent == "Type {{qty}}"
+
+
+def test_heal_summary_is_short_and_never_cut_mid_word() -> None:
+    from backroom_api.replay.engine import heal_summary
+    from backroom_api.skills.schema import StepChange
+
+    names = [("Email", "E-Mail"), ("Password", "Passwort"), ("Sign in", "Anmelden"),
+             ("Verify", "Bestätigen"), ("Catalog", "Katalog"), ("Search", "Suchen")]  # fmt: skip
+    changes = [
+        StepChange(op="insert", step_index=1, field="step", before=None,
+                   after={"intent": "Accept the cookie banner to clear the dialog over the page"}),
+        *[StepChange(step_index=i, field="target", before={"role": "x", "name": a},
+                     after={"role": "x", "name": b}) for i, (a, b) in enumerate(names, 2)],
+    ]  # fmt: skip
+    note = heal_summary(changes)
+    assert note.startswith("Added 1 step: 'Accept the cookie banner to clear the dialog…'.")
+    assert "6 labels changed: 'Email' → 'E-Mail', 'Password' → 'Passwort'" in note
+    assert note.endswith("and 2 more.") and len(note) < 260

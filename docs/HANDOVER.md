@@ -1,6 +1,6 @@
 # Handover — read this first on a new machine or in a new session
 
-Last updated: Sun 15 Nov 2026. **Laptop tasks L0–L13 complete; PC has done H1–H4. Next: H5 (integration: the demo script end to end), see §10.2.**
+Last updated: Mon 16 Nov 2026. **Laptop tasks L0–L13 complete; PC has done H1–H5 (M3 gate: the demo script works end to end). Next: reorder undo (branch), then H6 golden runs, H7 benchmarks, H8 deploy.**
 
 > **Two machines are in use.** The user's light laptop does the *light* tasks (plain code, no Docker, no Chromium); this PC does the *heavy* ones. **The split, the task IDs and the integration rules are in §9.** On the laptop, follow §2b. Each side logs what it finished in its own file under `docs/sync/`.
 
@@ -14,7 +14,7 @@ This file carries everything that lives outside git: the working agreements, the
 | **M0 Foundations** | **Done** | `pnpm check` green; provider probe 6/6 (`bench/results/provider_probe.json`, L10) |
 | **M1 Data + Portals** | **Done** (laptop branches merged; H1 done) | `pnpm seed` builds `data/out` and loads Postgres (migrations + world, idempotent) |
 | **M2 Agent** | **Done** (H2, H3; gate met) | Explore → compile → replay → heal on the real portals; evidence in `docs/sync/pc.md` (H3) and `bench/results/m2_gate.txt` |
-| **M3 Brief, memory, UI** | Laptop part done (L5–L9); H4 done; **H5 open** | Memory, detectors, brief pipeline + number guard, all web screens, run theater on fixtures |
+| **M3 Brief, memory, UI** | **Done** (L5–L9, H4, H5; gate met) | Memory, detectors, brief pipeline + number guard, all web screens, run theater on fixtures |
 | **M4 Bench + deploy** | Laptop part done (L11, L12); **H6–H8 open** | Bench harness (fakes), CI image build green, `infra/deploy.sh` |
 | **M5 Polish** | L13 part done; **H9 open** | `/bench` reads results; demo script current |
 

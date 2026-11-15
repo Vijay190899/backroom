@@ -191,6 +191,7 @@ export const runEventSchema = z.discriminatedUnion("type", [
     tokens_out: z.number().int(),
     usd: z.number(),
     error: z.string().nullable(),
+    url: z.string().nullable().default(null),
   }),
   z.strictObject({
     ...eventBase,
