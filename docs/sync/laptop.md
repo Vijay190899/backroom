@@ -14,6 +14,34 @@ Notes: surprises, shortcuts, things left undone.
 
 ---
 
+## Sun 15 Nov 2026 · L8 (part 5: café hero band, fade-through pages, intro polish) · branch laptop/l8-today
+Done:
+- The animated café is now a small hero band at the top of every page, above the content, not behind it. Headings are smaller, so the data starts sooner (DECISIONS L-79).
+- Page changes fade through (out in 120 ms, then in), so nothing from the old page lingers over the new one.
+- The intro has no Skip button (click or Esc still ends it), walks to the door, and no longer flickers: the model's z-fighting faces were separated, and the render scale is fixed.
+Verify:
+- Headless-Chrome checks:
+  - no part of the scene reaches the headline at 1440 or 390 px;
+  - no Next issue badge and no hydration errors;
+  - the intro plays, ends, and Esc ends it early;
+  - frame-by-frame capture of the intro finds 0 flicker frames;
+  - navigation frames show the old page gone before the new page rises.
+- `pnpm check`: green (312 pytest, ruff, pyright, tsc, eslint, contracts).
+- Lighthouse, production build:
+
+  | Page | Performance | Notes |
+  |---|---|---|
+  | `/` desktop | 95 | |
+  | `/bench` phone | 95 | |
+  | `/` phone | 72 | the 3D intro on a session's first visit, unchanged from part 4 |
+
+  Accessibility is 100 everywhere.
+- Independent audit (Sonnet): 0 blockers and 0 should-fix items. Applied one nit: the Skills highlights now fade out with their page instead of vanishing.
+Needs from PC:
+- Nothing new.
+Notes:
+- `apps/web/public/intro/cafe-shop.glb` is the repaired model (credited as modified, per CC-BY).
+
 ## Sun 15 Nov 2026 · L8 (part 4: café intro + live café background) · branch laptop/l8-today
 Done:
 - A 3D intro: the app opens on a low-poly café, orbits it, walks through the door and fades into Today. It plays once per session, has a Skip button, and is skipped under reduced motion (DECISIONS L-78).

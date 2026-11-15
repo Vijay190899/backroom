@@ -7,7 +7,7 @@
 const MARKUP = `<div id="intro" class="intro" aria-hidden="true">
   <div id="intro-stage" class="absolute inset-0"></div>
   <p class="intro-title"><span class="intro-mark" aria-hidden="true"></span>backroom</p>
-  <p class="intro-credit">Café model: Shaun Glowa, CC-BY 3.0, via poly.pizza</p>
+  <p class="intro-credit">Café model: Shaun Glowa, CC-BY 3.0, via poly.pizza (modified)</p>
 </div>`;
 
 export function IntroOverlay() {

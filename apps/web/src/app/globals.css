@@ -268,6 +268,7 @@ html[data-intro="play"] body {
   font-weight: 600;
   letter-spacing: -0.04em;
   color: var(--t-ink);
+  z-index: 1; /* above the 3D canvas */
   animation: enter-rise 700ms var(--t-ease-settle) both;
 }
 .intro-mark {
@@ -280,22 +281,9 @@ html[data-intro="play"] body {
   position: absolute;
   bottom: 1rem;
   left: 1rem;
+  z-index: 1;
   font-size: 11px;
   color: var(--t-muted);
-}
-.intro-skip {
-  position: fixed;
-  right: 1rem;
-  bottom: 1rem;
-  z-index: 101;
-  min-height: 2.75rem;
-  padding: 0 1rem;
-  border-radius: 0.75rem;
-  border: 1px solid var(--t-glass-line);
-  background: var(--t-glass-strong);
-  color: var(--t-ink);
-  font-size: 0.875rem;
-  cursor: pointer;
 }
 
 /* ---------------------------------------------------------------------------------
@@ -303,6 +291,17 @@ html[data-intro="play"] body {
  * the background (softened, veiled toward the top where headlines sit); the app drives
  * rain, the delivery van and the barista through `lib/scene.ts`.
  * --------------------------------------------------------------------------------- */
+/* The hero band (L-79): runs from under the floating header to just above the headline.
+ * Its bottom fades into the page, so the café sits above the content, never behind it. */
+.cafe-hero {
+  --hero-h: clamp(190px, 30vh, 270px);
+  position: relative;
+  height: var(--hero-h);
+  margin-top: -4.25rem; /* tucks under the floating header */
+  overflow: hidden;
+  pointer-events: none;
+  mask-image: linear-gradient(180deg, #000 78%, transparent);
+}
 .cafe-scene {
   animation: cafe-in 1.4s ease-out both;
 }
@@ -312,31 +311,31 @@ html[data-intro="play"] body {
   }
 }
 .cafe-sky {
-  background: linear-gradient(180deg, #fbe7cf 0%, #f8eee2 38%, var(--t-bg) 72%);
+  background: linear-gradient(180deg, #fbe2c4 0%, #f8eadb 55%, var(--t-bg) 100%);
   transition: filter 1.2s ease;
 }
 .dark .cafe-sky {
-  background: linear-gradient(180deg, #17121f 0%, #1c1411 40%, var(--t-bg) 78%);
+  background: linear-gradient(180deg, #1d1626 0%, #1a1310 55%, var(--t-bg) 100%);
 }
 .cafe-cloud {
   position: absolute;
-  width: 260px;
-  height: 260px;
-  opacity: 0.55;
+  width: 170px;
+  height: 170px;
+  opacity: 0.7;
   animation: cafe-drift 70s linear infinite;
 }
 .cafe-cloud-a {
-  top: 4vh;
+  top: 1.5rem;
 }
 .cafe-cloud-b {
-  top: 16vh;
-  width: 190px;
-  height: 190px;
+  top: 4.5rem;
+  width: 120px;
+  height: 120px;
   animation-duration: 95s;
   animation-delay: -40s;
 }
 .dark .cafe-cloud {
-  opacity: 0.18;
+  opacity: 0.22;
 }
 @keyframes cafe-drift {
   from {
@@ -346,25 +345,24 @@ html[data-intro="play"] body {
     transform: translateX(calc(100vw + 300px));
   }
 }
+/* The stage fills the band below the header; its width follows from its height. */
 .cafe-stage {
   position: absolute;
   bottom: 0;
   left: 50%;
-  width: clamp(760px, 115vw, 1600px);
+  height: calc(var(--hero-h) - 4.5rem);
   aspect-ratio: 2.4;
   transform: translateX(-50%);
-  opacity: 0.38;
-  filter: saturate(0.8) blur(0.6px);
   transition: filter 1.2s ease;
 }
 .dark .cafe-stage {
-  opacity: 0.32;
-  filter: saturate(0.7) brightness(0.65) blur(0.6px);
+  filter: saturate(0.8) brightness(0.8);
 }
+/* The pavement runs the full width of the band, level with the café's floor. */
 .cafe-ground {
   position: absolute;
   inset: auto 0 0 0;
-  height: 16%;
+  height: calc((var(--hero-h) - 4.5rem) * 0.16);
   background: linear-gradient(180deg, color-mix(in oklch, var(--t-amber) 22%, transparent), transparent);
 }
 .cafe-shop {
@@ -450,7 +448,7 @@ html[data-intro="play"] body {
 .is-raining .cafe-rain {
   opacity: 0.4;
 }
-.is-raining .cafe-sky,
+.cafe-hero:has(.is-raining) .cafe-sky,
 .is-raining .cafe-stage {
   filter: saturate(0.6) brightness(0.9);
 }
@@ -458,10 +456,6 @@ html[data-intro="play"] body {
   to {
     background-position: -60px 300px;
   }
-}
-/* Keeps the scene behind: the top of the screen, where headlines sit, stays clear. */
-.cafe-veil {
-  background: linear-gradient(180deg, color-mix(in oklch, var(--t-bg) 55%, transparent) 0%, transparent 55%);
 }
 html[data-motion="calm"] .cafe-cloud,
 html[data-motion="calm"] .cafe-rain,
@@ -546,9 +540,10 @@ html[data-motion="calm"]::view-transition-group(*) {
 ::view-transition-new(tab-bar) {
   animation: none;
 }
-/* Page changes: the old page sinks back and blurs out quickly; the new one rises into
- * focus with a long settle, drifting a little in the direction of travel. The live
- * background and particle canvases are excluded so the scene never freezes or flickers. */
+/* Page changes fade through (L-79): the old page leaves in 120 ms, then the new one rises
+ * into place. They never overlap, so no word of the old page shows through the new one.
+ * No blur filters: on a long page they cost frames. The café hero, the header and the
+ * particle canvas are excluded and simply stay. */
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
@@ -567,28 +562,40 @@ html[data-motion="calm"]::view-transition-group(*) {
 }
 ::view-transition-old(.nav-forward),
 ::view-transition-old(.nav-back) {
-  animation: 240ms cubic-bezier(0.4, 0, 1, 1) both page-out;
+  animation: 120ms cubic-bezier(0.4, 0, 1, 1) both page-out;
 }
 ::view-transition-new(.nav-forward) {
-  --drift: 28px;
-  animation: 560ms var(--t-ease-settle) 90ms both page-in;
+  --drift: 14px;
+  animation: 380ms var(--t-ease-out) 140ms both page-in;
 }
 ::view-transition-new(.nav-back) {
-  --drift: -28px;
-  animation: 560ms var(--t-ease-settle) 90ms both page-in;
+  --drift: -14px;
+  animation: 380ms var(--t-ease-out) 140ms both page-in;
+}
+/* Named pieces inside a page (the Skills picks) leave and arrive with their page, instead
+ * of cross-fading on their own over the next one. */
+html:active-view-transition-type(nav-forward, nav-back)::view-transition-group(skill-pick),
+html:active-view-transition-type(nav-forward, nav-back)::view-transition-group(version-pick) {
+  animation: none;
+}
+html:active-view-transition-type(nav-forward, nav-back)::view-transition-old(skill-pick),
+html:active-view-transition-type(nav-forward, nav-back)::view-transition-old(version-pick) {
+  animation: 120ms cubic-bezier(0.4, 0, 1, 1) both page-out;
+}
+html:active-view-transition-type(nav-forward, nav-back)::view-transition-new(skill-pick),
+html:active-view-transition-type(nav-forward, nav-back)::view-transition-new(version-pick) {
+  animation: 380ms var(--t-ease-out) 140ms both page-in;
 }
 @keyframes page-out {
   to {
     opacity: 0;
-    transform: scale(0.975);
-    filter: blur(6px);
+    transform: translateY(-6px) scale(0.99);
   }
 }
 @keyframes page-in {
   from {
     opacity: 0;
-    transform: translateX(var(--drift)) translateY(14px) scale(1.012);
-    filter: blur(8px);
+    transform: translateX(var(--drift)) translateY(10px);
   }
 }
 /* A story that moves (promoted to lead, columns closing up) glides to its new place. */

@@ -133,7 +133,7 @@ export default function AboutPage() {
         <a href="https://poly.pizza" className="link-draw text-ink">
           Poly Pizza
         </a>
-        . Café scene animations from{" "}
+        ; modified (overlapping faces separated to stop flicker). Café scene animations from{" "}
         <a href="https://lottiefiles.com" className="link-draw text-ink">
           LottieFiles
         </a>{" "}

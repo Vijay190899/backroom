@@ -19,8 +19,7 @@ function Anim(props: Omit<DotLottieWorkerReactProps, "workerId" | "renderConfig"
 }
 
 /**
- * The café behind the app (L-78): an illustrated scene, softened into the background,
- * always moving, and driven by what the app is doing: rain when the brief carries a
+ * The café in the hero band (L-78, L-79): an illustrated scene, always moving, and driven by what the app is doing: rain when the brief carries a
  * rain forecast, a delivery van (people-sized) when a supplier order is approved, the
  * barista working faster while the agent runs, a cup served when a run finishes.
  * Under reduced motion it holds still on each animation's first frame.
@@ -35,17 +34,12 @@ export function CafeScene() {
   const [lastTrip, setLastTrip] = useState(deliveries);
 
   return (
-    <div
-      aria-hidden
-      style={{ viewTransitionName: "ambient" }}
-      className={cn("cafe-scene pointer-events-none fixed inset-0 -z-10 overflow-hidden", raining && "is-raining")}
-    >
-      <div className="cafe-sky absolute inset-0" />
+    <div className={cn("cafe-scene absolute inset-0", raining && "is-raining")}>
       <Anim src="/scene/clouds.lottie" autoplay={play} loop speed={raining ? 1.6 : 0.6} className="cafe-cloud cafe-cloud-a" />
       <Anim src="/scene/clouds.lottie" autoplay={play} loop speed={raining ? 1.6 : 0.6} className="cafe-cloud cafe-cloud-b" />
 
+      <div className="cafe-ground" />
       <div className="cafe-stage">
-        <div className="cafe-ground" />
         <Anim src="/scene/cafe.lottie" autoplay={play} loop speed={busy ? 1.7 : 1} className="cafe-shop" />
         <Anim src="/scene/steam-cup.lottie" autoplay={play} loop className="cafe-steam" />
         {serves ? (
@@ -63,7 +57,6 @@ export function CafeScene() {
       </div>
 
       <div className="cafe-rain absolute inset-0" />
-      <div className="cafe-veil absolute inset-0" />
     </div>
   );
 }

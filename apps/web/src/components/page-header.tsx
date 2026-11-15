@@ -23,14 +23,14 @@ export function PageHeader({
 }) {
   const words = title.split(" ");
   return (
-    <header className="mb-10 lg:mb-14">
+    <header className="mb-8 lg:mb-10">
       {kicker || meta ? (
         <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
           {kicker ? <p className="kicker text-press-ink">{kicker}</p> : <span />}
           {meta ? <p className="text-sm text-muted-foreground tabular">{meta}</p> : null}
         </div>
       ) : null}
-      <h1 className="mt-4 text-[2.75rem] leading-[0.98] font-semibold tracking-[-0.045em] text-ink sm:text-7xl lg:text-[5.5rem]">
+      <h1 className="mt-3 text-[2.5rem] leading-[0.98] font-semibold tracking-[-0.045em] text-ink sm:text-6xl lg:text-7xl">
         {words.map((word, i) => (
           <span key={i} className="inline-block overflow-hidden pb-[0.12em] align-bottom">
             <span
@@ -44,7 +44,7 @@ export function PageHeader({
         ))}
       </h1>
       {subtitle || actions ? (
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
           {subtitle ? <p className="max-w-prose text-lg leading-snug text-muted-foreground">{subtitle}</p> : <span />}
           {actions}
         </div>
