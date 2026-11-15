@@ -14,6 +14,7 @@ import { formatDateline, formatTime } from "@/lib/format";
 import { PORTAL_LABEL } from "@/lib/labels";
 import { loadSampleRun } from "@/lib/runs";
 import { startRun } from "@/lib/agent-runs";
+import { deliver } from "@/lib/scene";
 import { useRegisterCommands, type Command } from "@/lib/commands";
 
 const PLACE = "Hafer & Bohne · Bonn-Südstadt";
@@ -129,8 +130,11 @@ export function TodayBrief() {
   async function approveOne(card: Card) {
     setOne(card.id, "approving");
     const portal = card.portal ? (PORTAL_LABEL[card.portal] ?? card.portal) : null;
+    // An approved supplier order sends a delivery van to the café scene.
+    const delivery = () => card.portal === "grainline" && deliver();
     if (sample) {
       setOne(card.id, "approved");
+      delivery();
       setMessage(`${card.title}: approved (sample brief, no portal was touched).`);
       // The dock plays the recorded sample run when the fixture has one for this card.
       const events = await loadSampleRun(card.id).catch(() => null);
@@ -145,6 +149,7 @@ export function TodayBrief() {
     }
     try {
       await approve(brief, card);
+      delivery();
       startRun({ id: card.id, title: card.title, portal, events: null, note: `${card.title}: the agent has started` });
       setOne(card.id, "approved");
       setMessage(`${card.title}: approved, the agent is on it.`);

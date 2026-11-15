@@ -3,10 +3,11 @@
 import { AnimatePresence, motion, useAnimationControls } from "motion/react";
 import { Bot, ChevronDown } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { RunTicker, useRunPlayback } from "@/components/today/run-ticker";
 import { setDockAnchor, useAgent, type AgentRun } from "@/lib/agent-runs";
+import { serve, startWork } from "@/lib/scene";
 import { cn } from "@/lib/utils";
 
 const SPRING = { type: "spring", stiffness: 380, damping: 32 } as const;
@@ -37,6 +38,14 @@ type PlayableRun = AgentRun & { events: NonNullable<AgentRun["events"]> };
 function PlayingRun({ run, open, onToggle }: { run: PlayableRun; open: boolean; onToggle: () => void }) {
   const playback = useRunPlayback(run.events);
   const { v, progress } = playback;
+  // The café scene works while the agent works, and serves a cup when the run finishes.
+  const finished = Boolean(v.finished);
+  const wasFinished = useRef(finished);
+  useEffect(() => (finished ? undefined : startWork()), [finished]);
+  useEffect(() => {
+    if (finished && !wasFinished.current) serve();
+    wasFinished.current = finished;
+  }, [finished]);
   return (
     <>
       <button

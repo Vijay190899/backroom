@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
+import { IntroOverlay, introInitScript } from "@/components/intro/intro-overlay";
 import { Providers } from "@/components/providers";
 import { AppShell } from "@/components/shell/app-shell";
 import { API_URL } from "@/lib/api";
@@ -35,7 +36,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: `${themeInitScript};${motionInitScript}` }} />
+        <script dangerouslySetInnerHTML={{ __html: `${themeInitScript};${motionInitScript};${introInitScript}` }} />
         {/* The brief and health calls go cross-origin: open that connection during HTML parse. */}
         <link rel="preconnect" href={API_URL} crossOrigin="anonymous" />
       </head>
@@ -46,6 +47,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         >
           Skip to content
         </a>
+        <IntroOverlay />
         <Providers>
           <AppShell>{children}</AppShell>
         </Providers>

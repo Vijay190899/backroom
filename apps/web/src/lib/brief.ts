@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, type QueryClient } from "@tanstack/react-query";
 
 import { API_URL } from "@/lib/api";
 import type { ActionCard, Brief } from "@/lib/contracts";
@@ -35,8 +35,39 @@ async function fetchBrief(signal?: AbortSignal): Promise<LoadedBrief> {
   return { brief: briefSchema.parse(sample.default), source: "sample" };
 }
 
+export const briefQuery = () =>
+  ({ queryKey: ["brief"], queryFn: ({ signal }: { signal?: AbortSignal }) => fetchBrief(signal) }) as const;
+
 export function useBrief() {
-  return useQuery({ queryKey: ["brief"], queryFn: ({ signal }) => fetchBrief(signal) });
+  return useQuery(briefQuery());
+}
+
+/**
+ * The brief if something else has loaded it, without fetching: background readers (the
+ * café scene) must not race the Today page's hydration with data the server never had.
+ */
+export function useCachedBrief() {
+  return useQuery({ ...briefQuery(), enabled: false });
+}
+
+/**
+ * Resolves once the brief has loaded (it is what the first page paints), or after `capMs`
+ * on pages that don't load it. Decoration (the café scene, the 3D intro) waits for this so
+ * it never competes with the page's own content for the network.
+ */
+export function afterFirstData(queryClient: QueryClient, capMs: number): Promise<void> {
+  return new Promise((resolve) => {
+    const cache = queryClient.getQueryCache();
+    const loaded = () => cache.find({ queryKey: ["brief"] })?.state.status === "success";
+    if (loaded()) return resolve();
+    const stop = cache.subscribe(() => loaded() && go());
+    const cap = setTimeout(go, capMs);
+    function go() {
+      stop();
+      clearTimeout(cap);
+      resolve();
+    }
+  });
 }
 
 /** One key per proposal, so a double tap or a retry never orders twice. */

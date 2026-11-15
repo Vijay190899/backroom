@@ -128,6 +128,16 @@ export default function AboutPage() {
       <p className="border-t border-ink pt-4 text-sm text-muted-foreground">
         Hafer &amp; Bohne, Grainline, TillDesk and Localboard are fictional. The portals are mock sites
         built for this demo, and Backroom never works around bot protection.
+        <br />
+        Café model (intro): &ldquo;Shop&rdquo; by Shaun Glowa, CC-BY 3.0, via{" "}
+        <a href="https://poly.pizza" className="link-draw text-ink">
+          Poly Pizza
+        </a>
+        . Café scene animations from{" "}
+        <a href="https://lottiefiles.com" className="link-draw text-ink">
+          LottieFiles
+        </a>{" "}
+        (Lottie Simple License).
       </p>
     </PageTransition>
   );

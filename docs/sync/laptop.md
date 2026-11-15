@@ -14,6 +14,30 @@ Notes: surprises, shortcuts, things left undone.
 
 ---
 
+## Sun 15 Nov 2026 · L8 (part 4: café intro + live café background) · branch laptop/l8-today
+Done:
+- A 3D intro: the app opens on a low-poly café, orbits it, walks through the door and fades into Today. It plays once per session, has a Skip button, and is skipped under reduced motion (DECISIONS L-78).
+- An animated café diorama sits faded in the background of every page and follows the data: rain from the brief's forecast, a delivery van (now people-sized) when a supplier order is approved, a busier barista while the agent runs, a served cup when it finishes.
+- The photo backdrop (L-77) and the GPU scene (`ambient-field.tsx`) are removed.
+Verify:
+- Headless-Chrome checks: the intro plays and ends about 4.4 s after the model loads, and a second load skips it. Rain shows on Today and on Skills (via the idle prefetch). The van arrives on the oat-milk approve. 390 px has no sideways scroll. No hydration errors.
+- Skip is focused on arrival and ends the intro, and the old timers never fire again. Each delivery is a fresh van that unmounts after its trip, and one cup is served per finished run.
+- `pnpm check`: green.
+- Lighthouse, production build: desktop `/` 93; phone `/` 72 on a first visit (86 with the intro's assets blocked); phone `/bench` 94; accessibility 100.
+Needs from PC:
+- Nothing new. For live runs, `startRun` already drives the scene's busy state through the dock.
+Notes:
+- New dependencies: `@lottiefiles/dotlottie-react` 0.21.0 and `@google/model-viewer` 4.4.0. Assets are in `apps/web/public/scene/` and `apps/web/public/intro/`, credited on About.
+- Development only: Lit and model-viewer print dev-mode warnings in the console.
+- Independent audit (Sonnet): 0 blockers. All fixed:
+  - the intro could stick if its script failed (now a 12 s safety timer);
+  - Skip duplicated finish and the old timers fired again afterwards;
+  - keyboard focus did not land on Skip;
+  - a second delivery reversed the van;
+  - the scene kept animating under reduced motion;
+  - a cup was served on dock remount;
+  - the van was sent before the approval succeeded.
+
 ## Sat 14 Nov 2026 · L8 (part 3: command-center redesign) · branch laptop/l8-today
 Done:
 - Second redesign at the owner's request (DECISIONS L-75): glass panels over a WebGL ember light field, Geist type, an ember accent.
