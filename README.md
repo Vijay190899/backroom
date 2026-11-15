@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/assets/banner.png" alt="backroom: the agentic back office for a café, shown beside a low-poly 3D café" width="100%"></p>
+
 # Backroom
 
 [![CI](https://github.com/Vijay190899/backroom/actions/workflows/ci.yml/badge.svg)](https://github.com/Vijay190899/backroom/actions/workflows/ci.yml)
@@ -86,6 +88,9 @@ pnpm probe:llm                  # confirms which LLM features the provider suppo
 
 ## Data attribution
 Weather data by [Open-Meteo](https://open-meteo.com/) (CC BY 4.0). Holidays by [Nager.Date](https://date.nager.at/). Sales based on the Maven Analytics "Coffee Shop Sales" sample dataset, re-based (see [DATA.md](docs/DATA.md)).
+
+## Asset attribution
+The 3D café (in the banner and the app's intro) is "Shop" by Shaun Glowa, [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/), via [Poly Pizza](https://poly.pizza), modified: overlapping faces were separated to stop flicker. The café scene animations are from [LottieFiles](https://lottiefiles.com) (Lottie Simple License).
 
 ## License
 MIT
