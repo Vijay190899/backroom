@@ -5,6 +5,12 @@ Only the **laptop** edits this file (the PC never does, so it cannot conflict). 
 Entry format:
 
 ```
+## Sun 15 Nov 2026 · L8 follow-up (thicker café drawings) · branch laptop/l9-run-theater
+Done:
+- The background café drawings' lines are 40% thicker (1.25 → 1.75 px on screen); the owner found them almost invisible. The intro stays on phones too (owner's call; `/` on phones stays about 71 on a first visit).
+Verify:
+- The rendered `stroke-width` is 1.4 at 30 px and 2.33 at 18 px (absolute 1.75 px); screenshot checked. `pnpm check` is green.
+
 ## Sun 15 Nov 2026 · L13 (part 1: bench page reads results; demo script) · branch laptop/l9-run-theater
 Done:
 - `/bench` reads `bench/results/b1,b2,b3,b5.json` at build time (`lib/bench-results.ts`) and shows each benchmark's measured headline with n, date and git SHA. A missing file, or one with `fake: true`, shows "Not run yet".
