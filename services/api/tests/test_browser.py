@@ -4,16 +4,10 @@ The laptop has no Chromium, so every test here skips when the browser is not ins
 """
 
 import asyncio
-import functools
-import http.server
 import logging
-import threading
-from collections.abc import AsyncIterator, Iterator
-from pathlib import Path
 from typing import Any
 
 import pytest
-from playwright.async_api import Error as PlaywrightError
 from playwright.async_api import Page
 
 from backroom_api.browser import (
@@ -29,23 +23,7 @@ from backroom_api.browser.vault import default_totp_secret
 from backroom_api.skills.schema import Expect, Locator, Step
 from backroom_portals import totp as portal_totp
 
-FIXTURES = Path(__file__).parent / "fixtures"
 PASSWORD = "hunter2-Secret!"
-
-
-class _Quiet(http.server.SimpleHTTPRequestHandler):
-    def log_message(self, format: str, *args: Any) -> None:
-        pass
-
-
-@pytest.fixture(scope="module")
-def base_url() -> Iterator[str]:
-    handler = functools.partial(_Quiet, directory=str(FIXTURES))
-    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-    yield f"http://127.0.0.1:{server.server_address[1]}"
-    server.shutdown()
 
 
 @pytest.fixture
@@ -57,26 +35,6 @@ def vault() -> SecretVault:
             "grainline_totp": default_totp_secret(44),
         }
     )
-
-
-@pytest.fixture
-async def pool() -> AsyncIterator[BrowserPool]:
-    p = BrowserPool(max_contexts=2)
-    try:
-        await p.start()
-    except PlaywrightError as exc:
-        if "Executable doesn't exist" in str(exc):
-            pytest.skip("Chromium is not installed (run `uv run playwright install chromium`)")
-        raise
-    yield p
-    await p.close()
-
-
-@pytest.fixture
-async def page(pool: BrowserPool, base_url: str) -> AsyncIterator[Page]:
-    async with pool.session(Allowlist(base_url, ["/shop.html"])) as p:
-        await p.goto(f"{base_url}/shop.html")
-        yield p
 
 
 def make_exec(page: Page, vault: SecretVault, base_url: str, **kw: Any) -> Executor:

@@ -1,6 +1,6 @@
 # Handover — read this first on a new machine or in a new session
 
-Last updated: Sun 15 Nov 2026. **The laptop tasks L0–L13 are complete. The PC continues with H1–H9: start at §10, the laptop handoff.**
+Last updated: Sun 15 Nov 2026. **Laptop tasks L0–L13 complete; PC has done H1, H2, H3 (M2 gate). Next: H4 (run persistence + SSE/WS routes), see §10.2.**
 
 > **Two machines are in use.** The user's light laptop does the *light* tasks (plain code, no Docker, no Chromium); this PC does the *heavy* ones. **The split, the task IDs and the integration rules are in §9.** On the laptop, follow §2b. Each side logs what it finished in its own file under `docs/sync/`.
 
@@ -13,7 +13,7 @@ This file carries everything that lives outside git: the working agreements, the
 | Docs, PRD, plan, CI, public repo | Done | https://github.com/Vijay190899/backroom (README with banner and demo GIF on `main`) |
 | **M0 Foundations** | **Done** | `pnpm check` green; provider probe 6/6 (`bench/results/provider_probe.json`, L10) |
 | **M1 Data + Portals** | **Done** (laptop branches merged; H1 done) | `pnpm seed` builds `data/out` and loads Postgres (migrations + world, idempotent) |
-| **M2 Agent** | H2 done; **H3 open** | Browser core in `backroom_api/browser/` (pool, vault, executor, screencast), 19 tests; real Grainline login works |
+| **M2 Agent** | **Done** (H2, H3; gate met) | Explore → compile → replay → heal on the real portals; evidence in `docs/sync/pc.md` (H3) and `bench/results/m2_gate.txt` |
 | **M3 Brief, memory, UI** | Laptop part done (L5–L9); **H4, H5 open** | Memory, detectors, brief pipeline + number guard, all web screens, run theater on fixtures |
 | **M4 Bench + deploy** | Laptop part done (L11, L12); **H6–H8 open** | Bench harness (fakes), CI image build green, `infra/deploy.sh` |
 | **M5 Polish** | L13 part done; **H9 open** | `/bench` reads results; demo script current |
@@ -30,6 +30,7 @@ The laptop branches are merged into `main` (Sun 15 Nov). `.env` on this PC keeps
   - pages: Today, Memory, Skills, Bench, About and the run theater `/runs/[id]`;
   - also: the 3D café intro, the café pattern background, the agent dock and ⌘K.
   - Everything runs on fixtures until the API routes exist; screens show "Sample" badges.
+- `services/api/backroom_api/{browser,agents,skills,replay}/`: the browser agent (H2–H3). Run a task by hand: `uv run python -m backroom_api.agents.cli run grainline.reorder_item [--seed 7] [--cold]` (needs `pnpm dev:portals`).
 - `bench/backroom_bench/`: harness for B1–B3 and B5 (`backroom-bench all [--fake] [--runner m:f] [--pack m:f]`).
 - `infra/deploy.sh` and `.github/workflows/deploy-images.yml` (GHCR images; the build is green on PR #14).
 

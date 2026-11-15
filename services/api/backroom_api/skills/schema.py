@@ -60,6 +60,9 @@ class Step(Contract):
     value_template: str | None = None
     expect: Expect | None = None
     timeout_ms: Annotated[int, Field(gt=0, le=30_000)] = 5_000
+    # Skipped when its element is absent: steps that only clear a pop-up, banner or menu,
+    # which a portal shows in some sessions and designs but not others.
+    optional: bool = False
 
     @model_validator(mode="after")
     def _check_shape(self) -> "Step":

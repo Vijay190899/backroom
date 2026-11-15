@@ -23,7 +23,7 @@ from playwright.async_api import Error as PlaywrightError
 from playwright.async_api import Locator, Page
 
 from backroom_api.browser.allowlist import Allowlist, NavigationBlockedError
-from backroom_api.browser.snapshot import wait_until_idle
+from backroom_api.browser.snapshot import parse_snapshot, wait_until_idle
 from backroom_api.browser.vault import SecretVault, UnknownSecretError
 from backroom_api.skills.schema import (
     CssFallback,
@@ -63,6 +63,7 @@ class StepOutcome:
     error_kind: ErrorKind | None = None
     error: str | None = None
     resolved_via: str | None = None  # "target", "fallback[0]", ...; None if no locator was used
+    found: SkillLocator | None = None  # what a fallback actually matched (role + name), for rung 1
     extracted: str | None = None
     detail: dict[str, Any] = field(default_factory=dict[str, Any])
 
@@ -169,20 +170,25 @@ class Executor:
 
     # --- running a step -------------------------------------------------------------------
 
-    async def run(self, step: Step, params: Mapping[str, Any]) -> StepOutcome:
+    async def run(
+        self, step: Step, params: Mapping[str, Any], timeout_ms: int | None = None
+    ) -> StepOutcome:
+        """Run one step. `timeout_ms` caps the step's own timeout (replay uses a shorter one)."""
+        timeout = min(step.timeout_ms, timeout_ms) if timeout_ms else step.timeout_ms
         started = time.monotonic()
         via: str | None = None
         extracted: str | None = None
+        found: SkillLocator | None = None
         try:
-            via, extracted = await self._perform(step, params)
-            await wait_until_idle(self.page, timeout_ms=min(step.timeout_ms, 3_000))
+            via, extracted, found = await self._perform(step, params, timeout)
+            await wait_until_idle(self.page, timeout_ms=min(timeout, 3_000))
             if self.page.url.startswith("chrome-error://"):
                 # The request guard aborted a navigation (or the portal is unreachable).
                 raise StepError(
                     "blocked", "navigation failed: blocked by the allowlist or unreachable"
                 )
             if step.expect is not None:
-                await self._check_expect(step.expect, step.timeout_ms)
+                await self._check_expect(step.expect, timeout)
         except StepError as exc:
             return self._fail(started, exc.kind, str(exc), via)
         except NavigationBlockedError as exc:
@@ -199,6 +205,7 @@ class Executor:
             duration_ms=int((time.monotonic() - started) * 1000),
             resolved_via=via,
             extracted=extracted,
+            found=found,
         )
 
     def _fail(self, started: float, kind: ErrorKind, message: str, via: str | None) -> StepOutcome:
@@ -211,35 +218,36 @@ class Executor:
         )
 
     async def _perform(
-        self, step: Step, params: Mapping[str, Any]
-    ) -> tuple[str | None, str | None]:
+        self, step: Step, params: Mapping[str, Any], timeout_ms: int
+    ) -> tuple[str | None, str | None, SkillLocator | None]:
         action = step.action
-        timeout = step.timeout_ms
+        timeout = timeout_ms
         if action == "goto":
             assert step.value_template is not None
             url = self.allowlist.check_document(
                 self.allowlist.absolute(render(step.value_template, params))
             )
             await self.page.goto(url, wait_until="domcontentloaded", timeout=timeout)
-            return None, None
+            return None, None, None
         if action == "press" and step.target is None and not step.fallbacks:
             assert step.value_template is not None
             await self.page.keyboard.press(render(step.value_template, params))
-            return None, None
+            return None, None, None
         if action == "wait_for" and step.target is None and not step.fallbacks:
             if step.value_template:
                 text = render(step.value_template, params)
                 await self.page.get_by_text(text).first.wait_for(state="visible", timeout=timeout)
-            return None, None
+            return None, None, None
         if action == "extract" and step.target is None and not step.fallbacks:
-            return None, await self.page.inner_text("body", timeout=timeout)
+            return None, await self.page.inner_text("body", timeout=timeout), None
 
         loc, via = await self.resolve(step.target, step.fallbacks, timeout)
+        found = await self._identify(loc) if via != "target" else None
         if action == "wait_for":
             await loc.wait_for(state="visible", timeout=timeout)
-            return via, None
+            return via, None, found
         if action == "extract":
-            return via, await loc.inner_text(timeout=timeout)
+            return via, await loc.inner_text(timeout=timeout), found
         await self._move_cursor(loc)
         if action == "click":
             await loc.click(timeout=timeout)
@@ -262,7 +270,18 @@ class Executor:
         elif action == "press":
             assert step.value_template is not None
             await loc.press(render(step.value_template, params), timeout=timeout)
-        return via, None
+        return via, None, found
+
+    async def _identify(self, loc: Locator) -> SkillLocator | None:
+        """Role + accessible name of the element a fallback found (it becomes the new target)."""
+        try:
+            snapshot = await loc.aria_snapshot(mode="ai")
+        except PlaywrightError:
+            return None
+        for element in parse_snapshot(snapshot):
+            if element.name:
+                return SkillLocator(role=element.role, name=element.name)
+        return None
 
     # --- expectations ---------------------------------------------------------------------
 

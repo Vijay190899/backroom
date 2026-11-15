@@ -341,6 +341,7 @@ DISMISS_BANNER = Step(
     action="click",
     target=Locator(role="button", name="Alle akzeptieren"),
     fallbacks=[TextFallback(text="Alle akzeptieren")],
+    optional=True,  # a pop-up is skipped when it is not there
 )
 SIGN_IN_V1 = {"role": "button", "name": "Sign in"}
 ADD_V1 = {"role": "button", "name": "Add to cart"}

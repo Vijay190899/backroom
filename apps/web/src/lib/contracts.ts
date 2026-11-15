@@ -90,6 +90,7 @@ export const stepSchema = z.strictObject({
   value_template: z.string().nullable().default(null),
   expect: expectSchema.nullable().default(null),
   timeout_ms: z.number().int().positive().max(30_000).default(5_000),
+  optional: z.boolean().default(false),
 });
 export const postconditionSchema = z.strictObject({
   kind: z.enum(["url_matches", "text_visible", "portal_state"]),

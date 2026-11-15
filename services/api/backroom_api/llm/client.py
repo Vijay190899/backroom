@@ -36,11 +36,10 @@ class LLM:
         ledger: SpendLedger | None = None,
     ) -> None:
         self._settings = settings
+        self.settings = settings
         self._client = client or registry.build_async_client(settings)
         self.caps: Caps = registry.caps_for(settings)
-        self.ledger = ledger or SpendLedger(
-            settings.llm_ledger_path, settings.llm_daily_budget_usd
-        )
+        self.ledger = ledger or SpendLedger(settings.llm_ledger_path, settings.llm_daily_budget_usd)
 
     def _request(
         self,

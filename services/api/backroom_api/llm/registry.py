@@ -192,9 +192,13 @@ def cost_usd(
         else 1.0
     )
     usd = (
-        input_tokens * price.input
-        + output_tokens * price.output
-        + cache_read_tokens * price.cache_read
-        + cache_write_tokens * price.cache_write
-    ) * multiplier / 1_000_000
+        (
+            input_tokens * price.input
+            + output_tokens * price.output
+            + cache_read_tokens * price.cache_read
+            + cache_write_tokens * price.cache_write
+        )
+        * multiplier
+        / 1_000_000
+    )
     return Cost(usd=usd, priced=True)

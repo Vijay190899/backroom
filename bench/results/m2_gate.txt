@@ -1,0 +1,28 @@
+forgot grainline.reorder_item
+=== seed 0 cold explore
+SUCCEEDED: Order GW-10504 placed: 24 x OAT-1L, €38.16
+mode=explore healed=False skill=v1 steps=13 llm_calls=13 tokens=15887/2276 cache_read=15522 $0.0029 18.9s
+=== warm, seed 0
+SUCCEEDED: Order GW-10505 placed: 24 x OAT-1L, €38.16
+mode=replay healed=False skill=v1 steps=13 llm_calls=0 tokens=0/0 cache_read=0 $0.0000 1.3s
+=== seed 7 (demo redesign)
+SUCCEEDED: Order GW-10506 placed: 24 x OAT-1L, €38.16
+mode=replay healed=True skill=v2 steps=26 llm_calls=13 tokens=15234/4089 cache_read=16289 $0.0037 36.1s
+=== warm, seed 7
+SUCCEEDED: Order GW-10507 placed: 24 x OAT-1L, €38.16
+mode=replay healed=False skill=v2 steps=14 llm_calls=0 tokens=0/0 cache_read=0 $0.0000 1.4s
+=== seed 13 (another redesign)
+SUCCEEDED: Order GW-10508 placed: 24 x OAT-1L, €38.16
+mode=replay healed=True skill=v3 steps=14 llm_calls=0 tokens=0/0 cache_read=0 $0.0000 1.9s
+=== warm, seed 13
+SUCCEEDED: Order GW-10509 placed: 24 x OAT-1L, €38.16
+mode=replay healed=False skill=v3 steps=14 llm_calls=0 tokens=0/0 cache_read=0 $0.0000 2.2s
+=== back to seed 7
+SUCCEEDED: Order GW-10510 placed: 24 x OAT-1L, €38.16
+mode=replay healed=True skill=v4 steps=14 llm_calls=0 tokens=0/0 cache_read=0 $0.0000 1.1s
+=== back to seed 0
+SUCCEEDED: Order GW-10511 placed: 24 x OAT-1L, €38.16
+mode=replay healed=True skill=v5 steps=14 llm_calls=0 tokens=0/0 cache_read=0 $0.0000 2.0s
+=== back to seed 13
+SUCCEEDED: Order GW-10512 placed: 24 x OAT-1L, €38.16
+mode=replay healed=False skill=v5 steps=14 llm_calls=0 tokens=0/0 cache_read=0 $0.0000 1.9s

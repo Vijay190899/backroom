@@ -11,6 +11,17 @@ Laptop must: pull, then run these commands (`uv sync --all-packages`, `pnpm inst
 Contract changes: anything the laptop's code must adapt to.
 ```
 
+## Sun 15 Nov 2026 · H3 explore, compile, replay, heal (M2 gate)
+Done:
+- `agents/` (explore loop, runner, task specs, postconditions, recorder, portal admin client, CLI, bench adapter), `skills/` (compiler, diff, file store), `replay/engine.py` (heal ladder: fallback → healer (Haiku) → escalation (Sonnet) → ask_human).
+- **Contract change (PC-owned, both sides updated):** `Step.optional: bool = false` in `skills/schema.py` and `apps/web/src/lib/contracts.ts`; fixtures regenerated (the seed-7 cookie step is optional). CONTRACTS §4 documents it. Existing skills and fixtures stay valid (the field has a default).
+- Gate evidence (`bench/results/m2_gate.txt`, real Chromium + portals + OpenRouter): cold explore at seed 0 ok (13 calls, $0.0029, 19 s); warm replay 1.3 s, 0 calls; seed 7 heal → v2 with diff ($0.0037, 36 s); warm at seed 7 1.4 s, 0 calls; seed 13 → v3 (rung 1, $0); switching back to 7, 0, 13: 0 calls each. Every success is proved from `/_admin/state`, with a baseline so an old order cannot count.
+- TillDesk `change_price`: cold 8 steps $0.0025; the skill goes to `/tilldesk/menu/{{item_id}}/edit`, so it works for any item (cappuccino €3.80 replayed in 1.0 s, 0 calls); healed at seed 7.
+- Bench: `--runner backroom_api.agents.bench_runner:factory` is the real B1/B2 runner.
+- `pnpm check` green: 355 passed. DECISIONS 17–21.
+Laptop must: `git pull`, `uv sync --all-packages`, `pnpm install`. The web `Step` type has `optional` now (a Skills-page badge for optional steps would be nice; not required).
+Not done: `grainline.download_invoice` has no task spec yet (its success needs a download check, which the postcondition kinds don't cover).
+
 ## Sun 15 Nov 2026 · H2 browser agent core
 Done (`services/api/backroom_api/browser/`):
 - `BrowserPool`: one Chromium, a fresh isolated context per run, `max_contexts` semaphore (2), allowlist enforced on every request.
