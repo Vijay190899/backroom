@@ -178,3 +178,10 @@ Written on the laptop. Every place where the laptop's work departs from the PRD,
   - It still follows the data: fine rain when the brief forecasts rain, the field warming while the agent works, a line-drawn van crossing the bottom on a supplier order, and a cup rising when a run finishes.
   - The Lottie files, their WASM runtime and the `@lottiefiles/dotlottie-react` dependency are removed.
   *Why:* the owner's request: a door that opens, and a hero that read as tacky replaced by something subtler that covers the whole screen. `/` on phones stays about 71 on a first visit (the intro, as before); desktop is 94 and `/bench` on phones 94.
+
+- **L-83 (L11). Bench harness design. Four choices:**
+  - B1 and B2 drive a `TaskRunner` protocol (`set_chaos`, `reset_skill`, `run`). The PC plugs in its in-process skill runner with `--runner module:factory`, because the laptop has no Chromium. B3's context-pack arm takes `--pack module:callable` (question → `ContextPack.text`) from the memory store. Without it, the arm is skipped, not faked.
+  - B3's raw-dump arm puts sales in as daily per-item rows. The 27k raw transactions are beyond any context window; every other table goes in whole. That is about 138k tokens, cached as one stable prefix. Tokens are compared as uncached input plus cache reads and writes, so caching never flatters the dump.
+  - B5 reports the pipeline's guard verdicts and also re-verifies every displayed number with the guard. On the committed briefs: 33 numbers checked, 0 unbacked.
+  - Fakes (`--fake`) write to `var/bench-fake/` with `fake: true`. Only real runs write `bench/results/`.
+  *Why:* the harness must run on the laptop against fakes (HANDOVER §9 L11), and the PC's H7 runs it for real. Real B3 cost about $1 (the `ask` role is Sonnet 5.5): one checked call was $0.35 to write the cache, then $0.016 per question.
