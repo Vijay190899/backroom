@@ -5,6 +5,7 @@ counts and names. Tokens, $ and latency come from the API's usage, through the c
 """
 
 import json
+import re
 import time
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass
@@ -14,6 +15,7 @@ from typing import Any, Protocol
 
 import duckdb
 
+from backroom_api.llm.meter import BudgetExceededError
 from backroom_bench.questions import QUESTIONS, Question
 from backroom_bench.results import percentile, rate
 
@@ -47,7 +49,11 @@ def correct(q: Question, truth: Any, answer: str | float | None) -> bool:
     if q.kind == "text":
         return str(answer).strip().casefold() == str(truth).strip().casefold()
     try:
-        value = float(str(answer).replace(",", "").replace("€", "").replace("%", "").strip())
+        text = str(answer).replace("€", "").replace("%", "").replace("\u2212", "-").strip()
+        # "8,24" is a decimal comma (German); "1,234.5" a thousands separator.
+        if re.fullmatch(r"-?\d+,\d{1,2}", text):
+            text = text.replace(",", ".")
+        value = float(text.replace(",", ""))
     except ValueError:
         return False
     if q.kind == "count":
@@ -65,6 +71,7 @@ class Answer:
     usd: float
     ms: int
     cache_write_tokens: int = 0
+    stop_reason: str | None = None
 
     @property
     def prompt_tokens(self) -> int:
@@ -171,7 +178,7 @@ class LlmAnswerer:
             system=[{"type": "text", "text": SYSTEM}],
             messages=[{"role": "user", "content": content}],
             json_schema=ANSWER_SCHEMA,
-            max_tokens=200,
+            max_tokens=1024,
         )
         ms = int((time.perf_counter() - started) * 1000)
         msg = result.message
@@ -191,7 +198,25 @@ class LlmAnswerer:
             result.cost.usd,
             ms,
             u.cache_creation_input_tokens or 0,
+            msg.stop_reason,
         )
+
+
+def _summary(per_arm: dict[str, dict[str, Any]], rows: list[dict[str, Any]]) -> dict[str, Any]:
+    pack, dump = per_arm.get("context_pack"), per_arm.get("raw_dump")
+    ratio = (
+        round(int(pack["input_tokens"]) / int(dump["input_tokens"]), 4)
+        if pack and dump and dump["input_tokens"]
+        else None
+    )
+    return {
+        "arms": per_arm,
+        "headline": {
+            "pack_tokens_vs_dump": ratio,
+            "targets": {"pack_accuracy": 0.9, "pack_tokens_vs_dump": 0.2},
+        },
+        "answers": rows,
+    }
 
 
 async def b3(
@@ -205,7 +230,11 @@ async def b3(
     for arm in arms:
         answers: list[tuple[Question, Answer, bool]] = []
         for q in questions:
-            a = await answerer.answer(q.text, arm.context(q))
+            try:
+                a = await answerer.answer(q.text, arm.context(q))
+            except BudgetExceededError:
+                # The daily budget guard stopped the run: keep what was measured, say so.
+                return {**_summary(per_arm, rows), "partial": "daily LLM budget reached"}
             ok = correct(q, truth[q.id], a.value)
             answers.append((q, a, ok))
             rows.append(
@@ -225,17 +254,4 @@ async def b3(
             "usd": round(sum(a.usd for _, a, _ in answers), 6),
             "p50_ms": percentile([a.ms for _, a, _ in answers], 50),
         }
-    pack, dump = per_arm.get("context_pack"), per_arm.get("raw_dump")
-    ratio = (
-        round(int(pack["input_tokens"]) / int(dump["input_tokens"]), 4)
-        if pack and dump and dump["input_tokens"]
-        else None
-    )
-    return {
-        "arms": per_arm,
-        "headline": {
-            "pack_tokens_vs_dump": ratio,
-            "targets": {"pack_accuracy": 0.9, "pack_tokens_vs_dump": 0.2},
-        },
-        "answers": rows,
-    }
+    return _summary(per_arm, rows)

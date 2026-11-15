@@ -19,6 +19,14 @@ Verify:
 - `uv run backroom-bench all --fake --seeds 3` writes `var/bench-fake/b1,b2,b3,b5.json`.
 - One real B3 call pair: both answers correct, `stop_reason` end_turn, the second call read 138,126 cached tokens, and both are in the ledger.
 - ruff and pyright are clean.
+- Audit (Sonnet): no blockers; 5 should-fix items and 3 nits, all fixed:
+  - real runs never grade fixture briefs;
+  - a skipped benchmark exits non-zero, and a real B3 needs `--pack`;
+  - the B2 header carries its seeds, and its headline adds `warm_success`, `all_ok` and `redesigns_healed`;
+  - the git SHA is marked `-dirty`;
+  - answers get `max_tokens` 1024 and record `stop_reason`;
+  - the budget guard stop writes a partial B3;
+  - decimal commas and the Unicode minus are graded correctly.
 Needs from PC (H7):
 - A `TaskRunner` factory over the skill runner and portals; a `pack_for(question)` over the memory store.
 - Run `pnpm bench`, then commit `bench/results/b1,b2,b3,b5.json`.

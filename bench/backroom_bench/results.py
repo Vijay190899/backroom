@@ -32,11 +32,24 @@ def rate(hits: int, n: int) -> float | None:
 
 
 def git_sha() -> str:
+    """The commit the numbers came from, marked "-dirty" if the tree had local changes."""
+    root = RESULTS_DIR.parents[1]
     try:
-        out = subprocess.run(
-            ["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True, check=True
-        )
-        return out.stdout.strip()
+        sha = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        dirty = subprocess.run(
+            ["git", "status", "--porcelain", "--untracked-files=no"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            check=True,
+        ).stdout.strip()
+        return f"{sha}-dirty" if dirty else sha
     except (OSError, subprocess.CalledProcessError):
         return "unknown"
 

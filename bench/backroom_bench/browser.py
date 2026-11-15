@@ -19,6 +19,7 @@ PORTAL = {
     "grainline.download_invoice": "grainline",
 }
 Start = Literal["cold", "warm"]
+B2_SEEDS = (0, 7, 13)  # the starting look, then the redesigns at runs 8 and 15
 
 
 @dataclass(frozen=True)
@@ -96,7 +97,7 @@ async def b2(
     task: str = TASKS[0],
     runs: int = 20,
     redesign_at: Sequence[int] = (8, 15),
-    seeds: Sequence[int] = (0, 7, 13),
+    seeds: Sequence[int] = B2_SEEDS,
 ) -> dict[str, Any]:
     """The same task `runs` times in a row; the portal is redesigned (new chaos seed) at
     the given 1-based run numbers. Expect spikes there, then recovery to cheap replays."""
@@ -117,6 +118,10 @@ async def b2(
         "headline": {
             "warm_p50_ms": percentile([int(s["wall_ms"]) for s in warm], 50),
             "warm_usd": round(sum(float(s["usd"]) for s in warm), 6),
+            # Fast failures must not pass for fast replays: report success alongside.
+            "warm_success": rate(sum(bool(s["ok"]) for s in warm), len(warm)),
+            "all_ok": all(bool(s["ok"]) for s in series),
+            "redesigns_healed": [s["run"] for s in series if s["redesign"] and s["healed"]],
             "targets": {"warm_p50_ms": 5000, "warm_usd": 0.0},
         },
     }

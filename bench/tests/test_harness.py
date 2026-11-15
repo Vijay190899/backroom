@@ -37,6 +37,7 @@ async def test_b2_spikes_at_redesigns_then_recovers() -> None:
     series = body["series"]
     healed = [s["run"] for s in series if s["healed"]]
     assert healed == [8, 15]
+    assert body["headline"]["redesigns_healed"] == [8, 15] and body["headline"]["all_ok"] is True
     assert body["headline"]["warm_usd"] == 0.0
 
 
@@ -50,6 +51,7 @@ def test_grading() -> None:
         num, 100.0, "101.5"
     )
     assert memory_bench.correct(num, 3.2, "€3.20") and not memory_bench.correct(num, 3.2, None)
+    assert memory_bench.correct(num, 8.24, "8,24") and memory_bench.correct(num, -5.0, "\u22125")
     assert memory_bench.correct(cnt, 49, "49") and not memory_bench.correct(cnt, 49, "49.4")
     assert memory_bench.correct(txt, "Whit Monday", "whit monday ") and not memory_bench.correct(
         txt, "Tuesday", "Monday"

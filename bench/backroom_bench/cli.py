@@ -32,13 +32,11 @@ def _load(spec: str) -> Any:
     return getattr(importlib.import_module(module), name)
 
 
-def _briefs(directory: Path | None) -> list[Brief]:
-    paths = (
-        sorted(directory.glob("*.json"))
-        if directory
-        else [FIXTURE_BRIEFS / "brief.json", FIXTURE_BRIEFS / "brief-after-reject.json"]
-    )
-    return [Brief.model_validate(json.loads(p.read_text(encoding="utf-8"))) for p in paths]
+def _briefs(directory: Path) -> list[Brief]:
+    return [
+        Brief.model_validate(json.loads(p.read_text(encoding="utf-8")))
+        for p in sorted(directory.glob("brief*.json"))
+    ]
 
 
 async def _run(args: argparse.Namespace) -> int:
@@ -47,6 +45,7 @@ async def _run(args: argparse.Namespace) -> int:
     which = {"b1", "b2", "b3", "b5"} if args.command == "all" else {args.command}
     seeds = list(range(args.seeds))
     written: list[Path] = []
+    skipped: list[str] = []  # asked for but not run: the exit code says so
 
     if which & {"b1", "b2"}:
         runner = (
@@ -57,6 +56,7 @@ async def _run(args: argparse.Namespace) -> int:
                 "B1/B2 need a browser runner: --runner module:factory (runs on the PC).",
                 file=sys.stderr,
             )
+            skipped += sorted(which & {"b1", "b2"})
             which -= {"b1", "b2"}
         else:
             if "b1" in which:
@@ -79,6 +79,7 @@ async def _run(args: argparse.Namespace) -> int:
                         "B2",
                         body,
                         settings=settings,
+                        seeds=list(browser.B2_SEEDS),
                         n=len(body["series"]),
                         fake=args.fake,
                         out_dir=out,
@@ -96,40 +97,59 @@ async def _run(args: argparse.Namespace) -> int:
 
             answerer = memory_bench.LlmAnswerer(LLM(settings))
             pack_for = _load(args.pack) if args.pack else None
-        arms: list[memory_bench.ContextArm] = [memory_bench.RawDump(con), memory_bench.NoMemory()]
-        if pack_for is not None:
-            arms.insert(0, memory_bench.PackArm(pack_for))
-        else:
+        if pack_for is None:
+            # Without the arm under test, B3 would publish a result with no headline.
             print(
-                "B3: no --pack given, so the context-pack arm is skipped (not faked).",
+                "B3 needs the context pack: --pack module:callable (runs on the PC).",
                 file=sys.stderr,
             )
-        body = await memory_bench.b3(answerer, arms, truth)
-        usd = sum(float(a["usd"]) for a in body["arms"].values())
-        body["cost"] = results.with_fee(usd, settings)
-        written.append(
-            results.write(
-                "B3",
-                body,
-                settings=settings,
-                n=len(memory_bench.QUESTIONS),
-                fake=args.fake,
-                out_dir=out,
+            skipped.append("b3")
+        else:
+            arms: list[memory_bench.ContextArm] = [
+                memory_bench.PackArm(pack_for),
+                memory_bench.RawDump(con),
+                memory_bench.NoMemory(),
+            ]
+            body = await memory_bench.b3(answerer, arms, truth)
+            usd = sum(float(a["usd"]) for a in body["arms"].values())
+            body["cost"] = results.with_fee(usd, settings)
+            written.append(
+                results.write(
+                    "B3",
+                    body,
+                    settings=settings,
+                    n=len(memory_bench.QUESTIONS),
+                    fake=args.fake,
+                    out_dir=out,
+                )
             )
-        )
 
     if "b5" in which:
-        briefs = _briefs(
-            Path(args.briefs) if args.briefs else (BENCH_BRIEFS if BENCH_BRIEFS.exists() else None)
+        # Real runs grade the briefs generated during the bench; only --fake may fall
+        # back to the committed sample briefs.
+        source = (
+            Path(args.briefs) if args.briefs else (FIXTURE_BRIEFS if args.fake else BENCH_BRIEFS)
         )
-        body = {"guard": guard_bench.summarize(briefs), "verification": guard_bench.verify(briefs)}
-        written.append(
-            results.write("B5", body, settings=settings, n=len(briefs), fake=args.fake, out_dir=out)
-        )
+        briefs = [b for b in _briefs(source) if b.cards] if source.exists() else []
+        if not briefs:
+            print(f"B5: no briefs in {source} (save the bench's briefs there).", file=sys.stderr)
+            skipped.append("b5")
+        else:
+            body = {
+                "guard": guard_bench.summarize(briefs),
+                "verification": guard_bench.verify(briefs),
+            }
+            written.append(
+                results.write(
+                    "B5", body, settings=settings, n=len(briefs), fake=args.fake, out_dir=out
+                )
+            )
 
     for p in written:
         print(f"wrote {p.relative_to(ROOT) if p.is_relative_to(ROOT) else p}")
-    return 0 if written else 2
+    if skipped:
+        print(f"skipped: {', '.join(skipped)}", file=sys.stderr)
+    return 0 if written and not skipped else 2
 
 
 def main() -> None:
