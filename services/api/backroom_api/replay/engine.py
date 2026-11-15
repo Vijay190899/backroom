@@ -14,7 +14,7 @@ A run that heals several steps produces one new version; it is stored by the cal
 the run finishes with every postcondition passing (CONTRACTS §4).
 """
 
-from collections.abc import Mapping
+from collections.abc import Awaitable, Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -35,10 +35,12 @@ from backroom_api.contracts.events import (
     StepStarted,
 )
 from backroom_api.llm import registry
-from backroom_api.skills.compiler import compile_action, fallbacks_for
+from backroom_api.skills.compiler import compile_action, fallbacks_for, render_text
 from backroom_api.skills.diff import field_changes
 from backroom_api.skills.schema import Fallback, Locator, Skill, Step, StepChange
 
+# Called on ask_human with (reason, step index); returns "resume", "cancel" or "timeout".
+AskHumanHook = Callable[[str, int], Awaitable[str]]
 REPLAY_TIMEOUT_MS = 2_500  # a step that is going to work does so well inside this
 AFTER_HEAL_TIMEOUT_MS = 600  # the site has changed: do not wait long on each stale locator
 OPTIONAL_TIMEOUT_MS = 800  # how long to look for a pop-up before deciding it is not there
@@ -59,6 +61,7 @@ class ReplayResult:
     healed: bool = False
     escalated: bool = False
     needs_human: bool = False
+    cancelled: bool = False  # the owner answered ask_human with "cancel"
     failure: str | None = None
     notes: list[str] = field(default_factory=list[str])
 
@@ -157,19 +160,24 @@ async def replay(
     portal: str,
     can_heal: bool = True,
     max_usd: float = 0.25,
+    ask_human: AskHumanHook | None = None,
 ) -> ReplayResult:
+    """Replay `skill`. With `ask_human`, a step the ladder cannot fix pauses the run until
+    the owner answers: "resume" retries the step (without another model heal), "cancel"
+    ends the run. Without it, or on any other answer, the run ends `needs_human`."""
     steps = list(skill.steps)
     result = ReplayResult(ok=False, steps=steps)
     new_version = skill.version + 1
     timeout = REPLAY_TIMEOUT_MS
     heals = 0
+    human_retry = False  # the owner said "resume": the next failure goes straight back
     i = 0
     while i < len(steps):
         step = steps[i]
         await rec.emit(
             StepStarted,
             index=i,
-            intent=step.intent,
+            intent=render_text(step.intent, params),
             action=step.action,
             target=step.target,
             value=display_value(step, params),
@@ -199,6 +207,7 @@ async def replay(
                 result.notes.append(_describe(step, changes))
                 result.healed = True
                 timeout = AFTER_HEAL_TIMEOUT_MS
+            human_retry = False
             i += 1
             continue
 
@@ -211,11 +220,13 @@ async def replay(
             or not can_heal
             or heals >= MAX_HEALS
             or rec.usd >= max_usd
+            or human_retry
         ):
-            result.failure = failure
-            await _give_up(rec, i, failure)
-            result.needs_human = True
-            return result
+            answer = await _hand_over(rec, i, failure, ask_human, result)
+            if answer != "resume":
+                return result
+            human_retry = True  # retry the step once as it is; no second model heal
+            continue
         heals += 1
         result.healed = True
         timeout = AFTER_HEAL_TIMEOUT_MS
@@ -234,10 +245,11 @@ async def replay(
             result=result,
         )
         if replaced is None:
-            result.failure = failure
-            await _give_up(rec, i, failure)
-            result.needs_human = True
-            return result
+            answer = await _hand_over(rec, i, failure, ask_human, result)
+            if answer != "resume":
+                return result
+            human_retry = True
+            continue
         steps[i : i + 1] = replaced
         i += len(replaced)
 
@@ -249,6 +261,24 @@ def _not_found(step: Step) -> str:
     return (
         f"locator not found: {step.target.role} {step.target.name!r}" if step.target else "failed"
     )
+
+
+async def _hand_over(
+    rec: RunRecorder,
+    index: int,
+    failure: str,
+    ask_human: "AskHumanHook | None",
+    result: ReplayResult,
+) -> str:
+    """Pause for the owner (or give up without a hook). Returns the answer."""
+    result.failure = failure
+    await _give_up(rec, index, failure)
+    answer = await ask_human(failure, index) if ask_human is not None else "timeout"
+    if answer == "cancel":
+        result.cancelled = True
+    elif answer != "resume":
+        result.needs_human = True
+    return answer
 
 
 async def _give_up(rec: RunRecorder, index: int, failure: str) -> None:

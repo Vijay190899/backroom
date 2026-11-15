@@ -21,12 +21,13 @@ from backroom_api.agents.postconditions import PostResult, check
 from backroom_api.agents.recorder import EventSink, RunRecorder
 from backroom_api.agents.tasks import TASKS, TaskSpec
 from backroom_api.browser import Allowlist, BrowserPool, Executor, SecretVault
+from backroom_api.browser.executor import CursorCallback
 from backroom_api.browser.screencast import FrameCallback, Screencast
 from backroom_api.config import Settings
 from backroom_api.contracts.common import Mode
 from backroom_api.contracts.events import RunEvent, RunFinished, RunStarted, RunTotals, StepStarted
 from backroom_api.llm.client import LLM
-from backroom_api.replay.engine import ReplayResult, replay
+from backroom_api.replay.engine import AskHumanHook, ReplayResult, replay
 from backroom_api.skills.compiler import compile_skill
 from backroom_api.skills.schema import Skill, SkillDiff, SkillStats, Step
 from backroom_api.skills.store import SkillStore
@@ -48,6 +49,13 @@ class RunResult:
     postconditions: list[PostResult] = field(default_factory=list[PostResult])
     failure: str | None = None
     events: list[RunEvent] = field(default_factory=list[RunEvent])
+
+
+@dataclass(frozen=True)
+class _Hooks:
+    on_cursor: CursorCallback | None = None
+    ask_human: AskHumanHook | None = None
+    undoable: bool = False
 
 
 class SkillRunner:
@@ -78,6 +86,9 @@ class SkillRunner:
         sink: EventSink | None = None,
         on_frame: FrameCallback | None = None,
         force_explore: bool = False,
+        on_cursor: CursorCallback | None = None,
+        ask_human: AskHumanHook | None = None,
+        undoable: bool = False,
     ) -> RunResult:
         """Run one task. Never raises for a run that went wrong: every run ends with a
         `run.finished` event, so a live client is never left waiting."""
@@ -88,7 +99,15 @@ class SkillRunner:
         # store the same new version.
         async with self._locks.setdefault(task, asyncio.Lock()):
             try:
-                return await self._run(spec, merged, rec, action_id, on_frame, force_explore)
+                return await self._run(
+                    spec,
+                    merged,
+                    rec,
+                    action_id,
+                    on_frame,
+                    force_explore,
+                    _Hooks(on_cursor=on_cursor, ask_human=ask_human, undoable=undoable),
+                )
             except Exception as exc:  # the run must still finish visibly
                 log.exception("run %s crashed", rec.run_id)
                 reason = self.vault.redact(f"{type(exc).__name__}: {exc}")[:300]
@@ -123,6 +142,7 @@ class SkillRunner:
         action_id: str,
         on_frame: FrameCallback | None,
         force_explore: bool,
+        hooks: "_Hooks",
     ) -> RunResult:
         task = spec.task
         run_id = rec.run_id
@@ -146,7 +166,7 @@ class SkillRunner:
         posts: list[PostResult] = []
         failure: str | None = None
         async with self.pool.session(allow) as page:
-            executor = Executor(page, self.vault, allow)
+            executor = Executor(page, self.vault, allow, on_cursor=hooks.on_cursor)
             cast = Screencast(page, on_frame) if on_frame else None
             if cast:
                 await cast.start()
@@ -162,6 +182,7 @@ class SkillRunner:
                         portal=spec.portal,
                         can_heal=self.llm is not None,
                         max_usd=self.settings.run_max_usd,
+                        ask_human=hooks.ask_human,
                     )
                     failure = replayed.failure
                     proceed = replayed.ok
@@ -198,14 +219,23 @@ class SkillRunner:
                 task, used_version, ok=verified, wall_ms=wall_ms, usd=round(rec.usd, 6)
             )
         needs_human = bool(replayed and replayed.needs_human)
-        status = "succeeded" if verified else ("needs_human" if needs_human else "failed")
+        cancelled = bool(replayed and replayed.cancelled)
+        status = (
+            "succeeded"
+            if verified
+            else "cancelled"
+            if cancelled
+            else "needs_human"
+            if needs_human
+            else "failed"
+        )
         summary = await self._summary(spec, merged, verified, failure)
         await rec.emit(
             RunFinished,
             status=status,
             summary=summary,
             result={"postconditions": [p.detail for p in posts]},
-            undo_available=False,
+            undo_available=verified and hooks.undoable,
             skill_version=used_version,
             totals=rec.totals(),
         )
