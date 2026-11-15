@@ -11,6 +11,8 @@
 
 > Independent exploration built for a Founding Engineer interview with Super44. Not affiliated with or endorsed by Super44. All businesses, portals and people are fictional; data is open or synthetic ([docs/DATA.md](docs/DATA.md)).
 
+<p align="center"><img src="docs/assets/demo.gif" alt="The run theater replaying a supplier order: the agent signs in, a button has moved, the healer model repairs the step, and the order is placed" width="100%"></p>
+
 ## What it demonstrates
 
 | Problem | How Backroom does it |
