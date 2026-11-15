@@ -1,17 +1,17 @@
 # Graph Report - backroom laptop work  (2026-11-15)
 
 ## Corpus Check
-- 182 files · ~101,150 words
+- 181 files · ~101,850 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 22 file(s) not represented in the graph (top: (none) 9, .lottie 5, .example 1)
+- Unclassified: 16 file(s) not represented in the graph (top: (none) 9, .example 1, .glb 1)
 
 ## Summary
-- 2539 nodes · 6441 edges · 108 communities (95 shown, 13 thin omitted)
+- 2538 nodes · 6429 edges · 115 communities (102 shown, 13 thin omitted)
 - Extraction: 90% EXTRACTED · 10% INFERRED · 0% AMBIGUOUS · INFERRED: 660 edges (avg confidence: 0.89)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `d5bcd1d9`
+- Built from commit: `22f4f405`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -19,16 +19,16 @@
 - grainline/routes.py
 - test_memory.py
 - Web zod contracts
-- L5: temporal memory store, writers, context packer (laptop/l5-memory)
+- GrainlineStore
 - gen_fixtures.py
 - action-card.tsx
 - Backroom Product Requirements Document
 - registry.py
 - Contract
-- probe.py
+- admin.py
 - project.yml
 - web/package.json
-- PlaceholderPage
+- app-shell.tsx
 - scripts
 - components.json
 - dependencies
@@ -39,13 +39,13 @@
 - client.py
 - Browser agent
 - run-theater.tsx
-- api-status.tsx
+- Frontend (apps/web) choices
 - F2 Run theater (step timeline + live browser stream)
 - app-shell.tsx
 - grainline/store.py
 - M4 Bench + Deploy (Thu 19:00-23:30)
 - Demo Script - 5 minutes
-- health.py
+- Contracts (L0)
 - api
 - pipeline.py
 - Build Plan (Wed 22:00 -> Fri 11:30 freeze)
@@ -58,7 +58,7 @@
 - Why this exists: Super44 JD hard problems
 - depends_on
 - healthcheck
-- Backend choices (services/api)
+- Decision Log (ADRs + laptop deviations)
 - Backroom Product Requirements Document
 - laptop.md
 - backroom-api
@@ -67,7 +67,7 @@
 - Handover
 - CONTRACTS.md
 - backroom-portals
-- RuntimeError
+- schema.py
 - backroom_portals/__init__.py
 - agent-dock.tsx
 - shifts
@@ -83,7 +83,7 @@
 - probe.py
 - Chaos engine (one chaos_seed per portal, seeded RNG variant catalog)
 - xlsx.py
-- ADR-9 LLM provider = OpenRouter by default, Anthropic direct as a switch
+- rendering.py
 - candidate.py
 - .mcp.json
 - agents.py
@@ -91,25 +91,26 @@
 - preferences
 - health.py
 - steps
-- re
-- jobs
+- test_contract.py
+- registry.py
 - Demo Script - 5 minutes
 - scripts
-- backroom_bench/cli.py
+- backroom_data/cli.py
 - backroom_portals/main.py
-- Build Plan (Wed 22:00 -> Fri 11:30 freeze)
+- README - Backroom overview
 - api
 - caddy
-- Security notes (talking points)
+- laptop.md
 - duckdb
-- L-3 (L0) Contract-check wiring outside laptop ownership (check:web, contracts script, allowImportingTsExtensions, CI step)
+- layout.tsx
 - portals
 - postgres
-- package.json
+- contract.py
 - record_rejection
 - Laptop deviations (L-n log, append-only; PC renumbers on merge)
-- Contracts (L0)
+- shell-extras.tsx
 - Verify every change
+- command-palette.tsx
 - services
 - Rules
 - rules
@@ -119,6 +120,12 @@
 - backroom-data
 - pnpm-workspace.yaml
 - backroom
+- json
+- apps_web_src_lib_utils_cn
+- commands.ts
+- cafe-pattern.tsx
+- How this maps to the real Super44 problem
+- Skill
 - Clock
 
 ## God Nodes (most connected - your core abstractions)
@@ -126,7 +133,7 @@
 2. `Candidate` - 60 edges
 3. `Backroom Product Requirements Document` - 53 edges
 4. `Contract` - 52 edges
-5. `react` - 33 edges
+5. `react` - 32 edges
 6. `LLM` - 30 edges
 7. `build()` - 30 edges
 8. `Settings` - 29 edges
@@ -134,16 +141,16 @@
 10. `generate()` - 26 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `3. Chaos catalog` --references--> `Look`  [INFERRED]
-  docs/CONTRACTS.md → services/portals/backroom_portals/rendering.py
 - `Model price table (USD per 1M tokens; kept in llm/registry.py)` --references--> `Price`  [INFERRED]
   docs/ARCHITECTURE.md → services/api/backroom_api/llm/registry.py
 - `9.1 Laptop tasks (light)` --references--> `Candidate`  [INFERRED]
   docs/HANDOVER.md → services/api/backroom_api/contracts/candidate.py
 - `Fri 13 Nov 2026 00:40 · L6 · branch laptop/l6-detectors (stacked on laptop/l4-data)` --references--> `Candidate`  [INFERRED]
   docs/sync/laptop.md → services/api/backroom_api/contracts/candidate.py
-- `L-71 (L8) Motion built on the platform (React ViewTransition, CSS/WAAPI keyframes, @number-flow/react) instead of the Motion library` --rationale_for--> `PageTransition()`  [INFERRED]
-  docs/DECISIONS.md → apps/web/src/components/motion/page-transition.tsx
+- `Thu 12 Nov 2026 21:40 · L3 · branch laptop/l3-tilldesk (stacked on laptop/l2-chaos)` --references--> `TillDeskState`  [INFERRED]
+  docs/sync/laptop.md → services/portals/backroom_portals/contract.py
+- `5. Run events` --references--> `RunEvent`  [INFERRED]
+  docs/CONTRACTS.md → apps/web/src/lib/contracts.ts
 
 ## Import Cycles
 - 2-file cycle: `services/portals/backroom_portals/config.py -> services/portals/backroom_portals/totp.py -> services/portals/backroom_portals/config.py`
@@ -163,83 +170,83 @@
 - **Grainline ordering flow pages** — services_portals_backroom_portals_templates_grainline_catalog, services_portals_backroom_portals_templates_grainline_cart, services_portals_backroom_portals_templates_grainline_checkout, services_portals_backroom_portals_templates_grainline_order, services_portals_backroom_portals_templates_grainline_invoices [INFERRED 0.95]
 - **TillDesk price change and publish flow** — services_portals_backroom_portals_templates_tilldesk_login, services_portals_backroom_portals_templates_tilldesk_menu, services_portals_backroom_portals_templates_tilldesk_edit, services_portals_backroom_portals_templates_tilldesk_menu_draft_publish_flow [INFERRED 0.95]
 
-## Communities (108 total, 13 thin omitted)
+## Communities (115 total, 13 thin omitted)
 
 ### Community 0 - "grainline/routes.py"
-Cohesion: 0.10
-Nodes (33): Order, OrderLine, _document(), _eur(), invoice_pdf(), _text(), _authed(), cart() (+25 more)
+Cohesion: 0.17
+Nodes (29): _document(), _eur(), invoice_pdf(), _text(), _authed(), cart(), cart_add(), cart_update() (+21 more)
 
 ### Community 1 - "test_memory.py"
 Cohesion: 0.05
-Nodes (46): Fri 13 Nov 2026 · L5 · branch laptop/l5-memory (stacked on laptop/l6-detectors), EpisodeRef, FactDetail, estimate_tokens(), pack(), seeds_for(), _triple(), add_episode() (+38 more)
+Nodes (49): POST /memory/ingest/invoice (PDF/image to extractor to facts), Fri 13 Nov 2026 · L5 · branch laptop/l5-memory (stacked on laptop/l6-detectors), L5: temporal memory store, writers, context packer (laptop/l5-memory), EpisodeRef, FactDetail, estimate_tokens(), pack(), seeds_for() (+41 more)
 
 ### Community 2 - "Web zod contracts"
 Cohesion: 0.03
-Nodes (74): zod@^4.6.7, actionCardSchema, approveResponseSchema, briefSchema, BriefStreamEvent, briefStreamEventSchema, candidateKindSchema, chaosRequestSchema (+66 more)
+Nodes (73): zod@^4.6.7, actionCardSchema, approveResponseSchema, briefSchema, BriefStreamEvent, briefStreamEventSchema, candidateKindSchema, chaosRequestSchema (+65 more)
 
-### Community 3 - "L5: temporal memory store, writers, context packer (laptop/l5-memory)"
-Cohesion: 0.19
-Nodes (6): POST /memory/ingest/invoice (PDF/image to extractor to facts), Context packer (memory.packer.pack), Memory writers (assert_fact, write_world, write_invoice), Predicate vocabulary (one-valued, many-valued), Neon hosted Postgres (laptop database), L5: temporal memory store, writers, context packer (laptop/l5-memory)
+### Community 3 - "GrainlineStore"
+Cohesion: 0.20
+Nodes (4): Order, OrderLine, GrainlineStore, Session
 
 ### Community 4 - "gen_fixtures.py"
-Cohesion: 0.12
-Nodes (24): L0: shared contracts (laptop/l0-contracts), AskHuman, CostTick, _Event, HealAttempt, HealFailed, HealStarted, HealSucceeded (+16 more)
+Cohesion: 0.16
+Nodes (18): AskHuman, CostTick, Cursor, _Event, FrameMeta, HealAttempt, HealFailed, HealStarted (+10 more)
 
 ### Community 5 - "action-card.tsx"
-Cohesion: 0.07
-Nodes (50): @base-ui/react@^1.9.0, motion@14.9.0, Error(), ActionCard(), approve(), onDragEnd(), onPointerMove(), openReject() (+42 more)
+Cohesion: 0.06
+Nodes (56): @base-ui/react@^1.9.0, Error(), EUR, SUFFIX, ActionCard(), approve(), onDragEnd(), onPointerMove() (+48 more)
 
 ### Community 6 - "Backroom Product Requirements Document"
-Cohesion: 0.12
-Nodes (29): Decision at 19:00: Localboard / Ask in or out, M1 Data + Portals (Wed 23:00-01:30), B3 ground truth computed by SQL on same data, Data Sources & Honesty Notes, Simulated inventory (opening + deliveries - sales x BOM), Maven Coffee Shop Sales dataset, Maven Analytics 'Coffee Shop Sales' (~149k rows, NYC), Maven source URL (S3 zip, verified 11 Nov) (+21 more)
+Cohesion: 0.17
+Nodes (22): M1 Data + Portals (Wed 23:00-01:30), B3 ground truth computed by SQL on same data, Data Sources & Honesty Notes, Simulated inventory (opening + deliveries - sales x BOM), Maven Coffee Shop Sales dataset, Maven Analytics 'Coffee Shop Sales' (~149k rows, NYC), Maven source URL (S3 zip, verified 11 Nov), Nager.Date public holidays (+14 more)
 
 ### Community 7 - "registry.py"
-Cohesion: 0.09
-Nodes (21): margin_pct(), PriceProposal, propose_price(), round_half_up(), display(), extract(), Found, _matches() (+13 more)
+Cohesion: 0.11
+Nodes (15): display(), extract(), Found, _matches(), _rounds_to(), _short(), unmatched(), copy_for() (+7 more)
 
 ### Community 8 - "Contract"
-Cohesion: 0.08
-Nodes (26): 7. API shapes, 8. Memory, ActionCard, ApiError, ApproveResponse, Brief, ChaosRequest, ChaosState (+18 more)
-
-### Community 9 - "probe.py"
 Cohesion: 0.10
-Nodes (16): Thu 12 Nov 2026 21:40 · L3 · branch laptop/l3-tilldesk (stacked on laptop/l2-chaos), fact(), chaos_get(), chaos_set(), _chaos_state(), require_admin(), reset(), state() (+8 more)
+Nodes (24): 7. API shapes, 8. Memory, ApiError, ApproveResponse, Brief, ChaosRequest, ChaosState, ContextPack (+16 more)
+
+### Community 9 - "admin.py"
+Cohesion: 0.23
+Nodes (7): chaos_get(), chaos_set(), _chaos_state(), require_admin(), reset(), state(), ChaosState
 
 ### Community 10 - "project.yml"
 Cohesion: 0.12
 Nodes (41): Grainline app shell template, Grainline base layout template, Grainline cart page, cart s_checkout section, cart s_lines section, Grainline catalog page, catalog add_form macro, Grainline checkout page (+33 more)
 
 ### Community 11 - "web/package.json"
-Cohesion: 0.14
-Nodes (30): brief(), candidates(), conn(), data_dir(), FakePlanner, FakeVerifier, _Message, _Result (+22 more)
+Cohesion: 0.18
+Nodes (26): brief(), candidates(), conn(), data_dir(), FakePlanner, FakeVerifier, rule(), test_a_reason_without_a_rule_records_only_the_episode() (+18 more)
 
-### Community 12 - "PlaceholderPage"
-Cohesion: 0.05
-Nodes (50): @google/model-viewer@4.4.0, geistMono, geistSans, metadata, RootLayout(), viewport, STEPS, CafeHero() (+42 more)
+### Community 12 - "app-shell.tsx"
+Cohesion: 0.27
+Nodes (12): ApiStatus(), AppShell(), CommandButton(), isActive(), NAV_ITEMS, navDirection(), NavItem, PILL (+4 more)
 
 ### Community 13 - "scripts"
-Cohesion: 0.08
-Nodes (21): SkillVersions, to_sse(), Skill, Step, StepChange, load(), make_skill(), test_brief_has_at_most_three_cards() (+13 more)
+Cohesion: 0.12
+Nodes (18): to_sse(), Step, load(), make_skill(), test_brief_has_at_most_three_cards(), test_goto_needs_a_path_and_secrets_need_the_exact_form(), test_heal_diff_can_insert_a_step(), test_margin_card_numbers_match_the_demo_story() (+10 more)
 
 ### Community 14 - "components.json"
-Cohesion: 0.10
-Nodes (19): build(), _maven_sales(), next_saturday(), _notes(), built(), cached_weather(), maven_zip(), test_build_is_idempotent() (+11 more)
+Cohesion: 0.13
+Nodes (16): build(), next_saturday(), _notes(), built(), cached_weather(), maven_zip(), test_build_is_idempotent(), test_build_is_idempotent_for_every_table() (+8 more)
 
 ### Community 15 - "dependencies"
-Cohesion: 0.10
-Nodes (33): Rule: LLMs never originate numbers, Beat 3:20 Learn the owner - reject 'max 8%' -> EUR3.45, Beat 2:40 Remember - time slider, butter fact superseded, Q: How does memory avoid going stale, backroom_api/agents (browser agent, planner, verifier, extractor), Worker role (LLM_WORKER_MODEL, Haiku 5.5, low): explore steps, extraction, routing, M3 Memory + Brief + UI (Thu 14:00-19:00), Alternative: Graphiti + FalkorDB / Neo4j (+25 more)
+Cohesion: 0.12
+Nodes (34): Beat 0:30 Evidence drawer (Franzbroetchen margin 71% -> 68%), Beat 3:20 Learn the owner - reject 'max 8%' -> EUR3.45, Beat 2:40 Remember - time slider, butter fact superseded, Q: How does memory avoid going stale, M3 Memory + Brief + UI (Thu 14:00-19:00), Context packer (memory.packer.pack), Scripted event: butter +16% day -9 (EUR7.10 -> 8.24/kg), Scripted event: oat milk +9% day -3 (+26 more)
 
 ### Community 16 - "format.ts"
 Cohesion: 0.11
-Nodes (31): useGraph(), Providers(), BadgeSlot(), SampleBadge(), SkillDetail(), SkillsDesk(), Stat(), Stats (+23 more)
+Nodes (32): PageHeader(), Providers(), BadgeSlot(), SampleBadge(), SkillDetail(), SkillsDesk(), Stat(), Stats (+24 more)
 
 ### Community 17 - "compilerOptions"
 Cohesion: 0.12
-Nodes (18): catalog_html(), dom_hash(), forced(), fresh_client(), signed_in(), skill_path_pages(), test_admin_chaos_sets_reads_and_resets_seeds(), test_admin_chaos_validates_and_needs_the_token() (+10 more)
+Nodes (17): catalog_html(), dom_hash(), forced(), fresh_client(), signed_in(), skill_path_pages(), test_admin_chaos_sets_reads_and_resets_seeds(), test_admin_chaos_validates_and_needs_the_token() (+9 more)
 
 ### Community 18 - "test_llm_client.py"
-Cohesion: 0.13
-Nodes (28): Rule: secrets never reach prompts or logs, Beat 1:00 Act - approve oat milk, REPLAY $0.000, Beat 1:40 Break it - chaos seed 7 -> HEAL -> skill v2 diff, Chaos seed 7 (German labels, moved nav, cookie modal), Chaos variant families (EN/DE label synonyms, DOM order, wrapper depth, random ids, interstitials, delayed render, button/link swap, moved nav), M2 Browser agent (Thu 09:00-14:00, riskiest), M2 gate (cold explore seed 0, warm replay <5 s 0 LLM, chaos seed 7 heal -> v2 diff), Why M2 first and fresh: riskiest milestone (+20 more)
+Cohesion: 0.09
+Nodes (41): Beat 1:00 Act - approve oat milk, REPLAY $0.000, Beat 1:40 Break it - chaos seed 7 -> HEAL -> skill v2 diff, Chaos seed 7 (German labels, moved nav, cookie modal), Q: What breaks first in production, CDP Page.startScreencast live frames, Chaos variant families (EN/DE label synonyms, DOM order, wrapper depth, random ids, interstitials, delayed render, button/link swap, moved nav), backroom_api/browser (pool, ARIA snapshot observation, executor, screencast), M2 Browser agent (Thu 09:00-14:00, riskiest) (+33 more)
 
 ### Community 19 - "Handover — read this first on a new machine or in a new session"
 Cohesion: 0.09
@@ -250,99 +257,99 @@ Cohesion: 0.16
 Nodes (27): parse_price(), change_price(), dom_hash(), fresh(), login(), pages(), state(), test_a_fresh_login_drops_leftover_drafts() (+19 more)
 
 ### Community 21 - "Browser agent"
-Cohesion: 0.20
-Nodes (29): GrainlineState, has_testid(), login(), state(), test_admin_needs_the_token(), test_bad_cart_input_shows_an_error_not_a_raw_4xx(), test_cancel_is_the_undo_and_only_works_once(), test_cart_update_and_remove() (+21 more)
+Cohesion: 0.21
+Nodes (28): has_testid(), login(), state(), test_admin_needs_the_token(), test_bad_cart_input_shows_an_error_not_a_raw_4xx(), test_cancel_is_the_undo_and_only_works_once(), test_cart_update_and_remove(), test_catalog_paginates() (+20 more)
 
 ### Community 22 - "run-theater.tsx"
 Cohesion: 0.06
 Nodes (56): metadata, RunPage(), Theater(), Element, ElementView(), FIELD_ROLES, fieldValue(), pageElements() (+48 more)
 
-### Community 23 - "api-status.tsx"
-Cohesion: 0.13
-Nodes (16): This is NOT the Next.js you know, Charts (Recharts or visx; dataviz skill, palette validator), Frontend (apps/web) choices, Memory graph lib (@xyflow/react or force-graph; benchmark at ~300 nodes), Next.js (App Router, latest stable), TypeScript strict, pnpm, Route /memory, Route /runs/[id] Run theater, Route /skills (+8 more)
+### Community 23 - "Frontend (apps/web) choices"
+Cohesion: 0.09
+Nodes (19): This is NOT the Next.js you know, Charts (Recharts or visx; dataviz skill, palette validator), Frontend (apps/web) choices, Memory graph lib (@xyflow/react or force-graph; benchmark at ~300 nodes), Key API routes, backroom_api/routes (brief, actions, runs SSE/WS, memory, bench, health), Navigation domain allowlist per run, Next.js (App Router, latest stable), TypeScript strict, pnpm (+11 more)
 
 ### Community 24 - "F2 Run theater (step timeline + live browser stream)"
-Cohesion: 0.05
-Nodes (46): eslintConfig, dependencies, class-variance-authority@^0.7.1, cn@^0.5.2, @lottiefiles/dotlottie-react@0.21.0, lucide-react@^1.72.0, react@19.3.0, react-dom@19.3.0 (+38 more)
+Cohesion: 0.06
+Nodes (45): eslintConfig, dependencies, class-variance-authority@^0.7.1, lucide-react@^1.72.0, motion@14.9.0, @number-flow/react@0.6.2, react@19.3.0, react-dom@19.3.0 (+37 more)
 
 ### Community 25 - "app-shell.tsx"
-Cohesion: 0.11
-Nodes (32): CardStatus, BriefCommands(), BriefSkeleton(), COUNT_WORDS, decisions(), TodayBrief(), approveAll(), approveOne() (+24 more)
+Cohesion: 0.09
+Nodes (34): @google/model-viewer@4.4.0, @tanstack/react-query@^5.107.1, IntroPlayer(), ModelViewer, BriefCommands(), BriefSkeleton(), COUNT_WORDS, decisions() (+26 more)
 
 ### Community 26 - "grainline/store.py"
-Cohesion: 0.16
-Nodes (9): Thu 12 Nov 2026 19:10 · L1 · branch laptop/l1-grainline (stacked on laptop/l0-contracts), next_weekday(), price_on(), PriceEvent, Product, seeded_orders(), SeedLine, SeedOrder (+1 more)
+Cohesion: 0.13
+Nodes (10): Thu 12 Nov 2026 19:10 · L1 · branch laptop/l1-grainline (stacked on laptop/l0-contracts), CallRecord, next_weekday(), price_on(), PriceEvent, Product, seeded_orders(), SeedLine (+2 more)
 
 ### Community 27 - "M4 Bench + Deploy (Thu 19:00-23:30)"
-Cohesion: 0.18
-Nodes (10): concurrency, cancel-in-progress, group, name, on, pull_request, push, permissions (+2 more)
+Cohesion: 0.12
+Nodes (14): exclude, include, Fixtures and the drift check, concurrency, cancel-in-progress, group, name, on (+6 more)
 
 ### Community 28 - "Demo Script - 5 minutes"
-Cohesion: 0.11
-Nodes (29): Rule: all LLM access through llm/registry.py, Beat 4:40 Close - /about, model table, adapters, Q: Cost at scale, Shared Action interface to the planner, Canonical model IDs mapped per provider (slash IDs pass through on OpenRouter), LLM_<ROLE>_EFFORT override, LLM_PROVIDER env var (openrouter default | anthropic), Memory per merchant + cross-merchant best-practices layer (+21 more)
+Cohesion: 0.08
+Nodes (33): Rule: all LLM access through llm/registry.py, Q: Cost at scale, Canonical model IDs mapped per provider (slash IDs pass through on OpenRouter), LLM_<ROLE>_EFFORT override, LLM_CAPS_OFF (switch capability flags off), LLM_PROVIDER env var (openrouter default | anthropic), backroom_api/agents (browser agent, planner, verifier, extractor), claude-haiku-5-5 ($0.10 / $0.50; long-prompt tier above 100K) (+25 more)
 
-### Community 29 - "health.py"
-Cohesion: 0.12
-Nodes (6): Thu 12 Nov 2026 20:40 · L2 · branch laptop/l2-chaos (stacked on laptop/l1-grainline), Label, label(), Look, page(), test_every_label_has_three_forms_and_a_german_one()
+### Community 29 - "Contracts (L0)"
+Cohesion: 0.14
+Nodes (7): 1. Changing a contract, 3. Chaos catalog, 4. Skills, 9. Fixtures and the drift check, Contracts (L0), Thu 12 Nov 2026 20:40 · L2 · branch laptop/l2-chaos (stacked on laptop/l1-grainline), Look
 
 ### Community 30 - "api"
-Cohesion: 0.10
-Nodes (26): nextConfig, next@16.4.6, AboutPage(), Chapter(), LADDER, metadata, MODELS, BENCHMARKS (+18 more)
+Cohesion: 0.09
+Nodes (27): nextConfig, next@16.4.6, AboutPage(), Chapter(), LADDER, metadata, MODELS, BENCHMARKS (+19 more)
 
 ### Community 31 - "pipeline.py"
-Cohesion: 0.10
-Nodes (25): 6. Candidates and the number guard, Fri 13 Nov 2026 · L7 · branch laptop/l7-brief (stacked on laptop/l5-memory), CardCopy, Planner, action_id(), brief_for_today(), BriefResult, _copy_for() (+17 more)
+Cohesion: 0.11
+Nodes (24): 6. Candidates and the number guard, Fri 13 Nov 2026 · L7 · branch laptop/l7-brief (stacked on laptop/l5-memory), CardCopy, Planner, action_id(), brief_for_today(), BriefResult, _copy_for() (+16 more)
 
 ### Community 32 - "Build Plan (Wed 22:00 -> Fri 11:30 freeze)"
-Cohesion: 0.15
-Nodes (17): Langfuse Cloud Hobby traces (P1), Sentry free tier errors (P1), Code freeze Fri 13 Nov 11:30, Build Plan (Wed 22:00 -> Fri 11:30 freeze), M0 Foundations, M1 Data + Portals, M2 Browser agent (riskiest), Break it: chaos seed 7 heal beat (+9 more)
+Cohesion: 0.11
+Nodes (22): Rule: every LLM call through cost meter + budget guard, Code freeze Fri 13 Nov 11:30, Build Plan (Wed 22:00 -> Fri 11:30 freeze), Record golden runs -> replay mode, M0 Foundations, M1 Data + Portals, M2 Browser agent (riskiest), M4 Bench + Deploy (+14 more)
 
 ### Community 33 - "portals"
-Cohesion: 0.14
-Nodes (12): apply_rainy_saturdays(), load_map(), map_item(), parse_maven(), rebase(), Sale, shift_days(), synthetic() (+4 more)
+Cohesion: 0.12
+Nodes (13): _maven_sales(), apply_rainy_saturdays(), load_map(), map_item(), parse_maven(), rebase(), Sale, shift_days() (+5 more)
 
 ### Community 34 - "postgres"
 Cohesion: 0.14
 Nodes (11): cached(), computed_nrw_holidays(), easter(), _fetch(), holidays(), maven_zip(), _parse_daily(), synthetic_weather() (+3 more)
 
 ### Community 35 - "TillDeskStore"
-Cohesion: 0.19
-Nodes (3): MenuItem, TillDeskStore, test_tilldesk_state_is_addressable_by_item_id()
+Cohesion: 0.20
+Nodes (4): MenuItem, TillDeskState, TillDeskStore, test_tilldesk_state_is_addressable_by_item_id()
 
 ### Community 36 - "scripts"
-Cohesion: 0.16
-Nodes (10): connect(), Context, _ingredient(), margin_erosion(), _n(), _shown(), stockout(), weather_demand() (+2 more)
+Cohesion: 0.11
+Nodes (17): connect(), Context, _ingredient(), margin_erosion(), _n(), _shown(), stockout(), weather_demand() (+9 more)
 
 ### Community 37 - "Portals service (FastAPI + Jinja2, backroom_portals)"
-Cohesion: 0.17
-Nodes (16): dataviz skill (before any chart), Frontend quality bar (Lighthouse >= 90, reduced motion), apps/web/src/styles/tokens.css, ui-ux-pro-max skill, Lightsail snapshot before final deploy (2-minute rollback), Route / Today, UI kit: Tailwind v4, shadcn/ui, Motion, lucide icons, cmdk, Code freeze Fri 13 Nov 11:30 (snapshot, no deploys) (+8 more)
+Cohesion: 0.20
+Nodes (14): Frontend quality bar (Lighthouse >= 90, reduced motion), apps/web/src/styles/tokens.css, Fonts via next/font: Newsreader (display + text cut), Geist, Geist Mono, Route / Today, GET /brief/today (cached brief; ?regenerate=1 streams a new one), App shell (sidebar/top bar, theme toggle) + fonts, M5 Polish + Rehearse, Accessibility (WCAG AA, keyboard, ARIA live) (+6 more)
 
 ### Community 38 - "services"
 Cohesion: 0.19
 Nodes (9): daily_usage(), inventory(), load_recipes(), recipe_rows(), rota(), supplier_prices(), unit_cost(), test_franzbroetchen_unit_cost_tells_the_story() (+1 more)
 
 ### Community 39 - "Why this exists: Super44 JD hard problems"
-Cohesion: 0.09
-Nodes (24): build_async_client(), canonical_model_id(), Caps, caps_for(), cost_usd(), is_configured(), LLMNotConfiguredError, Price (+16 more)
+Cohesion: 0.13
+Nodes (18): canonical_model_id(), cost_usd(), role_config(), wire_model_id(), make_settings(), test_anthropic_client_uses_default_base_url(), test_anthropic_uses_canonical_ids_and_rejects_slash_ids(), test_caps_defaults_and_overrides() (+10 more)
 
 ### Community 40 - "depends_on"
 Cohesion: 0.08
 Nodes (25): activation_command, activation_command_timeout, added_modes, agent_interface, default_modes, encoding, excluded_apis, excluded_tools (+17 more)
 
 ### Community 41 - "healthcheck"
-Cohesion: 0.20
-Nodes (19): Backroom Technical Architecture, Browser pool (1 Chromium, 2 contexts), Caddy (TLS + routing, auto-HTTPS), Deploy freeze: no deploys after Fri 11:30, infra/docker-compose.yml (postgres+pgvector, api, portals, caddy), FastAPI api service (orchestrator, agents, memory, SSE/WS), Hosting fallback (Hetzner CX22 / Fly.io with the same compose file), Hosting and operations (cheap, reliable) (+11 more)
-
-### Community 42 - "Backend choices (services/api)"
 Cohesion: 0.10
-Nodes (17): Q: Why not browser-use / Stagehand, Backend choices (services/api), Runtime: Python 3.12, uv, FastAPI, Pydantic v2, CDP Page.startScreencast live frames, Deploy flow (CI builds images, push to GHCR, deploy.sh pulls), infra/deploy.sh (ssh, compose pull, compose up, wait for health, smoke test), GHCR container registry, infra/ (docker-compose.yml, Caddyfile, deploy.sh, Lightsail notes) (+9 more)
+Nodes (35): Stack and commands, Backroom Technical Architecture, Browser pool (1 Chromium, 2 contexts), Caddy (TLS + routing, auto-HTTPS), Deploy freeze: no deploys after Fri 11:30, infra/docker-compose.yml (postgres+pgvector, api, portals, caddy), docs/ (PRD, ARCHITECTURE, BUILD_PLAN, DATA, DEMO_SCRIPT, DECISIONS), FastAPI api service (orchestrator, agents, memory, SSE/WS) (+27 more)
+
+### Community 42 - "Decision Log (ADRs + laptop deviations)"
+Cohesion: 0.11
+Nodes (19): Backend choices (services/api), Runtime: Python 3.12, uv, FastAPI, Pydantic v2, Deploy flow (CI builds images, push to GHCR, deploy.sh pulls), infra/deploy.sh (ssh, compose pull, compose up, wait for health, smoke test), GHCR container registry, infra/ (docker-compose.yml, Caddyfile, deploy.sh, Lightsail notes), Route /runs/[id] Run theater, api image FROM mcr.microsoft.com/playwright/python (noble) (+11 more)
 
 ### Community 43 - "Backroom Product Requirements Document"
 Cohesion: 0.10
-Nodes (25): Add Live demo + Benchmarks badges to README, Open or synthetic data only ('Synthetic' chip in UI), Action card (impact, why, evidence chips, Approve/Review/Not now), B2 Learning curve, B4 Model swap (P1), Backroom: agentic back office for a cafe (engine under 'Approve all'), Brief AC: <1.5 s cached, <15 s cold, Backroom Product Requirements Document (+17 more)
+Nodes (29): Rule: fictional names only; no Super44 branding in UI, Sentry free tier errors (P1), Decision at 19:00: Localboard / Ask in or out, TillDesk may slip to Thu 08:00, Open or synthetic data only ('Synthetic' chip in UI), Action card (impact, why, evidence chips, Approve/Review/Not now), B2 Learning curve, Cut order if behind (+21 more)
 
 ### Community 44 - "laptop.md"
-Cohesion: 0.17
+Cohesion: 0.15
 Nodes (8): get_settings(), Settings, make_pool(), ping(), create_app(), lifespan(), test_health_reports_degraded_when_dependencies_are_down(), connect()
 
 ### Community 45 - "backroom-api"
@@ -350,68 +357,68 @@ Cohesion: 0.09
 Nodes (21): aliases, components, hooks, lib, ui, utils, iconLibrary, menuAccent (+13 more)
 
 ### Community 46 - "pnpm-workspace.yaml"
-Cohesion: 0.13
-Nodes (27): Rule: every LLM call through cost meter + budget guard, Beat 4:00 Proof - /bench, Route /bench, bench package backroom_bench (script backroom-bench; results/*.json committed), pnpm bench (uv run backroom-bench all: B1-B5 to bench/results/*.json), Milestone gate rule (don't start next until gate passes or scope cut logged), Record golden runs -> replay mode, M3 gate (full DEMO_SCRIPT works locally end-to-end) (+19 more)
+Cohesion: 0.17
+Nodes (21): ui-ux-pro-max skill, Beat 4:00 Proof - /bench, Lightsail snapshot before final deploy (2-minute rollback), Route /bench, bench package backroom_bench (script backroom-bench; results/*.json committed), pnpm bench (uv run backroom-bench all: B1-B5 to bench/results/*.json), Code freeze Fri 13 Nov 11:30 (snapshot, no deploys), Milestone gate rule (don't start next until gate passes or scope cut logged) (+13 more)
 
 ### Community 47 - "Non-negotiables (LLM via registry, no LLM numbers, secrets, budget)"
-Cohesion: 0.19
-Nodes (13): CLAUDE.md agent guide, CLAUDE.md - Backroom agent guide, claude-api skill (load before Anthropic SDK code), context7 for library docs, Git rules (small commits per gate, no AI attribution, log deviations), graphify-out/GRAPH_REPORT.md, graphify MCP (query_graph, get_neighbors, shortest_path), Session read order (HANDOVER, BUILD_PLAN, GRAPH_REPORT) (+5 more)
+Cohesion: 0.16
+Nodes (15): CLAUDE.md agent guide, CLAUDE.md - Backroom agent guide, claude-api skill (load before Anthropic SDK code), context7 for library docs, Git rules (small commits per gate, no AI attribution, log deviations), graphify-out/GRAPH_REPORT.md, graphify MCP (query_graph, get_neighbors, shortest_path), Session read order (HANDOVER, BUILD_PLAN, GRAPH_REPORT) (+7 more)
 
 ### Community 48 - "Handover"
-Cohesion: 0.11
-Nodes (19): Decision Log (ADRs + laptop deviations), Handover, Full setup (Docker, pnpm dev), Integration rules (branches, merge --no-ff), Laptop setup (no Docker, no Chromium, pnpm dev:lite), Laptop tasks L0-L13, Neon hosted Postgres for the laptop, PC tasks H1-H9 (+11 more)
+Cohesion: 0.16
+Nodes (12): pnpm dev:lite (api, portals, web without Docker or a database; API reports degraded), Neon hosted Postgres (laptop database), Handover, Full setup (Docker, pnpm dev), Integration rules (branches, merge --no-ff), Laptop setup (no Docker, no Chromium, pnpm dev:lite), Laptop tasks L0-L13, Neon hosted Postgres for the laptop (+4 more)
 
 ### Community 49 - "CONTRACTS.md"
-Cohesion: 0.10
-Nodes (27): Key API routes, backroom_api/routes (brief, actions, runs SSE/WS, memory, bench, health), POST /ask (SSE answer with tool calls + citations, P1), GET /memory/facts/{id} (fact + provenance), POST /actions/{id}/reject ({reason} to preference episode), Portals admin API (/_admin/chaos, state, reset), API shapes (contracts/api.py), Brief pipeline (stream_today, BriefResult) (+19 more)
+Cohesion: 0.13
+Nodes (21): Portals admin API (/_admin/chaos, state, reset), Brief pipeline (stream_today, BriefResult), Detector Candidate, Chaos catalog (nine variant families), Data tables (Parquet, cli.SCHEMAS), Detectors (stock-out, margin, weather) and weekly impact, Portal labels (en, en_alt, de), Memory writers (assert_fact, write_world, write_invoice) (+13 more)
 
 ### Community 50 - "backroom-portals"
 Cohesion: 0.30
 Nodes (13): _authed(), home(), item_edit(), item_save(), login(), login_submit(), logout(), menu() (+5 more)
 
-### Community 51 - "RuntimeError"
-Cohesion: 0.16
-Nodes (18): Stack and commands, docs/ (PRD, ARCHITECTURE, BUILD_PLAN, DATA, DEMO_SCRIPT, DECISIONS), backroom_api/memory (schema, writers, supersession, context packer), backroom_api/replay (golden-run recorder & player), Root package.json (pnpm workspace root + task runner), data package backroom_data (script backroom-data; raw data not committed), pnpm dev (Postgres in Docker + api + portals + next dev in parallel), pnpm dev:lite (api, portals, web without Docker or a database; API reports degraded) (+10 more)
+### Community 51 - "schema.py"
+Cohesion: 0.15
+Nodes (9): L0: shared contracts (laptop/l0-contracts), GoldenFrame, CssFallback, Expect, LabelFallback, Postcondition, SkillStats, TextFallback (+1 more)
 
 ### Community 52 - "backroom_portals/__init__.py"
-Cohesion: 0.20
-Nodes (15): 'As of' query predicate (valid_from <= t and valid_to null or > t), Index fact (subject_id, predicate, valid_from desc), Memory schema sketch (entity, episode, fact), Table entity (type, name, attrs, optional embedding vector(384), fastembed bge-small P1), Table episode (invoice | approval | rejection | chat | run | seed), Table fact (subject, predicate, object/value, valid_from/valid_to, recorded_at, source_episode, confidence), Memory contract (bitemporal facts, supersession), entity (+7 more)
+Cohesion: 0.18
+Nodes (16): 'As of' query predicate (valid_from <= t and valid_to null or > t), Index fact (subject_id, predicate, valid_from desc), Memory schema sketch (entity, episode, fact), backroom_api/memory (schema, writers, supersession, context packer), Table entity (type, name, attrs, optional embedding vector(384), fastembed bge-small P1), Table episode (invoice | approval | rejection | chat | run | seed), Table fact (subject, predicate, object/value, valid_from/valid_to, recorded_at, source_episode, confidence), Memory contract (bitemporal facts, supersession) (+8 more)
 
 ### Community 53 - "agent-dock.tsx"
 Cohesion: 0.08
-Nodes (32): SceneDriver(), AgentDock(), PlayableRun, PlayingRun(), Ring(), SPRING, TheaterLink(), AgentDock (+24 more)
+Nodes (29): cn@^0.5.2, STEPS, AgentDock(), PlayableRun, PlayingRun(), Ring(), SPRING, TheaterLink() (+21 more)
 
 ### Community 54 - "shifts"
 Cohesion: 0.11
 Nodes (18): hourly_wage_eur, end, staff, start, shifts, saturday, sunday, weekday (+10 more)
 
 ### Community 55 - "LLM"
-Cohesion: 0.24
-Nodes (4): LLM, LLMResult, Cost, RoleConfig
+Cohesion: 0.18
+Nodes (5): Brief AC: <1.5 s cached, <15 s cold, _timed(), LLMResult, Cost, RoleConfig
 
 ### Community 56 - "Candidate"
-Cohesion: 0.17
-Nodes (15): run_all(), Candidate, test_template_copy_passes_the_guard_for_every_candidate(), candidates(), data_dir(), numbers(), test_a_date_the_data_was_not_built_for_is_refused(), test_all_three_detectors_fire() (+7 more)
+Cohesion: 0.14
+Nodes (18): run_all(), Candidate, good_copy(), plan(), test_template_copy_passes_the_guard_for_every_candidate(), candidates(), data_dir(), numbers() (+10 more)
 
 ### Community 57 - "particles.ts"
 Cohesion: 0.26
 Nodes (12): attachParticleCanvas(), Effect, effects, ensureLoop(), explodeInto(), formFrom(), isDarkTheme(), Particle (+4 more)
 
 ### Community 58 - "memory-desk.tsx"
-Cohesion: 0.08
-Nodes (42): @number-flow/react@0.6.2, EmptyState(), edgePath(), FactValue(), isoDay(), MemoryDesk(), play(), writeUrl() (+34 more)
+Cohesion: 0.14
+Nodes (26): EmptyState(), edgePath(), FactValue(), isoDay(), MemoryDesk(), play(), writeUrl(), plainValue() (+18 more)
 
 ### Community 59 - "compilerOptions"
 Cohesion: 0.12
 Nodes (17): compilerOptions, allowImportingTsExtensions, allowJs, esModuleInterop, incremental, isolatedModules, jsx, lib (+9 more)
 
 ### Community 60 - "L2: chaos engine with 9 families (laptop/l2-chaos)"
-Cohesion: 0.14
-Nodes (8): POST /_admin/chaos {portal, seed} (PORTALS_ADMIN_TOKEN header), POST /chaos {portal, seed} (dev/demo; forwards to portals /_admin/chaos), Rules for the agent runner (fresh context, aria-busy, hamburger, links, exact names), Sync entry format (Done / Verify / Needs from PC / Notes), Independent audit pass per laptop task (blockers and should-fix items, all fixed), L1: Grainline portal with TOTP, cart, checkout, invoices (laptop/l1-grainline), L2: chaos engine with 9 families (laptop/l2-chaos), L3: TillDesk portal (laptop/l3-tilldesk)
+Cohesion: 0.15
+Nodes (7): POST /_admin/chaos {portal, seed} (PORTALS_ADMIN_TOKEN header), POST /chaos {portal, seed} (dev/demo; forwards to portals /_admin/chaos), Rules for the agent runner (fresh context, aria-busy, hamburger, links, exact names), Independent audit pass per laptop task (blockers and should-fix items, all fixed), L1: Grainline portal with TOTP, cart, checkout, invoices (laptop/l1-grainline), L2: chaos engine with 9 families (laptop/l2-chaos), L3: TillDesk portal (laptop/l3-tilldesk)
 
 ### Community 61 - "test_llm_client.py"
-Cohesion: 0.11
-Nodes (12): BudgetExceededError, CallRecord, SpendLedger, fake_message(), FakeClient, FakeMessages, make_llm(), test_budget_guard_blocks_before_calling() (+4 more)
+Cohesion: 0.13
+Nodes (11): BudgetExceededError, SpendLedger, fake_message(), FakeClient, FakeMessages, make_llm(), test_budget_guard_blocks_before_calling(), test_caps_off_strips_effort_and_strict() (+3 more)
 
 ### Community 62 - "Handover — read this first on a new machine or in a new session"
 Cohesion: 0.12
@@ -422,28 +429,32 @@ Cohesion: 0.23
 Nodes (6): code_at(), default_secret(), now_code(), verify(), test_totp_cli_prints_a_valid_code(), test_totp_matches_the_rfc_6238_vector()
 
 ### Community 64 - "probe.py"
-Cohesion: 0.32
-Nodes (12): Check, check_basic(), check_effort(), check_prompt_cache(), check_streaming(), check_strict_tools(), check_structured_outputs(), _git_sha() (+4 more)
+Cohesion: 0.26
+Nodes (13): Check, check_basic(), check_effort(), check_prompt_cache(), check_streaming(), check_strict_tools(), check_structured_outputs(), _git_sha() (+5 more)
 
 ### Community 65 - "Chaos engine (one chaos_seed per portal, seeded RNG variant catalog)"
-Cohesion: 0.24
-Nodes (6): Check: DOM-hash test per chaos seed, DuckDB over Parquet (sales analytics), backroom_api/analytics (DuckDB queries, stockout/margin/weather detectors), Portal patterns (login, TOTP via pyotp, dashboard, cookie banner, catalog, cart, checkout, order history, PDF invoices), M1 gate (portals usable, DOM-hash determinism, seed loads), Chaos toggle (seed picker)
+Cohesion: 0.14
+Nodes (10): Check: DOM-hash test per chaos seed, Q: Why not browser-use / Stagehand, Portal patterns (login, TOTP via pyotp, dashboard, cookie banner, catalog, cart, checkout, order history, PDF invoices), M1 gate (portals usable, DOM-hash determinism, seed loads), Alternative: browser-use / Stagehand, Alternative: Graphiti + FalkorDB / Neo4j, Likely interview questions, Decisions already made (do not re-litigate) (+2 more)
 
-### Community 67 - "ADR-9 LLM provider = OpenRouter by default, Anthropic direct as a switch"
-Cohesion: 0.31
-Nodes (6): LLM_CAPS_OFF (switch capability flags off), OpenRouter ~5.5% credit fee (OPENROUTER_FEE_PCT), Provider openrouter (default; base_url openrouter.ai/api, auth_token, X-Title/HTTP-Referer headers), Alternative: OpenAI-compatible OpenRouter API (second code path), L10: LLM capability probe on OpenRouter (laptop/l10-llm-probe), probe:llm
+### Community 66 - "xlsx.py"
+Cohesion: 0.18
+Nodes (4): _column(), rows(), test_xlsx_reader_streams_rows_with_shared_strings(), tiny_xlsx()
+
+### Community 67 - "rendering.py"
+Cohesion: 0.17
+Nodes (4): fact(), ChaosSeeds, label(), page()
 
 ### Community 69 - ".mcp.json"
 Cohesion: 0.16
 Nodes (14): cmd, python, uvx, chrome-devtools, context7, figma, graphify, playwright (+6 more)
 
 ### Community 70 - "agents.py"
-Cohesion: 0.10
-Nodes (18): L7: brief pipeline with planner, verifier, number guard, reject-to-preference (laptop/l7-brief), BriefLLMError, candidate_view(), LLMPlanner, LLMVerifier, _Model, _parse(), Plan (+10 more)
+Cohesion: 0.12
+Nodes (14): BriefLLMError, candidate_view(), Draft, LLMVerifier, _Model, _parse(), Plan, _system() (+6 more)
 
 ### Community 71 - "Cost meter (per-call ledger row: provider, role, model, tokens, cache, $, stop_reason, run_id)"
-Cohesion: 0.14
-Nodes (10): Check: one real LLM call (stop_reason, $, cache_read > 0), Daily LLM budget guard (sums today's ledger rows before each call), Capability probe (one cheap Haiku call per feature; M0 gate), Cost meter (per-call ledger row: provider, role, model, tokens, cache, $, stop_reason, run_id), LLM spend ledger var/llm_ledger.jsonl (LLM_LEDGER_PATH), backroom_api/llm (model registry, client, cost meter, budget guard), Operational guards (daily LLM budget cap, per-IP rate limit, DEMO_ACCESS_CODE, CORS to Vercel domain), pnpm probe:llm (uv run backroom-bench probe) (+2 more)
+Cohesion: 0.23
+Nodes (9): Check: one real LLM call (stop_reason, $, cache_read > 0), Daily LLM budget guard (sums today's ledger rows before each call), Capability probe (one cheap Haiku call per feature; M0 gate), Cost meter (per-call ledger row: provider, role, model, tokens, cache, $, stop_reason, run_id), LLM spend ledger var/llm_ledger.jsonl (LLM_LEDGER_PATH), backroom_api/llm (model registry, client, cost meter, budget guard), pnpm probe:llm (uv run backroom-bench probe), bench/results/provider_probe.json (+1 more)
 
 ### Community 72 - "preferences"
 Cohesion: 0.15
@@ -451,35 +462,35 @@ Nodes (12): business_rules, id, rule, text, preferences, id, rule, since_days_ag
 
 ### Community 73 - "health.py"
 Cohesion: 0.21
-Nodes (3): health(), _portals_ok(), _postgres_ok()
+Nodes (4): is_configured(), health(), _portals_ok(), _postgres_ok()
 
 ### Community 74 - "steps"
-Cohesion: 0.24
-Nodes (13): steps, steps, id, if, name, run, uses, with (+5 more)
+Cohesion: 0.12
+Nodes (23): name, runs-on, steps, jobs, docs, python, web, name (+15 more)
 
-### Community 75 - "re"
-Cohesion: 0.19
-Nodes (7): 2. Portals, testid(), test_demo_seed_is_german_with_moved_nav_and_cookie_banner(), test_demo_story_ids_and_prices(), test_routes_are_unique_and_under_one_prefix(), test_seed_zero_is_canonical(), test_testids()
+### Community 75 - "test_contract.py"
+Cohesion: 0.16
+Nodes (8): pick_variants(), test_demo_seed_is_german_with_moved_nav_and_cookie_banner(), test_demo_story_ids_and_prices(), test_every_label_has_three_forms_and_a_german_one(), test_negative_seed_is_rejected(), test_routes_are_unique_and_under_one_prefix(), test_same_seed_same_variants_and_seeds_differ(), test_seed_zero_is_canonical()
 
-### Community 76 - "jobs"
-Cohesion: 0.20
-Nodes (10): name, runs-on, jobs, docs, python, web, name, runs-on (+2 more)
+### Community 76 - "registry.py"
+Cohesion: 0.17
+Nodes (5): build_async_client(), Caps, caps_for(), LLMNotConfiguredError, Price
 
 ### Community 77 - "Demo Script - 5 minutes"
-Cohesion: 0.11
-Nodes (28): Rule: fictional names only; no Super44 branding in UI, Beat 0:30 Evidence drawer (Franzbroetchen margin 71% -> 68%), Beat 0:00 Hook - Today 3 cards, M3 Memory + Brief + UI, Rehearse demo script 3x on deployed URL, TillDesk may slip to Thu 08:00, Demo-story prices (DEMO_PRICES_EUR), Scripted event: butter +16% day -9 (EUR7.10 -> 8.24/kg) (+20 more)
+Cohesion: 0.18
+Nodes (17): Beat 0:00 Hook - Today 3 cards, Q: Cloudflare / bot protection on real portals, M3 Memory + Brief + UI, Rehearse demo script 3x on deployed URL, Demo-story prices (DEMO_PRICES_EUR), Demo Script - 5 minutes, Five-minute demo beats (hook, evidence, act, break it, remember, learn, proof, close), Approve all button (+9 more)
 
 ### Community 78 - "scripts"
-Cohesion: 0.17
-Nodes (12): scripts, bench, check, check:py, dev, dev:api, dev:db, dev:lite (+4 more)
+Cohesion: 0.10
+Nodes (20): description, devDependencies, concurrently@^9.1.0, name, packageManager, private, scripts, bench (+12 more)
 
 ### Community 80 - "backroom_portals/main.py"
-Cohesion: 0.11
-Nodes (5): main(), get_settings(), Settings, create_app(), client()
+Cohesion: 0.15
+Nodes (5): get_settings(), Settings, create_app(), client(), make_settings()
 
-### Community 81 - "Build Plan (Wed 22:00 -> Fri 11:30 freeze)"
-Cohesion: 0.16
-Nodes (14): Q: Cloudflare / bot protection on real portals, Q: What breaks first in production, Agent-cursor overlay / halo, F2 Run theater, Human handoff (ask_human: CAPTCHA, 2FA, ambiguity), Idempotency key on approve (no double orders), JD problem 5: UX for agentic systems, JD problem 1: browser automation that actually works (+6 more)
+### Community 81 - "README - Backroom overview"
+Cohesion: 0.18
+Nodes (11): Add Live demo + Benchmarks badges to README, Backroom: agentic back office for a cafe (engine under 'Approve all'), JD problem 5: UX for agentic systems, JD problem 1: browser automation that actually works, JD problem 3: memory and context that compound, JD problem 2: multi-agent orchestration, JD problem 4: agentic self-improvement, Why this exists: Super44 JD hard problems (+3 more)
 
 ### Community 82 - "api"
 Cohesion: 0.20
@@ -489,13 +500,13 @@ Nodes (10): env_file, environment, expose, profiles, restart, volumes, DATABASE_
 Cohesion: 0.20
 Nodes (10): depends_on, environment, image, ports, profiles, restart, volumes, API_HOST (+2 more)
 
-### Community 84 - "Security notes (talking points)"
-Cohesion: 0.29
-Nodes (3): Navigation domain allowlist per run, POST /actions/{id}/approve (Idempotency-Key header to run_id), Security notes (talking points)
+### Community 84 - "laptop.md"
+Cohesion: 0.15
+Nodes (10): Handover update protocol, Sync entry format (Done / Verify / Needs from PC / Notes), Fri 13 Nov 2026 00:40 · L6 · branch laptop/l6-detectors (stacked on laptop/l4-data), Sync log: laptop → PC, Thu 12 Nov 2026 15:20 · L10 · branch laptop/l10-llm-probe, Thu 12 Nov 2026 17:30 · L0 · branch laptop/l0-contracts, Thu 12 Nov 2026 21:40 · L3 · branch laptop/l3-tilldesk (stacked on laptop/l2-chaos), Thu 12 Nov 2026 23:30 · L4 · branch laptop/l4-data (stacked on laptop/l3-tilldesk) (+2 more)
 
-### Community 86 - "L-3 (L0) Contract-check wiring outside laptop ownership (check:web, contracts script, allowImportingTsExtensions, CI step)"
-Cohesion: 0.40
-Nodes (3): exclude, include, check:web
+### Community 86 - "layout.tsx"
+Cohesion: 0.19
+Nodes (10): geistMono, geistSans, metadata, RootLayout(), viewport, INTRO_KEY, introInitScript, IntroOverlay() (+2 more)
 
 ### Community 87 - "portals"
 Cohesion: 0.25
@@ -505,33 +516,37 @@ Nodes (9): build, context, dockerfile, build, env_file, expose, profiles, restar
 Cohesion: 0.22
 Nodes (9): POSTGRES_DB, POSTGRES_PASSWORD, POSTGRES_USER, environment, image, ports, restart, volumes (+1 more)
 
-### Community 89 - "package.json"
-Cohesion: 0.25
-Nodes (8): description, devDependencies, concurrently@^9.1.0, name, packageManager, private, version, concurrently
+### Community 89 - "contract.py"
+Cohesion: 0.19
+Nodes (7): 2. Portals, ChaosRequest, GrainlineState, Label, _Model, testid(), test_testids()
 
 ### Community 90 - "record_rejection"
-Cohesion: 0.24
-Nodes (4): checked(), ExtractedRule, record_rejection(), test_extracted_rules_need_the_owners_words()
+Cohesion: 0.23
+Nodes (5): ActionCard, checked(), ExtractedRule, record_rejection(), test_extracted_rules_need_the_owners_words()
 
 ### Community 91 - "Laptop deviations (L-n log, append-only; PC renumbers on merge)"
-Cohesion: 0.16
-Nodes (3): Laptop deviations (L-n log, append-only; PC renumbers on merge), L4: data pipeline to Parquet (laptop/l4-data), L6: DuckDB detectors and deterministic pricing (laptop/l6-detectors)
+Cohesion: 0.13
+Nodes (8): DuckDB over Parquet (sales analytics), backroom_api/analytics (DuckDB queries, stockout/margin/weather detectors), data package backroom_data (script backroom-data; raw data not committed), pnpm seed (uv run backroom-data all: download, transform, load Postgres + Parquet), Laptop deviations (L-n log, append-only; PC renumbers on merge), Card: Rainy Saturday (trim shift / Localboard special), L4: data pipeline to Parquet (laptop/l4-data), L6: DuckDB detectors and deterministic pricing (laptop/l6-detectors)
 
-### Community 92 - "Contracts (L0)"
-Cohesion: 0.40
-Nodes (5): 1. Changing a contract, 3. Chaos catalog, 4. Skills, 9. Fixtures and the drift check, Contracts (L0)
+### Community 92 - "shell-extras.tsx"
+Cohesion: 0.30
+Nodes (8): SceneDriver(), AgentDock, CommandPalette, IntroPlayer, ParticleLayer, ShellExtras(), useCachedBrief(), setRaining()
 
 ### Community 93 - "Verify every change"
-Cohesion: 0.12
+Cohesion: 0.13
 Nodes (15): Check: start service + curl route, Check: run task at seed 0 and one chaos seed + metrics, Check: Lighthouse via web-perf skill, Check: pytest + ruff + pyright for Python logic, Check: Playwright MCP screenshots 390/1440 light+dark, no console errors, Verification rules (verify before next step, state evidence), web-perf skill (Lighthouse), CI: GitHub Actions (lint, typecheck, unit tests, compose-based e2e) (+7 more)
+
+### Community 94 - "command-palette.tsx"
+Cohesion: 0.30
+Nodes (8): CommandPalette(), onPaletteOpen(), useCommands(), isDark(), listeners, setDark(), subscribeTheme(), THEME_STORAGE_KEY
 
 ### Community 95 - "services"
 Cohesion: 0.29
 Nodes (6): name, services, volumes, apidata, caddydata, pgdata
 
 ### Community 96 - "Rules"
-Cohesion: 0.09
-Nodes (11): Draft, Verdict, Verifier, _rules_note(), _verify(), Preference, Rules, rules_from_memory() (+3 more)
+Cohesion: 0.11
+Nodes (6): L7: brief pipeline with planner, verifier, number guard, reject-to-preference (laptop/l7-brief), Rules, rules_from_memory(), weekday_index(), _weekdays(), test_weekday_names_are_normalised()
 
 ### Community 97 - "rules"
 Cohesion: 0.33
@@ -545,6 +560,26 @@ Nodes (5): depends_on, portals, postgres, condition, condition
 Cohesion: 0.40
 Nodes (5): interval, retries, test, timeout, healthcheck
 
+### Community 108 - "json"
+Cohesion: 0.24
+Nodes (8): LLMPlanner, extract(), _Message, _Result, StubLLM, test_llm_planner_raises_on_unusable_answers(), test_llm_planner_sends_a_cached_structured_request(), test_llm_rewrite_ends_on_a_user_turn()
+
+### Community 109 - "apps_web_src_lib_utils_cn"
+Cohesion: 0.27
+Nodes (6): Status, Tone, TONE_DOT, fetchHealth(), Health, healthSchema
+
+### Community 110 - "commands.ts"
+Cohesion: 0.24
+Nodes (8): Command, listeners, openListeners, openPalette(), publish(), registerCommands(), snapshot, sources
+
+### Community 111 - "cafe-pattern.tsx"
+Cohesion: 0.36
+Nodes (7): CafePattern(), FAR, Glyph, Layer(), NEAR, Tile(), useScene()
+
+### Community 112 - "How this maps to the real Super44 problem"
+Cohesion: 0.32
+Nodes (6): Beat 4:40 Close - /about, model table, adapters, Shared Action interface to the planner, Memory per merchant + cross-merchant best-practices layer, backroom_api/skills (compiler, replay, healer, registry), Route /about (architecture for the interview), How this maps to the real Super44 problem
+
 ## Ambiguous Edges - Review These
 - `Card: Reorder oat milk (stock-out, Grainline)` → `Scripted event: oat milk +9% day -3`  [AMBIGUOUS]
   docs/DATA.md · relation: conceptually_related_to
@@ -555,22 +590,22 @@ Nodes (5): interval, retries, test, timeout, healthcheck
 
 ## Knowledge Gaps
 - **50 isolated node(s):** `backroom-api`, `backroom-bench`, `backroom-data`, `backroom-portals`, `backroom` (+45 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 691 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 694 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **13 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `L0: shared contracts (laptop/l0-contracts)` connect `gen_fixtures.py` to `Web zod contracts`, `L5: temporal memory store, writers, context packer (laptop/l5-memory)`, `candidate.py`, `Contract`, `M4 Bench + Deploy (Thu 19:00-23:30)`, `probe.py`, `CONTRACTS.md`, `backroom_portals/__init__.py`, `L-3 (L0) Contract-check wiring outside laptop ownership (check:web, contracts script, allowImportingTsExtensions, CI step)`, `Laptop deviations (L-n log, append-only; PC renumbers on merge)`, `L2: chaos engine with 9 families (laptop/l2-chaos)`?**
-  _High betweenness centrality (0.195) - this node is a cross-community bridge._
+- **Why does `L0: shared contracts (laptop/l0-contracts)` connect `schema.py` to `Web zod contracts`, `candidate.py`, `gen_fixtures.py`, `Contract`, `Laptop deviations (L-n log, append-only; PC renumbers on merge)`, `test_contract.py`, `CONTRACTS.md`, `laptop.md`, `backroom_portals/__init__.py`, `contract.py`, `M4 Bench + Deploy (Thu 19:00-23:30)`, `L2: chaos engine with 9 families (laptop/l2-chaos)`?**
+  _High betweenness centrality (0.185) - this node is a cross-community bridge._
 - **Are the 42 inferred relationships involving `Candidate` (e.g. with `Contracts (L0)` and `L-45 (L6) Weekly EUR impact defined per card kind; cards ranked by it`) actually correct?**
   _`Candidate` has 42 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `backroom-api`, `backroom-bench`, `backroom-data` to the rest of the system?**
   _50 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `grainline/routes.py` be split into smaller, more focused modules?**
-  _Cohesion score 0.09814563545906829 - nodes in this community are weakly interconnected._
-- **Why does `Laptop deviations (L-n log, append-only; PC renumbers on merge)` connect `Laptop deviations (L-n log, append-only; PC renumbers on merge)` to `L5: temporal memory store, writers, context packer (laptop/l5-memory)`, `gen_fixtures.py`, `action-card.tsx`, `Backroom Product Requirements Document`, `Contract`, `project.yml`, `dependencies`, `format.ts`, `test_llm_client.py`, `api`, `pipeline.py`, `Portals service (FastAPI + Jinja2, backroom_portals)`, `pnpm-workspace.yaml`, `Handover`, `CONTRACTS.md`, `backroom_portals/__init__.py`, `memory-desk.tsx`, `L2: chaos engine with 9 families (laptop/l2-chaos)`, `Chaos engine (one chaos_seed per portal, seeded RNG variant catalog)`, `ADR-9 LLM provider = OpenRouter by default, Anthropic direct as a switch`, `agents.py`, `Cost meter (per-call ledger row: provider, role, model, tokens, cache, $, stop_reason, run_id)`, `Build Plan (Wed 22:00 -> Fri 11:30 freeze)`, `L-3 (L0) Contract-check wiring outside laptop ownership (check:web, contracts script, allowImportingTsExtensions, CI step)`, `Verify every change`?**
-  _High betweenness centrality (0.114) - this node is a cross-community bridge._
+- **Should `test_memory.py` be split into smaller, more focused modules?**
+  _Cohesion score 0.05311250713877784 - nodes in this community are weakly interconnected._
+- **Why does `Laptop deviations (L-n log, append-only; PC renumbers on merge)` connect `Laptop deviations (L-n log, append-only; PC renumbers on merge)` to `test_memory.py`, `registry.py`, `project.yml`, `dependencies`, `format.ts`, `test_llm_client.py`, `app-shell.tsx`, `M4 Bench + Deploy (Thu 19:00-23:30)`, `api`, `pipeline.py`, `Build Plan (Wed 22:00 -> Fri 11:30 freeze)`, `Portals service (FastAPI + Jinja2, backroom_portals)`, `Decision Log (ADRs + laptop deviations)`, `pnpm-workspace.yaml`, `Handover`, `CONTRACTS.md`, `schema.py`, `backroom_portals/__init__.py`, `LLM`, `L2: chaos engine with 9 families (laptop/l2-chaos)`, `Cost meter (per-call ledger row: provider, role, model, tokens, cache, $, stop_reason, run_id)`, `test_contract.py`, `laptop.md`, `Rules`?**
+  _High betweenness centrality (0.100) - this node is a cross-community bridge._
 
 ### Low-confidence Hints
 _AMBIGUOUS edges — the extractor was unsure. Verify before acting on these._
