@@ -17,25 +17,22 @@ export type LoadedBrief = { brief: Brief; source: Source };
 // bundle; every response and fixture is still parsed before use.
 const contracts = () => import("@/lib/contracts");
 
-async function sampleBrief(): Promise<Brief> {
-  const [{ briefSchema }, fixture] = await Promise.all([
-    contracts(),
-    import("@/fixtures/brief.json"),
-  ]);
-  return briefSchema.parse(fixture.default);
-}
-
 async function fetchBrief(signal?: AbortSignal): Promise<LoadedBrief> {
+  // The fixture downloads alongside the API call (not after it fails), so the sample
+  // fallback costs no extra round trip before the first cards paint.
+  const fixture = import("@/fixtures/brief.json");
+  const schemas = contracts();
   try {
     const [res, { briefSchema }] = await Promise.all([
       fetch(`${API_URL}/brief/today`, { signal, cache: "no-store" }),
-      contracts(),
+      schemas,
     ]);
     if (res.ok) return { brief: briefSchema.parse(await res.json()), source: "live" };
   } catch (error) {
     if (signal?.aborted) throw error;
   }
-  return { brief: await sampleBrief(), source: "sample" };
+  const [{ briefSchema }, sample] = await Promise.all([schemas, fixture]);
+  return { brief: briefSchema.parse(sample.default), source: "sample" };
 }
 
 export function useBrief() {

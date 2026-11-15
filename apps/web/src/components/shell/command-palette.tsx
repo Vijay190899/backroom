@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { onPaletteOpen, useCommands, type Command } from "@/lib/commands";
-import { motionLevel, setMotionLevel } from "@/lib/motion-pref";
 import { isDark, setDark } from "@/lib/theme";
 import { cn } from "@/lib/utils";
 
@@ -42,12 +41,6 @@ export function CommandPalette() {
       ...pageCommands,
       ...NAV_ITEMS.map((n) => ({ id: `go:${n.href}`, group: "Go to", label: n.label, run: () => router.push(n.href) })),
       { id: "theme", group: "Settings", label: "Switch light / dark theme", run: () => setDark(!isDark()) },
-      {
-        id: "motion",
-        group: "Settings",
-        label: "Calm or restore the motion",
-        run: () => setMotionLevel(motionLevel() === "full" ? "calm" : "full"),
-      },
     ],
     [pageCommands, router],
   );

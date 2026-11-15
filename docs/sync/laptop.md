@@ -19,11 +19,12 @@ Done:
 - Second redesign at the owner's request (DECISIONS L-75): glass panels over a WebGL ember light field, Geist type, an ember accent.
 - Today: cards spring in, light up and tilt under the cursor, and drag right to approve or left to skip. Each card has a graphic from its own numbers (margin scale, stock cells, rain-vs-dry bars).
 - Approve explodes the card's text into particles that fly into a floating Agent dock; the dock plays the sample run (ring fills, turns violet while healing). A rebuilt card assembles from particles.
-- ⌘K command palette (go to a page, approve a card, theme, motion) and a header motion toggle.
+- ⌘K command palette (go to a page, approve a card, theme).
+- Owner's follow-ups (L-76): always in motion (no toggle; the device's reduced-motion setting is still honoured), no cursor glow, a procedural café scene in the background (revert switch `SCENE`), light mode with matching depth, fluid page transitions with prefetched data.
 Verify:
 - `pnpm check`: green (312 pytest, eslint, tsc, contracts).
 - Headless-Chrome checks at 390 and 1440 px, light and dark, cover every page and flow, including the explosion, the dock run, the particle rebuild and the palette.
-- Lighthouse on a production build, phones: `/` 96, `/bench` 95, `/skills` 95; desktop 99–100; accessibility 100.
+- Lighthouse on a production build: `/` 87 on phones (the owner accepted phones in the 80s for the maximal option), `/bench` 96 on phones, desktop 99–100, accessibility 100. Page transitions hold 60 fps, and pages arrive filled at 0.13 s.
 Needs from PC:
 - Unchanged from part 2. For live approve, call `startRun` (`lib/agent-runs.ts`) with the run's events as they stream.
 Notes:

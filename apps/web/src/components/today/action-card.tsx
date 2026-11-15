@@ -81,8 +81,8 @@ function Deck({ text, className }: { text: string; className: string }) {
 }
 
 /**
- * One decision as a glass card. It falls into place on a spring, lights up under the
- * cursor and tilts toward it; drag it right to approve or left to skip (the buttons do
+ * One decision as a glass card. It falls into place on a spring and tilts toward the
+ * cursor; drag it right to approve or left to skip (the buttons do
  * the same, and calm mode turns dragging off). Approving breaks it into particles that fly into the agent dock; a rebuilt
  * card assembles itself out of particles.
  */
@@ -131,7 +131,7 @@ export function ActionCard({
     return () => clearTimeout(fallback);
   }, [forming]);
 
-  // Pointer light and tilt.
+  // The card leans toward the pointer.
   const tiltX = useSpring(useMotionValue(0), { stiffness: 180, damping: 18 });
   const tiltY = useSpring(useMotionValue(0), { stiffness: 180, damping: 18 });
   function onPointerMove(e: PointerEvent<HTMLElement>) {
@@ -139,16 +139,12 @@ export function ActionCard({
     // Events from the portalled drawer and dialog bubble here through React; ignore them.
     if (!el.contains(e.target as Node)) return;
     const r = el.getBoundingClientRect();
-    el.style.setProperty("--mx", `${e.clientX - r.left}px`);
-    el.style.setProperty("--my", `${e.clientY - r.top}px`);
-    el.style.setProperty("--spot", "1");
     if (e.pointerType === "mouse" && motionLevel() === "full") {
       tiltY.set(((e.clientX - r.left) / r.width - 0.5) * 5);
       tiltX.set(-((e.clientY - r.top) / r.height - 0.5) * 5);
     }
   }
-  function onPointerLeave(e: PointerEvent<HTMLElement>) {
-    e.currentTarget.style.setProperty("--spot", "0");
+  function onPointerLeave() {
     tiltX.set(0);
     tiltY.set(0);
   }
@@ -261,7 +257,7 @@ export function ActionCard({
         onPointerLeave={onPointerLeave}
         whileDrag={{ scale: 1.02, cursor: "grabbing" }}
         className={cn(
-          "glass spotlight touch-pan-y rounded-[var(--t-radius-card)] p-6 sm:p-8",
+          "glass touch-pan-y rounded-[var(--t-radius-card)] p-6 sm:p-8",
           lead && "grid gap-8 lg:grid-cols-12 lg:gap-10",
         )}
       >
@@ -333,7 +329,7 @@ export function ActionCard({
             <p className="mt-1 flex items-baseline gap-2">
               <Figure
                 value={card.impact_eur_weekly}
-                className="text-6xl leading-none text-press-ink font-semibold tracking-[-0.04em] sm:text-7xl"
+                className="text-6xl leading-none font-semibold tracking-[-0.04em] text-press-ink sm:text-7xl"
               />
               <span className="text-sm text-muted-foreground">a week</span>
             </p>

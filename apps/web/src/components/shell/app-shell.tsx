@@ -2,7 +2,6 @@ import { Suspense, type ReactNode } from "react";
 
 import { ApiStatus } from "./api-status";
 import { CommandButton } from "./command-button";
-import { MotionToggle } from "./motion-toggle";
 import { TabBarLinks, TopBarLinks } from "./nav-links";
 import { ShellExtras } from "./shell-extras";
 import { ThemeToggle } from "./theme-toggle";
@@ -27,7 +26,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="ml-auto flex items-center gap-1">
             <ApiStatus />
             <CommandButton />
-            <MotionToggle />
             <ThemeToggle />
           </div>
         </div>

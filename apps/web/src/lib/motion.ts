@@ -8,7 +8,7 @@ export function enterDelay(ms: number): CSSProperties {
 }
 
 /**
- * The reader asked for less motion (system setting or the header toggle): show finished
+ * The device asks for reduced motion: show finished
  * states instead of animating to them.
  */
 export function prefersReducedMotion(): boolean {

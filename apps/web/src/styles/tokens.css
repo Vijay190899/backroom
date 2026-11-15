@@ -2,17 +2,17 @@
  * Backroom design tokens: "Command center" (DECISIONS L-75). Warm black, glass surfaces,
  * ember and amber light. Components never use raw hex: they use these tokens through the
  * Tailwind colour names mapped in app/globals.css. Every text token is >= 4.5:1 against
- * bg and surface in both themes. Prefixed `--t-` because shadcn/ui owns `--accent`.
+ * bg, surface and the darkest spot of the café scene behind (L-76) in both themes. Prefixed `--t-` because shadcn/ui owns `--accent`.
  */
 :root {
   --t-bg: #f4f1ec;
   --t-surface: #ffffff;
   --t-subtle: #ebe6df;
   --t-ink: #16130f;
-  --t-muted: #655c52;
+  --t-muted: #51493f;
   --t-line: rgb(22 19 15 / 0.1);
   --t-accent: #c2410c; /* ember */
-  --t-accent-ink: #c2410c;
+  --t-accent-ink: #8f2f0f; /* text-sized ember */
   --t-amber: #9a5b00;
   --t-pos: #1c7a4c;
   --t-neg: #b4233a;
@@ -26,9 +26,14 @@
   /* Glass: translucent panels over the ambient field */
   --t-glass: rgb(255 255 255 / 0.62);
   --t-glass-strong: rgb(255 255 255 / 0.82);
-  --t-glass-line: rgb(22 19 15 / 0.08);
+  --t-glass-line: rgb(110 70 30 / 0.1);
+  /* Panel fill: lit from above, warmer and more see-through toward the bottom. */
+  --t-glass-fill: linear-gradient(180deg, rgb(255 255 255 / 0.78), rgb(255 250 243 / 0.52));
   --t-glow: rgb(194 65 12 / 0.18);
-  --t-shadow: 0 1px 0 0 rgb(255 255 255 / 0.7) inset, 0 20px 50px -20px rgb(60 30 10 / 0.25);
+  --t-shadow:
+    0 1px 0 0 rgb(255 255 255 / 0.95) inset, 0 -1px 0 0 rgb(120 80 40 / 0.05) inset,
+    0 1px 2px rgb(90 50 20 / 0.05), 0 8px 16px -6px rgb(90 50 20 / 0.08),
+    0 28px 56px -24px rgb(90 50 20 / 0.28);
 
   --t-radius-card: 1.25rem;
   --t-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -56,6 +61,9 @@
   --t-glass: rgb(255 245 235 / 0.045);
   --t-glass-strong: rgb(255 245 235 / 0.08);
   --t-glass-line: rgb(255 240 225 / 0.1);
+  --t-glass-fill: linear-gradient(180deg, rgb(255 245 235 / 0.075), rgb(255 245 235 / 0.03));
   --t-glow: rgb(255 122 69 / 0.22);
-  --t-shadow: 0 1px 0 0 rgb(255 245 235 / 0.08) inset, 0 30px 60px -24px rgb(0 0 0 / 0.7);
+  --t-shadow:
+    0 1px 0 0 rgb(255 245 235 / 0.1) inset, 0 1px 2px rgb(0 0 0 / 0.3),
+    0 30px 60px -24px rgb(0 0 0 / 0.7);
 }

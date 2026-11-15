@@ -8,33 +8,18 @@ import { PageHeader } from "@/components/page-header";
 import { BadgeSlot, SampleBadge } from "@/components/sample-badge";
 import type { Skill, SkillSummary, SkillVersions } from "@/lib/contracts";
 import { useLiveOrSample } from "@/lib/data";
+import { skillsQuery, skillVersionsQuery } from "@/lib/queries";
 import { PORTAL_LABEL, TASK_LABEL } from "@/lib/labels";
 import { enterDelay } from "@/lib/motion";
 import { annotate, stepLine } from "@/lib/skills";
 import { cn } from "@/lib/utils";
 
-const contracts = () => import("@/lib/contracts");
-
 function useRegistry() {
-  return useLiveOrSample<SkillSummary[]>(
-    "skills",
-    "/skills",
-    async () => (await contracts()).skillSummarySchema.array(),
-    () => import("@/fixtures/skills.json"),
-  );
+  return useLiveOrSample(skillsQuery());
 }
 
 function useVersions(skillId: string | null) {
-  return useLiveOrSample<SkillVersions | null>(
-    `skill-versions:${skillId}`,
-    `/skills/${encodeURIComponent(skillId ?? "")}/versions`,
-    async () => (await contracts()).skillVersionsSchema.nullable(),
-    // The sample has one skill's history; any other skill has none to show.
-    async () => {
-      const fixture = await import("@/fixtures/skill-versions.json");
-      return { default: fixture.default.skill_id === skillId ? fixture.default : null };
-    },
-  );
+  return useLiveOrSample(skillVersionsQuery(skillId));
 }
 
 /** The selected skill lives in the URL (`?skill=`), so a link opens the same view. */

@@ -8,6 +8,7 @@ export function ParticleLayer() {
     <canvas
       aria-hidden
       ref={attachParticleCanvas}
+      style={{ viewTransitionName: "particles" }}
       className="pointer-events-none fixed inset-0 z-[70] size-full"
     />
   );

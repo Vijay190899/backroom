@@ -7,8 +7,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { BadgeSlot, SampleBadge } from "@/components/sample-badge";
-import type { GraphFact, GraphNode, MemoryGraph } from "@/lib/contracts";
+import type { GraphFact, GraphNode } from "@/lib/contracts";
 import { useLiveOrSample } from "@/lib/data";
+import { memoryQuery } from "@/lib/queries";
 import { formatDateline, formatEur } from "@/lib/format";
 import { dayOf, endOfDay, layout, PREDICATE, record, timeline, validAt, type Slot } from "@/lib/memory";
 import { prefersReducedMotion } from "@/lib/motion";
@@ -35,12 +36,7 @@ function edgePath(a: Point, b: Point, size: { w: number; h: number }, narrow: bo
 }
 
 function useGraph() {
-  return useLiveOrSample<MemoryGraph>(
-    "memory-graph",
-    "/memory/graph",
-    async () => (await import("@/lib/contracts")).memoryGraphSchema,
-    () => import("@/fixtures/memory-graph.json"),
-  );
+  return useLiveOrSample(memoryQuery());
 }
 
 /** A fact's value as words and rolling digits: "€8.24/kg", "77.5 g of Butter", "Grainline Wholesale". */

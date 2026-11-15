@@ -9,16 +9,7 @@ const VERT = `#version 300 es
 in vec2 a;
 void main() { gl_Position = vec4(a, 0.0, 1.0); }`;
 
-// Domain-warped fbm (Inigo Quilez's warping) in ember and amber, very low in the dark so
-// text on glass keeps its contrast; a soft light follows the pointer; grain kills banding.
-const FRAG = `#version 300 es
-precision highp float;
-uniform vec2 uRes;
-uniform float uTime;
-uniform vec2 uMouse;
-uniform float uDark;
-out vec4 o;
-
+const NOISE = `
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float noise(vec2 p) {
   vec2 i = floor(p), f = fract(p);
@@ -30,36 +21,143 @@ float fbm(vec2 p) {
   mat2 r = mat2(0.8, -0.6, 0.6, 0.8);
   for (int i = 0; i < 5; i++) { v += a * noise(p); p = r * p * 2.03; a *= 0.5; }
   return v;
-}
+}`;
 
+/**
+ * Which picture sits behind the app. "cafe" is the café scene (L-76, experimental);
+ * "ember" is the earlier abstract field (L-75). Switch back here if the scene is reverted.
+ */
+const SCENE: "cafe" | "ember" = "cafe";
+
+// The earlier abstract field: domain-warped fbm in ember and amber (Inigo Quilez's warping).
+const EMBER = `#version 300 es
+precision highp float;
+uniform vec2 uRes;
+uniform float uTime;
+uniform float uDark;
+uniform float uScroll;
+out vec4 o;
+${NOISE}
 void main() {
   vec2 p = (gl_FragCoord.xy - 0.5 * uRes) / uRes.y;
   float t = uTime * 0.035;
   vec2 q = vec2(fbm(p * 1.3 + t), fbm(p * 1.3 + vec2(5.2, 1.3) - t));
   vec2 r = vec2(fbm(p * 1.7 + 3.2 * q + vec2(1.7, 9.2) + 0.7 * t), fbm(p * 1.7 + 3.2 * q + vec2(8.3, 2.8) - 0.6 * t));
   float f = fbm(p * 1.5 + 3.4 * r);
-
   vec3 ember = vec3(1.0, 0.48, 0.27);
   vec3 amber = vec3(1.0, 0.71, 0.28);
   vec3 wine = vec3(0.32, 0.07, 0.05);
-
-  vec3 bgD = vec3(0.039, 0.035, 0.031);
-  vec3 bgL = vec3(0.957, 0.945, 0.925);
   float glow = smoothstep(0.42, 1.05, f);
-  float vein = smoothstep(0.55, 0.62, f) - smoothstep(0.62, 0.72, f);
-
-  vec2 m = (uMouse - 0.5 * uRes) / uRes.y;
-  float light = exp(-3.2 * length(p - m));
-
-  vec3 dark = bgD + wine * glow * 0.55 + mix(ember, amber, r.x) * (glow * glow) * 0.16 + ember * vein * 0.05 + ember * light * 0.07;
-  vec3 lite = bgL - vec3(0.0, 0.05, 0.09) * glow * 0.55 + mix(ember, amber, r.y) * glow * 0.06 + ember * light * 0.04;
+  vec3 dark = vec3(0.039, 0.035, 0.031) + wine * glow * 0.55 + mix(ember, amber, r.x) * (glow * glow) * 0.16;
+  vec3 lite = vec3(0.957, 0.945, 0.925) - vec3(0.0, 0.05, 0.09) * glow * 0.55 + mix(ember, amber, r.y) * glow * 0.06;
   vec3 col = mix(lite, dark, uDark);
-
-  float vig = smoothstep(1.25, 0.25, length(p));
-  col *= mix(1.0, vig, 0.35 * uDark);
+  col *= mix(1.0, smoothstep(1.25, 0.25, length(p)), 0.35 * uDark);
   col += (hash(gl_FragCoord.xy + uTime) - 0.5) / 255.0 * 2.0;
   o = vec4(col, 1.0);
 }`;
+
+// The café: an espresso-and-crema (dark) or latte-foam (light) field, out-of-focus café
+// lights drifting at the edges (kept off the reading column), steam rising from cups
+// below the fold, and a sparse scatter of coffee beans that drifts with the scroll.
+const CAFE = `#version 300 es
+precision highp float;
+uniform vec2 uRes;
+uniform float uTime;
+uniform float uDark;
+uniform float uScroll;
+out vec4 o;
+${NOISE}
+
+vec3 bokeh(vec2 p, float t, vec3 a, vec3 b, float aspect) {
+  vec3 acc = vec3(0.0);
+  for (int i = 0; i < 18; i++) {
+    float fi = float(i);
+    vec2 h = vec2(hash(vec2(fi, 1.3)), hash(vec2(fi, 7.1)));
+    // Spread across the width, but pushed toward the sides.
+    float side = h.x < 0.5 ? -1.0 : 1.0;
+    float x = side * mix(0.32, 0.98, fract(h.x * 2.0)) * aspect * 0.5 * 1.05;
+    vec2 c = vec2(x, (h.y - 0.5) * 1.25);
+    c += 0.05 * vec2(sin(t * 0.21 + fi), cos(t * 0.17 + fi * 1.7));
+    c.y = mod(c.y + uScroll * (0.15 + 0.35 * h.y) + 0.8, 1.6) - 0.8;
+    float r = mix(0.035, 0.13, hash(vec2(fi, 3.7)));
+    float d = length(p - c);
+    float disc = smoothstep(r, r * 0.86, d);
+    float rim = smoothstep(r * 0.62, r * 0.97, d) * disc;
+    float tw = 0.65 + 0.35 * sin(t * 0.6 + fi * 2.3);
+    vec3 col = mix(a, b, hash(vec2(fi, 9.9)));
+    acc += col * (disc * 0.3 + rim * 0.16) * tw;
+  }
+  return acc;
+}
+
+float steam(vec2 p, float t) {
+  float s = 0.0;
+  for (int i = 0; i < 3; i++) {
+    float fi = float(i);
+    float x0 = (fi - 1.0) * 0.82 + 0.08 * sin(fi * 4.0);
+    float y = p.y + 0.62;
+    float sway = 0.14 * sin(y * 2.4 - t * 0.8 + fi * 2.0) * y;
+    float dx = p.x - x0 - sway;
+    float width = 0.04 + 0.2 * clamp(y, 0.0, 1.5);
+    float column = exp(-dx * dx / (width * width));
+    float n = fbm(vec2(dx * 4.5 + fi * 10.0, y * 2.3 - t * 0.5));
+    float fade = smoothstep(-0.05, 0.3, y) * smoothstep(1.7, 0.5, y);
+    s += column * smoothstep(0.42, 0.85, n) * fade;
+  }
+  return s;
+}
+
+float beans(vec2 p, float t) {
+  p.y -= uScroll * 0.35 - t * 0.008;
+  vec2 g = p * 3.4;
+  vec2 id = floor(g);
+  vec2 f = fract(g) - 0.5;
+  float keep = step(0.74, hash(id));
+  float a = hash(id + 3.1) * 6.283 + t * 0.02 * (hash(id + 8.0) - 0.5);
+  mat2 R = mat2(cos(a), -sin(a), sin(a), cos(a));
+  vec2 q = R * (f - (vec2(hash(id + 1.7), hash(id + 5.3)) - 0.5) * 0.4);
+  q *= vec2(1.0, 1.42);
+  float d = length(q) - 0.14;
+  float body = smoothstep(0.012, -0.012, d);
+  float crease = smoothstep(0.02, 0.0, abs(q.x + 0.035 * sin(q.y * 22.0))) * step(abs(q.y), 0.12);
+  return keep * body * (1.0 - 0.85 * crease);
+}
+
+void main() {
+  vec2 p = (gl_FragCoord.xy - 0.5 * uRes) / uRes.y;
+  float aspect = uRes.x / uRes.y;
+  float t = uTime;
+  float w = t * 0.03;
+  vec2 q = vec2(fbm(p * 1.2 + w), fbm(p * 1.2 + vec2(5.2, 1.3) - w));
+  vec2 r = vec2(fbm(p * 1.6 + 3.0 * q + vec2(1.7, 9.2) + 0.5 * w), fbm(p * 1.6 + 3.0 * q + vec2(8.3, 2.8) - 0.4 * w));
+  float f = fbm(p * 1.4 + 3.2 * r);
+  float st = steam(p, t);
+  float bn = beans(p, t);
+
+  // Espresso and crema
+  vec3 dark = vec3(0.036, 0.028, 0.022) + vec3(0.30, 0.15, 0.07) * smoothstep(0.45, 1.0, f) * 0.45;
+  dark = mix(dark, vec3(0.13, 0.075, 0.045), bn * 0.55);
+  dark += bokeh(p, t, vec3(1.0, 0.48, 0.27), vec3(1.0, 0.74, 0.42), aspect) * 0.16;
+  dark += vec3(0.95, 0.86, 0.76) * st * 0.055;
+
+  // Latte foam, caramel veins, morning light
+  vec3 milk = vec3(0.968, 0.948, 0.918);
+  vec3 latte = vec3(0.905, 0.815, 0.69);
+  float swirl = smoothstep(0.35, 0.95, f);
+  vec3 lite = mix(milk, latte, swirl * 0.55);
+  float vein = smoothstep(0.6, 0.66, f) - smoothstep(0.66, 0.76, f);
+  lite = mix(lite, vec3(0.78, 0.55, 0.33), vein * 0.18);
+  lite = mix(lite, vec3(0.6, 0.4, 0.25), bn * 0.09);
+  lite += bokeh(p, t, vec3(1.0, 0.86, 0.62), vec3(1.0, 0.97, 0.9), aspect) * 0.09;
+  lite = mix(lite, vec3(1.0), clamp(st * 0.32, 0.0, 0.5));
+
+  vec3 col = mix(lite, dark, uDark);
+  col *= mix(1.0, smoothstep(1.3, 0.25, length(p)), 0.3 * uDark);
+  col += (hash(gl_FragCoord.xy + uTime) - 0.5) / 255.0 * 2.0;
+  o = vec4(col, 1.0);
+}`;
+
+const FRAG = SCENE === "cafe" ? CAFE : EMBER;
 
 function compile(gl: WebGL2RenderingContext, type: number, src: string): WebGLShader | null {
   const sh = gl.createShader(type);
@@ -70,8 +168,8 @@ function compile(gl: WebGL2RenderingContext, type: number, src: string): WebGLSh
 }
 
 /**
- * The light behind everything: a slow ember field at half resolution, 30 fps, paused in
- * hidden tabs, one still frame in calm mode. Purely decorative (aria-hidden); without
+ * The picture behind everything (see SCENE): half resolution, 30 fps, paused in hidden
+ * tabs, one still frame under reduced motion. Purely decorative (aria-hidden); without
  * WebGL2 the plain background shows.
  */
 export function AmbientField() {
@@ -110,29 +208,25 @@ export function AmbientField() {
 
     const uRes = gl.getUniformLocation(prog, "uRes");
     const uTime = gl.getUniformLocation(prog, "uTime");
-    const uMouse = gl.getUniformLocation(prog, "uMouse");
+    const uScroll = gl.getUniformLocation(prog, "uScroll");
     const uDark = gl.getUniformLocation(prog, "uDark");
 
     const scale = 0.5;
-    const target = { x: innerWidth * 0.7, y: innerHeight * 0.3 };
-    const mouse = { ...target };
     const start = performance.now();
     let frame = 0;
     let last = 0;
 
     const draw = (now: number) => {
-      mouse.x += (target.x - mouse.x) * 0.06;
-      mouse.y += (target.y - mouse.y) * 0.06;
       gl.uniform2f(uRes, el.width, el.height);
       gl.uniform1f(uTime, (now - start) / 1000);
-      gl.uniform2f(uMouse, mouse.x * scale, (innerHeight - mouse.y) * scale);
+      gl.uniform1f(uScroll, scrollY / Math.max(1, innerHeight));
       gl.uniform1f(uDark, live.current.dark ? 1 : 0);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     };
     const loop = (now: number) => {
       if (live.current.level !== "full") {
         frame = 0;
-        draw(start + 40_000); // calm: one still frame
+        draw(start + 40_000); // reduced motion: one still frame, 40 s in (a settled look)
         return;
       }
       frame = requestAnimationFrame(loop);
@@ -152,13 +246,8 @@ export function AmbientField() {
       gl.viewport(0, 0, el.width, el.height);
       wake();
     };
-    const onMove = (e: PointerEvent) => {
-      target.x = e.clientX;
-      target.y = e.clientY;
-    };
     resize();
     addEventListener("resize", resize);
-    addEventListener("pointermove", onMove, { passive: true });
     el.dataset.ready = "1";
     // A lost context would leave an opaque black canvas: fade it out instead.
     const onLost = () => delete el.dataset.ready;
@@ -168,7 +257,6 @@ export function AmbientField() {
       cancelAnimationFrame(frame);
       state.wake = () => {};
       removeEventListener("resize", resize);
-      removeEventListener("pointermove", onMove);
       el.removeEventListener("webglcontextlost", onLost);
     };
   }, []);
@@ -177,6 +265,7 @@ export function AmbientField() {
     <canvas
       ref={canvas}
       aria-hidden
+      style={{ viewTransitionName: "ambient" }}
       className="pointer-events-none fixed inset-0 -z-10 size-full opacity-0 transition-opacity duration-[1200ms] data-[ready]:opacity-100"
     />
   );
