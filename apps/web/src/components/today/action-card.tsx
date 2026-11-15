@@ -1,29 +1,27 @@
 "use client";
 
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, MoveLeft, MoveRight } from "lucide-react";
+import { motion, useMotionValue, useSpring, useTransform, type PanInfo } from "motion/react";
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent } from "react";
 
-import { Figure, FigureValue } from "@/components/motion/figure";
-import { RunTicker } from "@/components/today/run-ticker";
+import { Figure } from "@/components/motion/figure";
+import { CardVisual } from "@/components/today/card-visual";
 import { Button } from "@/components/ui/button";
-import type { ActionCard as Card, EvidenceNumber, RunEvent } from "@/lib/contracts";
+import { absorb, dockPoint } from "@/lib/agent-runs";
+import type { ActionCard as Card, EvidenceNumber } from "@/lib/contracts";
 import { changedWords } from "@/lib/diff";
 import { PORTAL_LABEL as PORTAL } from "@/lib/labels";
 import { enterDelay } from "@/lib/motion";
-import { loadSampleRun } from "@/lib/runs";
+import { motionLevel } from "@/lib/motion-pref";
+import { useMotionLevel } from "@/lib/use-motion-level";
+import { explodeInto, formFrom } from "@/lib/particles";
 import { cn } from "@/lib/utils";
 
 const KIND: Record<Card["kind"], string> = {
   stockout: "Stock",
   margin_erosion: "Margin",
   weather_demand: "Weather",
-};
-/** The figures worth printing beside the lead story, per kind, in reading order. */
-const KEY_FIGURES: Record<Card["kind"], string[]> = {
-  stockout: ["days_left", "qty", "order_total_eur"],
-  margin_erosion: ["margin_after_pct", "margin_target_pct", "price_now_eur", "price_new_eur"],
-  weather_demand: ["rain_mm", "footfall_change_pct", "shift_hours"],
 };
 
 // The drawer and the dialog (and Base UI's dialog code) load on first use, off the
@@ -40,34 +38,16 @@ const RejectDialog = dynamic(
 export type CardStatus = "proposed" | "approving" | "approved" | "rejected";
 type Variant = "lead" | "column";
 
+const SWIPE = 120; // px a card must be dragged to count as a decision
+const FALL = { type: "spring", stiffness: 170, damping: 17, mass: 0.9 } as const;
+
 function impactNumber(card: Card): EvidenceNumber | undefined {
   return card.numbers.find((n) => n.key === "impact_eur_weekly");
 }
 
-function keyFigures(card: Card): EvidenceNumber[] {
-  const byKey = new Map(card.numbers.map((n) => [n.key, n]));
-  const picked = KEY_FIGURES[card.kind].flatMap((k) => byKey.get(k) ?? []);
-  const fallback = card.numbers.filter((n) => n.key !== "impact_eur_weekly").slice(0, 3);
-  return picked.length ? picked : fallback;
-}
-
-function Kicker({ card }: { card: Card }) {
-  return (
-    <p className="kicker flex flex-wrap items-center gap-x-2 text-press-ink">
-      <span>{KIND[card.kind]}</span>
-      <span aria-hidden className="text-line">
-        /
-      </span>
-      <span className="text-muted-foreground" translate="no">
-        {card.portal ? (PORTAL[card.portal] ?? card.portal) : "Advice only"}
-      </span>
-    </p>
-  );
-}
-
 /**
- * The deck, with the words Backroom just changed marked when a rebuilt brief swaps the
- * card's text (same story, new wording): the marker sweeps in once under the new words.
+ * The card's sentence, with the words Backroom just changed marked when a rebuilt brief
+ * swaps the text (same story, new wording): the marker sweeps in once under the new words.
  */
 function Deck({ text, className }: { text: string; className: string }) {
   const [seen, setSeen] = useState(text);
@@ -77,13 +57,19 @@ function Deck({ text, className }: { text: string; className: string }) {
     setBefore(seen);
     setSeen(text);
   }
-  if (!before) return <p className={className}>{text}</p>;
+  if (!before) {
+    return (
+      <p data-particle-text className={className}>
+        {text}
+      </p>
+    );
+  }
   let marked = 0;
   return (
-    <p className={className}>
+    <p data-particle-text className={className}>
       {changedWords(before, text).map((part, i) =>
         part.changed ? (
-          <mark key={i} className="marker bg-transparent text-inherit" style={enterDelay(250 + marked++ * 140)}>
+          <mark key={i} className="marker bg-transparent text-inherit" style={enterDelay(900 + marked++ * 140)}>
             {part.text}
           </mark>
         ) : (
@@ -94,81 +80,12 @@ function Deck({ text, className }: { text: string; className: string }) {
   );
 }
 
-/** The recorded run for an approved sample card, when the fixture has one for it. */
-function useSampleRun(card: Card, active: boolean): RunEvent[] | null {
-  const [run, setRun] = useState<RunEvent[] | null>(null);
-  useEffect(() => {
-    if (!active) return;
-    let live = true;
-    void loadSampleRun(card.id).then((events) => {
-      if (live) setRun(events);
-    });
-    return () => {
-      live = false;
-    };
-  }, [active, card.id]);
-  return active ? run : null;
-}
-
-function Actions({
-  card,
-  status,
-  sample,
-  hasRun,
-  onApprove,
-  onEvidence,
-  onReject,
-}: {
-  card: Card;
-  status: CardStatus;
-  sample: boolean;
-  hasRun: boolean;
-  onApprove: () => void;
-  onEvidence: () => void;
-  onReject: () => void;
-}) {
-  if (status === "approved") {
-    return (
-      <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2">
-        <p
-          role="status"
-          className="stamp-in kicker inline-flex h-11 items-center gap-2 border-2 border-pos px-3 text-pos sm:h-10"
-        >
-          <Check aria-hidden className="size-4" strokeWidth={2.5} />
-          Approved
-        </p>
-        <p className="text-sm text-muted-foreground">
-          {sample
-            ? hasRun
-              ? "Sample brief: replaying the recorded run, no portal touched."
-              : "Sample brief: nothing was sent to a portal."
-            : `The agent is on it in ${PORTAL[card.portal ?? ""] ?? "the portal"}.`}
-        </p>
-        <Button size="lg" variant="ghost" onClick={onEvidence}>
-          See evidence
-        </Button>
-      </div>
-    );
-  }
-  const busy = status === "approving";
-  return (
-    <div className="mt-6 flex flex-wrap items-center gap-2">
-      {card.executable ? (
-        <Button size="lg" onClick={onApprove} disabled={busy}>
-          {busy ? <Loader2 aria-hidden className="animate-spin" /> : null}
-          {busy ? "Starting…" : "Approve"}
-        </Button>
-      ) : null}
-      <Button size="lg" variant="outline" onClick={onEvidence}>
-        See evidence
-      </Button>
-      <Button size="lg" variant="ghost" onClick={onReject}>
-        Not now
-      </Button>
-    </div>
-  );
-}
-
+/**
+ * One decision as a glass card. It falls into place on a spring, lights up under the
+ * cursor and tilts toward it; drag it right to approve or left to skip (the buttons do
+ * the same, and calm mode turns dragging off). Approving breaks it into particles that fly into the agent dock; a rebuilt
+ * card assembles itself out of particles.
+ */
 export function ActionCard({
   card,
   status,
@@ -190,123 +107,243 @@ export function ActionCard({
   const [rejectOpen, setRejectOpen] = useState(false);
   // Mounted from the first open on, so later closes still animate out.
   const [used, setUsed] = useState({ evidence: false, reject: false });
+  const ref = useRef<HTMLElement>(null);
   const impact = impactNumber(card);
   const lead = variant === "lead";
-  const titleId = `${card.id}-title`;
-  // The lead is the page's first story (h2); columns sit under "Also in this edition".
+  const titleId = `${card.candidate_id}-title`;
+  // The lead is the page's first card (h2); the others sit under "Also today".
   const Heading = lead ? "h2" : "h3";
-  const run = useSampleRun(card, sample && status === "approved");
+  const proposed = status === "proposed";
+  const level = useMotionLevel();
 
-  const actions = (
-    <Actions
-      card={card}
-      status={status}
-      sample={sample}
-      hasRun={run !== null}
-      onApprove={onApprove}
-      onEvidence={() => {
-        setUsed((u) => ({ ...u, evidence: true }));
-        setEvidenceOpen(true);
-      }}
-      onReject={() => {
-        setUsed((u) => ({ ...u, reject: true }));
-        setRejectOpen(true);
-      }}
-    />
+  // A rebuilt card (same story, new id) assembles out of particles.
+  const [seenId, setSeenId] = useState(card.id);
+  const [forming, setForming] = useState(false);
+  if (seenId !== card.id) {
+    setSeenId(card.id);
+    setForming(motionLevel() === "full");
+  }
+  useEffect(() => {
+    if (!forming || !ref.current) return;
+    const done = () => setForming(false);
+    const started = formFrom(ref.current, { x: innerWidth / 2, y: innerHeight / 2 }, done);
+    const fallback = setTimeout(done, started ? 1600 : 0);
+    return () => clearTimeout(fallback);
+  }, [forming]);
+
+  // Pointer light and tilt.
+  const tiltX = useSpring(useMotionValue(0), { stiffness: 180, damping: 18 });
+  const tiltY = useSpring(useMotionValue(0), { stiffness: 180, damping: 18 });
+  function onPointerMove(e: PointerEvent<HTMLElement>) {
+    const el = e.currentTarget;
+    // Events from the portalled drawer and dialog bubble here through React; ignore them.
+    if (!el.contains(e.target as Node)) return;
+    const r = el.getBoundingClientRect();
+    el.style.setProperty("--mx", `${e.clientX - r.left}px`);
+    el.style.setProperty("--my", `${e.clientY - r.top}px`);
+    el.style.setProperty("--spot", "1");
+    if (e.pointerType === "mouse" && motionLevel() === "full") {
+      tiltY.set(((e.clientX - r.left) / r.width - 0.5) * 5);
+      tiltX.set(-((e.clientY - r.top) / r.height - 0.5) * 5);
+    }
+  }
+  function onPointerLeave(e: PointerEvent<HTMLElement>) {
+    e.currentTarget.style.setProperty("--spot", "0");
+    tiltX.set(0);
+    tiltY.set(0);
+  }
+
+  // Drag to decide.
+  const x = useMotionValue(0);
+  const rotate = useTransform(x, [-240, 240], [-7, 7]);
+  const approveHint = useTransform(x, [30, SWIPE], [0, 1]);
+  const skipHint = useTransform(x, [-SWIPE, -30], [1, 0]);
+
+  function approve() {
+    try {
+      if (ref.current && motionLevel() === "full") explodeInto(ref.current, dockPoint(), absorb);
+    } catch {
+      // The effect is decoration: approving must never depend on it.
+    }
+    onApprove();
+  }
+  function openReject() {
+    setUsed((u) => ({ ...u, reject: true }));
+    setRejectOpen(true);
+  }
+  function onDragEnd(_: unknown, info: PanInfo) {
+    if (info.offset.x > SWIPE && card.executable) approve();
+    else if (info.offset.x < -SWIPE) openReject();
+  }
+
+  const dialogs = (
+    <>
+      {used.evidence ? <EvidenceDrawer card={card} open={evidenceOpen} onOpenChange={setEvidenceOpen} /> : null}
+      {used.reject ? (
+        <RejectDialog card={card} open={rejectOpen} onOpenChange={setRejectOpen} onSubmit={onReject} />
+      ) : null}
+    </>
   );
-  const note = card.preference_note ? (
-    <p className="mt-4 flex items-start gap-2 text-sm text-pos">
-      <Check aria-hidden className="mt-0.5 size-4 shrink-0" strokeWidth={2.25} />
-      {card.preference_note}
-    </p>
-  ) : null;
+  const openEvidence = () => {
+    setUsed((u) => ({ ...u, evidence: true }));
+    setEvidenceOpen(true);
+  };
+
+  if (status === "approved") {
+    return (
+      <motion.article
+        layout
+        aria-labelledby={titleId}
+        data-status={status}
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ ...FALL, delay: motionLevel() === "full" ? 0.35 : 0 }}
+        className="glass flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl px-5 py-4"
+      >
+        <span className="grid size-8 shrink-0 place-items-center rounded-full bg-pos/15 text-pos">
+          <Check aria-hidden className="size-4" strokeWidth={2.5} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <Heading id={titleId} className="truncate font-medium text-ink">
+            {card.title}
+          </Heading>
+          <p role="status" className="text-sm text-muted-foreground">
+            Approved ·{" "}
+            {sample
+              ? "sample brief, no portal touched"
+              : `the agent is on it in ${PORTAL[card.portal ?? ""] ?? "the portal"}`}
+          </p>
+        </div>
+        <Button size="lg" variant="ghost" onClick={openEvidence}>
+          See evidence
+        </Button>
+        {dialogs}
+      </motion.article>
+    );
+  }
 
   return (
-    <article
-      aria-labelledby={titleId}
-      data-status={status}
-      style={enterDelay(index * 80)}
-      className={cn("enter", lead && "grid gap-8 lg:grid-cols-12 lg:gap-10")}
-    >
-      <div className={cn(lead && "lg:col-span-8")}>
-        <Kicker card={card} />
-        <Heading
-          id={titleId}
-          className={cn(
-            "mt-3 font-display font-medium tracking-[-0.015em] text-ink",
-            lead
-              ? "text-[2.375rem] leading-[1.02] sm:text-5xl lg:text-[3.5rem]"
-              : "text-[1.875rem] leading-[1.08]",
-          )}
+    <div className="relative [perspective:1200px]">
+      {/* What a drag will do, revealed behind the card as it moves. */}
+      {card.executable ? (
+        <motion.p
+          aria-hidden
+          style={{ opacity: approveHint }}
+          className="absolute inset-y-0 left-6 flex items-center gap-2 text-sm font-medium text-pos"
         >
-          {card.title}
-        </Heading>
-        {!lead ? (
-          <p className="mt-3 flex flex-wrap items-baseline gap-x-2">
-            <Figure
-              value={card.impact_eur_weekly}
-              className="font-display text-2xl font-medium text-ink"
-            />
-            <span className="text-sm text-muted-foreground">
-              a week{impact ? ` · ${impact.label.toLowerCase()}` : ""}
+          Approve <MoveRight className="size-4" />
+        </motion.p>
+      ) : null}
+      <motion.p
+        aria-hidden
+        style={{ opacity: skipHint }}
+        className="absolute inset-y-0 right-6 flex items-center gap-2 text-sm font-medium text-muted-foreground"
+      >
+        <MoveLeft className="size-4" /> Not now
+      </motion.p>
+
+      <motion.article
+        ref={ref}
+        layout="position"
+        aria-labelledby={titleId}
+        data-status={status}
+        initial={{ opacity: 0, y: -60, scale: 0.94 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ ...FALL, delay: 0.15 + index * 0.12 }}
+        style={{ x, rotate, rotateX: tiltX, rotateY: tiltY }}
+        drag={proposed && level === "full" ? "x" : false}
+        dragDirectionLock
+        dragSnapToOrigin
+        dragElastic={1}
+        dragConstraints={{ left: 0, right: 0 }}
+        onDragEnd={onDragEnd}
+        onPointerMove={onPointerMove}
+        onPointerLeave={onPointerLeave}
+        whileDrag={{ scale: 1.02, cursor: "grabbing" }}
+        className={cn(
+          "glass spotlight touch-pan-y rounded-[var(--t-radius-card)] p-6 sm:p-8",
+          lead && "grid gap-8 lg:grid-cols-12 lg:gap-10",
+        )}
+      >
+        <div
+          className={cn("transition-opacity duration-300", forming && "opacity-0", lead && "lg:col-span-7")}
+        >
+          <p className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="rounded-full bg-press/15 px-2.5 py-1 font-medium text-press-ink">{KIND[card.kind]}</span>
+            <span className="rounded-full border border-glass-line px-2.5 py-1 text-muted-foreground" translate="no">
+              {card.portal ? (PORTAL[card.portal] ?? card.portal) : "Advice only"}
             </span>
           </p>
+          <Heading
+            id={titleId}
+            data-particle-text
+            className={cn(
+              "mt-4 font-semibold tracking-[-0.035em] text-ink",
+              lead ? "text-4xl leading-[1.02] sm:text-5xl" : "text-[1.75rem] leading-[1.08]",
+            )}
+          >
+            {card.title}
+          </Heading>
+          {!lead ? (
+            <p className="mt-3 flex flex-wrap items-baseline gap-x-2">
+              <Figure value={card.impact_eur_weekly} className="text-2xl font-semibold tracking-tight text-ink" />
+              <span className="text-sm text-muted-foreground">
+                a week{impact ? ` · ${impact.label.toLowerCase()}` : ""}
+              </span>
+            </p>
+          ) : null}
+          <Deck
+            text={card.why}
+            className={cn("mt-4 max-w-[40rem] text-muted-foreground", lead ? "text-lg leading-relaxed" : "leading-relaxed")}
+          />
+          {card.preference_note ? (
+            <p className="mt-4 flex items-start gap-2 text-sm text-pos">
+              <Check aria-hidden className="mt-0.5 size-4 shrink-0" strokeWidth={2.25} />
+              {card.preference_note}
+            </p>
+          ) : null}
+          {!lead ? (
+            <div className="mt-6">
+              <CardVisual card={card} />
+            </div>
+          ) : null}
+
+          <div className="mt-6 flex flex-wrap items-center gap-2">
+            {card.executable ? (
+              <Button size="lg" onClick={approve} disabled={status === "approving"}>
+                {status === "approving" ? <Loader2 aria-hidden className="animate-spin" /> : null}
+                {status === "approving" ? "Starting…" : "Approve"}
+              </Button>
+            ) : null}
+            <Button size="lg" variant="outline" onClick={openEvidence}>
+              See evidence
+            </Button>
+            <Button size="lg" variant="ghost" onClick={openReject}>
+              Not now
+            </Button>
+          </div>
+        </div>
+
+        {lead ? (
+          <aside
+            aria-label="The figures"
+            className={cn("transition-opacity duration-300 lg:col-span-5", forming && "opacity-0")}
+          >
+            <p className="text-sm text-muted-foreground">{impact?.label ?? "Weekly impact"}</p>
+            <p className="mt-1 flex items-baseline gap-2">
+              <Figure
+                value={card.impact_eur_weekly}
+                className="text-6xl leading-none text-press-ink font-semibold tracking-[-0.04em] sm:text-7xl"
+              />
+              <span className="text-sm text-muted-foreground">a week</span>
+            </p>
+            <div className="mt-8">
+              <CardVisual card={card} />
+            </div>
+          </aside>
         ) : null}
-        <Deck
-          text={card.why}
-          className={cn(
-            "mt-4 max-w-[40rem] font-serif text-ink/85",
-            lead ? "text-xl leading-[1.5]" : "text-[1.0625rem] leading-[1.55]",
-          )}
-        />
-        {note}
-        {actions}
-        {run ? <RunTicker events={run} label="Sample run" /> : null}
-      </div>
-
-      {lead ? (
-        <aside
-          aria-label="The figures"
-          className="border-t border-line pt-6 lg:col-span-4 lg:border-t-0 lg:border-l lg:pt-1 lg:pl-10"
-        >
-          <p className="kicker text-muted-foreground">{impact?.label ?? "Weekly impact"}</p>
-          <p className="mt-2 flex items-baseline gap-2">
-            <Figure
-              value={card.impact_eur_weekly}
-              className="font-display text-6xl leading-none font-medium tracking-[-0.02em] text-ink"
-            />
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground">a week</p>
-          <dl className="mt-6 border-t border-ink">
-            {keyFigures(card).map((n) => (
-              <div
-                key={n.key}
-                className="flex items-baseline gap-2 border-b border-line py-2.5 text-[0.9375rem]"
-              >
-                <dt className="flex min-w-0 flex-1 items-baseline gap-2 text-muted-foreground">
-                  <span className="shrink-0">{n.label}</span>
-                  <span aria-hidden className="mb-1 min-w-4 flex-1 border-b border-dotted border-line" />
-                </dt>
-                <dd className="font-medium text-ink tabular">
-                  <FigureValue n={n} />
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </aside>
-      ) : null}
-
-      {used.evidence ? (
-        <EvidenceDrawer card={card} open={evidenceOpen} onOpenChange={setEvidenceOpen} />
-      ) : null}
-      {used.reject ? (
-        <RejectDialog
-          card={card}
-          open={rejectOpen}
-          onOpenChange={setRejectOpen}
-          onSubmit={onReject}
-        />
-      ) : null}
-    </article>
+        {dialogs}
+      </motion.article>
+    </div>
   );
 }

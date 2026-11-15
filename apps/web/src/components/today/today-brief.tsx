@@ -1,7 +1,7 @@
 "use client";
 
 import { ListChecks, Loader2, Sunrise } from "lucide-react";
-import { startTransition, useState, ViewTransition } from "react";
+import { startTransition, useEffect, useMemo, useRef, useState } from "react";
 
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
@@ -11,7 +11,10 @@ import { Button } from "@/components/ui/button";
 import { approve, reject, sampleAfterReject, useBrief, type LoadedBrief } from "@/lib/brief";
 import type { ActionCard as Card } from "@/lib/contracts";
 import { formatDateline, formatTime } from "@/lib/format";
-import { enterDelay } from "@/lib/motion";
+import { PORTAL_LABEL } from "@/lib/labels";
+import { loadSampleRun } from "@/lib/runs";
+import { startRun } from "@/lib/agent-runs";
+import { useRegisterCommands, type Command } from "@/lib/commands";
 
 const PLACE = "Hafer & Bohne · Bonn-Südstadt";
 const COUNT_WORDS = ["No", "One", "Two", "Three", "Four", "Five", "Six"];
@@ -49,6 +52,26 @@ function BriefSkeleton() {
       </div>
     </div>
   );
+}
+
+/** Puts "Approve …" for each pending card into the ⌘K palette while the brief is shown. */
+function BriefCommands({ pending, onApprove }: { pending: Card[]; onApprove: (card: Card) => void }) {
+  const latest = useRef(onApprove);
+  useEffect(() => {
+    latest.current = onApprove;
+  });
+  const commands = useMemo<Command[]>(
+    () =>
+      pending.map((card) => ({
+        id: `approve:${card.id}`,
+        group: "Approve",
+        label: card.title,
+        run: () => latest.current(card),
+      })),
+    [pending],
+  );
+  useRegisterCommands("brief", commands);
+  return null;
 }
 
 export function TodayBrief() {
@@ -105,13 +128,24 @@ export function TodayBrief() {
 
   async function approveOne(card: Card) {
     setOne(card.id, "approving");
+    const portal = card.portal ? (PORTAL_LABEL[card.portal] ?? card.portal) : null;
     if (sample) {
       setOne(card.id, "approved");
       setMessage(`${card.title}: approved (sample brief, no portal was touched).`);
+      // The dock plays the recorded sample run when the fixture has one for this card.
+      const events = await loadSampleRun(card.id).catch(() => null);
+      startRun({
+        id: card.id,
+        title: card.title,
+        portal,
+        events,
+        note: `${card.title}: approved · no recorded run in the sample`,
+      });
       return;
     }
     try {
       await approve(brief, card);
+      startRun({ id: card.id, title: card.title, portal, events: null, note: `${card.title}: the agent has started` });
       setOne(card.id, "approved");
       setMessage(`${card.title}: approved, the agent is on it.`);
     } catch {
@@ -168,29 +202,17 @@ export function TodayBrief() {
   // Identity is the candidate (stock-out of oat milk, margin of Franzbrötchen…), not the
   // card id, which changes when a rebuilt brief re-prices the same story.
   const story = (card: Card, variant: "lead" | "column", index: number) => (
-    <ViewTransition
+    <ActionCard
       key={card.candidate_id}
-      name={`story-${card.candidate_id.replace(/[^a-zA-Z0-9_-]/g, "-")}`}
-      share="story"
-      update="story"
-      enter="story-enter"
-      exit="story-exit"
-      default="none"
-    >
-      <div>
-        <ActionCard
-          card={card}
-          variant={variant}
-          index={index}
-          sample={sample}
-          status={status[card.id] ?? "proposed"}
-          onApprove={() => void approveOne(card)}
-          onReject={(reason) => rejectOne(card, reason)}
-        />
-      </div>
-    </ViewTransition>
+      card={card}
+      variant={variant}
+      index={index}
+      sample={sample}
+      status={status[card.id] ?? "proposed"}
+      onApprove={() => void approveOne(card)}
+      onReject={(reason) => rejectOne(card, reason)}
+    />
   );
-
   return (
     <>
       <PageHeader
@@ -219,6 +241,7 @@ export function TodayBrief() {
       <p role="status" aria-live="polite" className="sr-only">
         {message}
       </p>
+      <BriefCommands pending={pending} onApprove={(card) => void approveOne(card)} />
 
       {!lead ? (
         <EmptyState
@@ -230,22 +253,12 @@ export function TodayBrief() {
         <>
           {story(lead, "lead", 0)}
           {rest.length > 0 ? (
-            <section aria-labelledby="also-heading" className="mt-14 lg:mt-16">
-              <div className="enter flex items-center gap-4" style={enterDelay(80)}>
-                <h2 id="also-heading" className="kicker shrink-0 text-ink">
-                  Also in this edition
-                </h2>
-                <span aria-hidden className="h-px flex-1 bg-ink" />
-              </div>
-              <div className="mt-8 grid divide-y divide-line sm:grid-cols-2 sm:divide-x sm:divide-y-0">
-                {rest.map((card, i) => (
-                  <div
-                    key={card.candidate_id}
-                    className="py-8 first:pt-0 last:pb-0 sm:px-8 sm:py-0 sm:first:pl-0 sm:last:pr-0"
-                  >
-                    {story(card, "column", i + 1)}
-                  </div>
-                ))}
+            <section aria-labelledby="also-heading" className="mt-10">
+              <h2 id="also-heading" className="kicker text-muted-foreground">
+                Also today
+              </h2>
+              <div className="mt-4 grid items-start gap-5 md:grid-cols-2">
+                {rest.map((card, i) => story(card, "column", i + 1))}
               </div>
             </section>
           ) : null}
@@ -258,7 +271,7 @@ export function TodayBrief() {
         </p>
       ) : null}
 
-      <footer className="mt-16 border-t border-ink pt-4 text-sm leading-relaxed text-muted-foreground">
+      <footer className="mt-16 border-t border-line pt-4 text-sm leading-relaxed text-muted-foreground">
         <p className="max-w-3xl">
           Prepared at {formatTime(brief.generated_at)} from the till, the invoices and the
           forecast. Every figure here was computed by code, and the words around them were

@@ -47,15 +47,12 @@ function view(events: RunEvent[], upTo: number) {
   return { mode, step, totalSteps, intent, heal, heals, usd, finished };
 }
 
-/**
- * The approved card's run, played back from its recorded events: the step the agent is
- * on, REPLAY switching to HEAL when a button moved, the cost ticking, then the result.
- * Every word and number is an event field; nothing is generated here.
- */
-export function RunTicker({ events, label }: { events: RunEvent[]; label: string }) {
+export type Playback = ReturnType<typeof useRunPlayback>;
+
+/** Plays a run's recorded events back in time (about 2× speed); the owner shows it. */
+export function useRunPlayback(events: RunEvent[]) {
   const [upTo, setUpTo] = useState(() => (prefersReducedMotion() ? events.length : 1));
   const [round, setRound] = useState(0);
-  const strip = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (upTo >= events.length) return;
@@ -65,12 +62,27 @@ export function RunTicker({ events, label }: { events: RunEvent[]; label: string
 
   const v = useMemo(() => view(events, upTo), [events, upTo]);
   const progress = v.finished ? 1 : v.totalSteps ? v.step / v.totalSteps : 0;
+  const restart = () => {
+    setUpTo(1);
+    setRound((r) => r + 1);
+  };
+  return { v, progress, restart };
+}
+
+/**
+ * A run, played back from its recorded events: the step the agent is on, REPLAY
+ * switching to HEAL when a button moved, the cost ticking, then the result. Every word
+ * and number is an event field; nothing is generated here.
+ */
+export function RunTicker({ playback, label }: { playback: Playback; label: string }) {
+  const { v, progress, restart } = playback;
+  const strip = useRef<HTMLDivElement>(null);
   // One live region that stays mounted, so screen readers hear each heal and the result
   // (not every step).
   const announce = v.finished ? v.finished.summary : v.heal?.startsWith("Healed") ? v.heal : "";
 
   return (
-    <div ref={strip} tabIndex={-1} className="mt-5 border-t border-ink pt-3 outline-none">
+    <div ref={strip} tabIndex={-1} className="outline-none">
       <p role="status" className="sr-only">
         {announce}
       </p>
@@ -119,11 +131,10 @@ export function RunTicker({ events, label }: { events: RunEvent[]; label: string
             <button
               type="button"
               onClick={() => {
-                setUpTo(1);
-                setRound((r) => r + 1);
+                restart();
                 strip.current?.focus(); // the button unmounts while the run plays
               }}
-              className="link-draw inline-flex min-h-11 cursor-pointer items-center gap-1 text-press-ink motion-reduce:hidden sm:min-h-0"
+              className="link-draw inline-flex min-h-11 cursor-pointer items-center gap-1 text-press-ink calm-hidden sm:min-h-0"
             >
               <RotateCcw aria-hidden className="size-3.5" />
               Watch again

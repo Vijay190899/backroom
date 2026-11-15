@@ -10,9 +10,9 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-newsreader-display), var(--font-newsreader);
-  --font-heading: var(--font-newsreader-display), var(--font-newsreader);
-  --font-serif: var(--font-newsreader);
+  --font-display: var(--font-geist-sans);
+  --font-heading: var(--font-geist-sans);
+  --font-serif: var(--font-geist-sans);
   --color-ink: var(--t-ink);
   --color-surface: var(--t-surface);
   --color-subtle: var(--t-subtle);
@@ -24,6 +24,10 @@
   --color-explore: var(--t-explore);
   --color-replay: var(--t-replay);
   --color-heal: var(--t-heal);
+  --color-amber: var(--t-amber);
+  --color-glass: var(--t-glass);
+  --color-glass-strong: var(--t-glass-strong);
+  --color-glass-line: var(--t-glass-line);
   --color-chart-mark: var(--t-chart-1);
   --ease-out-soft: var(--t-ease-out);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -141,6 +145,66 @@
   .tabular {
     font-variant-numeric: tabular-nums lining-nums;
   }
+  /* Glass panel over the ambient field: translucent fill, hairline, inner highlight. */
+  .glass {
+    background: var(--t-glass);
+    border: 1px solid var(--t-glass-line);
+    box-shadow: var(--t-shadow);
+    backdrop-filter: blur(18px) saturate(1.4);
+    -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  }
+  /* Chrome that content scrolls under (header, tab bar, dock): mostly opaque glass. */
+  .glass-solid {
+    background: color-mix(in oklch, var(--t-bg) 84%, transparent);
+    backdrop-filter: blur(28px) saturate(1.5);
+    -webkit-backdrop-filter: blur(28px) saturate(1.5);
+  }
+  /* Cursor light: set --mx/--my (px) on pointer move; the border and fill glow there. */
+  .spotlight {
+    position: relative;
+    isolation: isolate;
+  }
+  .spotlight::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    opacity: var(--spot, 0);
+    background: radial-gradient(
+      420px circle at var(--mx, 50%) var(--my, 50%),
+      var(--t-glow),
+      transparent 60%
+    );
+    transition: opacity 300ms var(--t-ease-out);
+  }
+  .spotlight::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    opacity: var(--spot, 0);
+    background: radial-gradient(
+      260px circle at var(--mx, 50%) var(--my, 50%),
+      color-mix(in oklch, var(--t-accent) 80%, transparent),
+      transparent 70%
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    transition: opacity 300ms var(--t-ease-out);
+  }
+  /* Ember-to-amber text, for the few words that carry the moment. */
+  .text-ember {
+    background: linear-gradient(100deg, var(--t-accent), var(--t-amber));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
   /* Newspaper section label: small, tracked capitals (colour set where used). */
   .kicker {
     font-family: var(--font-geist-sans);
@@ -193,15 +257,44 @@
   --t-vt-move: 380ms;
 }
 
-/* The masthead "impression": painted from the first frame (so it is the LCP at once),
- * it inks in from a soft blur like type pressed onto paper. */
-.impress {
-  animation: impress 900ms var(--t-ease-settle) both;
+/* Headline words drop into place on a spring (overshoot, then settle). */
+:root {
+  --t-spring: linear(
+    0, 0.009, 0.035 2.1%, 0.141, 0.281 6.7%, 0.723 12.9%, 0.938 16.7%, 1.017, 1.077, 1.121,
+    1.149 24.3%, 1.159, 1.163, 1.161, 1.154 29.9%, 1.129 32.8%, 1.051 39.6%, 1.017 43.1%,
+    0.991, 0.977 51%, 0.974 53.8%, 0.975 57.1%, 0.997 69.8%, 1.003 76.9%, 1.004 83.8%, 1
+  );
 }
-@keyframes impress {
+.word-drop {
+  animation: word-drop 900ms var(--t-spring) both;
+  animation-delay: var(--enter-delay, 0ms);
+}
+@keyframes word-drop {
   from {
-    filter: blur(6px);
+    transform: translateY(-115%) rotate(-4deg);
   }
+}
+html[data-motion="calm"] .word-drop,
+html[data-motion="calm"] .enter,
+html[data-motion="calm"] .marker,
+html[data-motion="calm"] .wipe,
+html[data-motion="calm"] .bar-grow,
+html[data-motion="calm"] .edge-draw,
+html[data-motion="calm"] .stamp-in,
+html[data-motion="calm"] .enter-rule {
+  animation: none;
+}
+html[data-motion="calm"] .calm-hidden {
+  display: none;
+}
+html[data-motion="calm"] .animate-pulse {
+  animation: none;
+}
+html[data-motion="calm"]::view-transition-old(*),
+html[data-motion="calm"]::view-transition-new(*),
+html[data-motion="calm"]::view-transition-group(*) {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
 }
 
 /* A marker sweep under words Backroom just changed (the rebuilt brief). */
@@ -389,15 +482,13 @@
 .flow[data-paused] .flow-pulse {
   animation-play-state: paused;
 }
-@media (prefers-reduced-motion: reduce) {
-  /* At rest on "You approve" (the fifth of six steps). */
-  .flow-pulse {
-    animation: none;
-    translate: 0 calc((100cqh - 4.5rem) * 0.8);
-  }
+/* Calm: at rest on "You approve" (the fifth of six steps). */
+html[data-motion="calm"] .flow-pulse {
+  animation: none;
+  translate: 0 calc((100cqh - 4.5rem) * 0.8);
 }
-@media (prefers-reduced-motion: reduce) and (width >= 40rem) {
-  .flow-pulse {
+@media (width >= 40rem) {
+  html[data-motion="calm"] .flow-pulse {
     translate: calc(100cqw * 4 / 6) 0;
   }
 }

@@ -48,7 +48,7 @@ export function FlowDiagram() {
         type="button"
         onClick={() => setPaused((p) => !p)}
         aria-label={paused ? "Play the flow" : "Pause the flow"}
-        className="absolute -top-12 right-0 inline-flex size-11 cursor-pointer motion-reduce:hidden items-center justify-center rounded-full border border-ink/25 text-ink transition-colors duration-150 hover:border-ink/60"
+        className="absolute -top-12 right-0 inline-flex size-11 cursor-pointer calm-hidden items-center justify-center rounded-full border border-ink/25 text-ink transition-colors duration-150 hover:border-ink/60"
       >
         {paused ? <Play aria-hidden className="size-4" /> : <Pause aria-hidden className="size-4" />}
       </button>

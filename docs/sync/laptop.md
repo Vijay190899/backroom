@@ -14,6 +14,23 @@ Notes: surprises, shortcuts, things left undone.
 
 ---
 
+## Sat 14 Nov 2026 · L8 (part 3: command-center redesign) · branch laptop/l8-today
+Done:
+- Second redesign at the owner's request (DECISIONS L-75): glass panels over a WebGL ember light field, Geist type, an ember accent.
+- Today: cards spring in, light up and tilt under the cursor, and drag right to approve or left to skip. Each card has a graphic from its own numbers (margin scale, stock cells, rain-vs-dry bars).
+- Approve explodes the card's text into particles that fly into a floating Agent dock; the dock plays the sample run (ring fills, turns violet while healing). A rebuilt card assembles from particles.
+- ⌘K command palette (go to a page, approve a card, theme, motion) and a header motion toggle.
+Verify:
+- `pnpm check`: green (312 pytest, eslint, tsc, contracts).
+- Headless-Chrome checks at 390 and 1440 px, light and dark, cover every page and flow, including the explosion, the dock run, the particle rebuild and the palette.
+- Lighthouse on a production build, phones: `/` 96, `/bench` 95, `/skills` 95; desktop 99–100; accessibility 100.
+Needs from PC:
+- Unchanged from part 2. For live approve, call `startRun` (`lib/agent-runs.ts`) with the run's events as they stream.
+Notes:
+- New dependency: `motion` 14.9.0. Removed: Newsreader and `src/fonts/`.
+- Skills, Memory, Bench and About have the new theme and shell but their part-2 layouts.
+- Independent audit: 0 blockers, 14 should-fix items. Fixed: the palette's see-through panel, calm mode still moving (drag, stock pulse, route slides, About pulse), the header toggle being ignored under the OS setting, a total that added unlike amounts (removed), the dock's missing "Sample run" label, 44 px targets, palette keyboard gaps, frame-rate-dependent particle physics, and a lost WebGL context.
+
 ## Sat 14 Nov 2026 · L8 (part 2: Skills, Memory, Bench, About + motion) · branch laptop/l8-today
 Done:
 - Motion layer (DECISIONS L-71), on View Transitions, CSS and NumberFlow:
