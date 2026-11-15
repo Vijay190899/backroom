@@ -1,16 +1,16 @@
 # Demo Script — 5 minutes
 
-**Setup before the call:** deployed URL open in a browser at 110% zoom. `/bench` in a second tab. Portals pre-warmed (skills compiled at seed 0). Chaos seed 7 verified to heal. Live-mode access code set. Local `docker compose` running as a backup.
+**Setup before the call:** deployed URL open in a browser at 110% zoom. `/bench` in a second tab. Portals pre-warmed (skills compiled at seed 0). Chaos seed 7 verified to heal. Live-mode access code set. Local `docker compose` running as a backup. Open the app in a **fresh tab** just before the call: the café walk-in intro plays once per tab.
 
 | t | Beat | What you show | Line |
 |---|---|---|---|
-| 0:00 | Hook | Today: 3 cards for Hafer & Bohne | "Your homepage ends at 'Approve all'. This is what happens after the owner taps it." |
+| 0:00 | Hook | The intro walks into the café, the door opens, and Today appears: 3 cards for Hafer & Bohne | "Your homepage ends at 'Approve all'. This is what happens after the owner taps it." |
 | 0:30 | Evidence | Open the Franzbrötchen margin card's evidence drawer: SQL result, invoice fact, butter +16%, margin 71% → 68% (target 70%) | "Every euro here was computed by code. The model writes the sentence, and a number guard rejects any figure that isn't in the evidence." |
-| 1:00 | Act | Approve "Reorder oat milk" → Run theater: login, TOTP, cart, checkout. REPLAY badge, 2.x s, $0.000 | "It ran this before, so it compiled the run into a skill. No LLM call this time." |
-| 1:40 | Break it | Chaos seed 7 (German labels, moved nav, cookie modal) → replay fails at step 4 → HEAL on Haiku → success → skill v2 diff | "The site changed. It noticed, fixed itself, and now every merchant on this portal gets the fix." |
+| 1:00 | Act | Approve "Reorder oat milk": the card bursts into the Agent dock and a delivery van crosses the background. Open the dock → "Open in the run theater" (`/runs/<id>`): login, TOTP, cart, checkout. REPLAY badge, ticker at 2.x s, $0.000 | "It ran this before, so it compiled the run into a skill. No LLM call this time." |
+| 1:40 | Break it | In the theater, set chaos seed 7 (German labels, moved nav, cookie modal), approve again → replay fails at "Sign in" → the heal ladder: fallback ✗, healer (Haiku) ✓ → success → skill v2 diff on `/skills` | "The site changed. It noticed, fixed itself, and now every merchant on this portal gets the fix." |
 | 2:40 | Remember | Memory: drag the time slider back 10 days → butter price fact superseded; fact provenance = invoice PDF | "Facts have validity windows, so it knows what was true when. That's what makes memory compound instead of bloat." |
 | 3:20 | Learn the owner | Reject the Franzbrötchen card (€3.20 → €3.60, +12.5%) with "too steep, max 8%" → new Preference fact appears in memory → regenerate → €3.45 (+7.8%, margin still 70%), "kept under your 8% cap" | "Rejections become rules the verifier enforces. That's the second self-improvement loop." |
-| 4:00 | Proof | `/bench`: learning curve (spikes at redesigns, then recovery), success under 20 chaos seeds, $/task, memory vs raw-dump accuracy and tokens | "These are measured, reproducible numbers. One command, results committed with the git SHA." |
+| 4:00 | Proof | `/bench`: each benchmark's measured headline (success under 20 chaos seeds, warm p50 and $ on the learning curve, memory accuracy at a fraction of the raw dump's tokens, 100% of displayed numbers verified), with n, date and git SHA | "These are measured, reproducible numbers. One command, results committed with the git SHA." |
 | 4:40 | Close | `/about` architecture + model table | "Provider and models are env vars. Haiku does the work and Sonnet plans, via OpenRouter today. Switching to Opus, or going direct to Anthropic, is one line. How I'd take this to a real POS: API adapters first, browser skills for the long tail." |
 
 ## Likely questions (prepare crisp answers)

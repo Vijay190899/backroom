@@ -5,6 +5,16 @@ Only the **laptop** edits this file (the PC never does, so it cannot conflict). 
 Entry format:
 
 ```
+## Sun 15 Nov 2026 · L13 (part 1: bench page reads results; demo script) · branch laptop/l9-run-theater
+Done:
+- `/bench` reads `bench/results/b1,b2,b3,b5.json` at build time (`lib/bench-results.ts`) and shows each benchmark's measured headline with n, date and git SHA. A missing file, or one with `fake: true`, shows "Not run yet".
+- `docs/DEMO_SCRIPT.md` follows the current UI: the intro, the dock → run theater, the chaos picker in the theater, the bench headlines.
+Verify:
+- With L11's fake results copied in as non-fake, `/bench` showed every headline. Without them, "Not run yet" stays.
+- `pnpm check` is green.
+Needs from PC:
+- After H7 commits `bench/results/*.json`, a rebuild shows them; no code change needed.
+
 ## <date time> · L<id> · branch laptop/<id>-<slug>
 Done: what works now.
 Verify: the exact commands to check it (and what you should see).

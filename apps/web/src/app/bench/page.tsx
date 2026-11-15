@@ -5,6 +5,7 @@ import probeJson from "../../../../../bench/results/provider_probe.json";
 
 import { PageTransition } from "@/components/motion/page-transition";
 import { PageHeader } from "@/components/page-header";
+import { headline } from "@/lib/bench-results";
 import { enterDelay } from "@/lib/motion";
 import { probeSchema } from "@/lib/schemas/probe";
 import { cn } from "@/lib/utils";
@@ -61,6 +62,27 @@ const BENCHMARKS = [
     target: "100% of displayed numbers verified",
   },
 ];
+
+/** A benchmark's measured headline, or an honest "not run yet" until its results exist. */
+function BenchHeadline({ id }: { id: string }) {
+  const h = headline(id);
+  if (!h) {
+    return (
+      <p className="self-start sm:text-right">
+        <span className="kicker inline-flex h-7 items-center border border-dashed border-ink/30 px-2 text-[0.625rem] text-muted-foreground">
+          Not run yet
+        </span>
+      </p>
+    );
+  }
+  return (
+    <div className="self-start sm:text-right">
+      <p className="font-display text-3xl text-ink tabular">{h.value}</p>
+      <p className="mt-1 text-sm text-muted-foreground">{h.detail}</p>
+      <p className="mt-1 font-mono text-[11px] text-muted-foreground">{h.meta}</p>
+    </div>
+  );
+}
 
 const ms = new Intl.NumberFormat("en-GB");
 const usd = (v: number) =>
@@ -203,11 +225,7 @@ export default function BenchPage() {
                   {b.target}
                 </p>
               </div>
-              <p className="self-start sm:text-right">
-                <span className="kicker inline-flex h-7 items-center border border-dashed border-ink/30 px-2 text-[0.625rem] text-muted-foreground">
-                  Not run yet
-                </span>
-              </p>
+              <BenchHeadline id={b.id} />
             </li>
           ))}
         </ol>
