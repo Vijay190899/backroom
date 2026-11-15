@@ -1,0 +1,18 @@
+{% extends "grainline/base.html" %}
+{% block body %}
+{%- set items = [
+  ("/grainline/catalog", "nav_catalog"),
+  ("/grainline/cart", "nav_cart"),
+  ("/grainline/orders", "nav_orders"),
+  ("/grainline/invoices", "nav_invoices"),
+] -%}
+{% if look.nav == 'sidebar' %}
+<div class="{{ look.cls('layout') }}">
+  {{ m.nav(items, "/grainline/logout") }}
+  <main>{% block main %}{% endblock %}</main>
+</div>
+{% else %}
+{{ m.nav(items, "/grainline/logout") }}
+<main>{{ self.main() }}</main>
+{% endif %}
+{% endblock %}

@@ -39,7 +39,7 @@ exclude = ["**/node_modules", "**/.venv", "apps", "graphify-out"]
 reportMissingTypeStubs = false
 
 [tool.pytest.ini_options]
-testpaths = ["services/api/tests", "services/portals/tests"]
+testpaths = ["services/api/tests", "services/portals/tests", "data/tests"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 addopts = "-q --import-mode=importlib"

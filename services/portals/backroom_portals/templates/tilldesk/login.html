@@ -1,0 +1,13 @@
+{% extends "tilldesk/base.html" %}
+{% block title %}Log in · TillDesk{% endblock %}
+{% block body %}
+<main>
+  <h1>Back office login</h1>
+  <form class="{{ look.cls('box') }}" method="post" action="/tilldesk/login" data-testid="{{ tid('login_form') }}">
+    {% if error %}<p class="{{ look.cls('error') }}" role="alert" data-testid="{{ tid('login_error') }}">Unknown user or wrong password.</p>{% endif %}
+    {{ m.field('username', 'username', attrs='autocomplete="username" required') }}
+    {{ m.field('password', 'password', type='password', attrs='autocomplete="current-password" required') }}
+    <div>{{ m.submit('log_in') }}</div>
+  </form>
+</main>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "grainline/base.html" %}
+{% block title %}Sign in · Grainline Wholesale{% endblock %}
+{% block body %}
+<main>
+  <h1>Customer login</h1>
+  <form class="{{ look.cls('box') }}" method="post" action="/grainline/login" data-testid="{{ tid('login_form') }}">
+    {% if error %}<p class="{{ look.cls('error') }}" role="alert" data-testid="{{ tid('login_error') }}">Email or password is incorrect.</p>{% endif %}
+    {{ m.field('email', 'email', type='email', attrs='autocomplete="username" required') }}
+    {{ m.field('password', 'password', type='password', attrs='autocomplete="current-password" required') }}
+    <div>{{ m.submit('sign_in') }}</div>
+  </form>
+</main>
+{% endblock %}

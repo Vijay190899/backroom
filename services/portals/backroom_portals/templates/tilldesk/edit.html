@@ -1,0 +1,12 @@
+{% extends "tilldesk/app.html" %}
+{% block title %}Edit {{ item.name }} · TillDesk{% endblock %}
+{% block main %}
+<h1>Edit {{ item.name }}</h1>
+<p class="{{ look.cls('muted') }}">On the till now: €{{ '%.2f' % item.published_price_eur }}</p>
+<form class="{{ look.cls('box') }}" method="post" action="/tilldesk/menu/{{ item.id }}" data-testid="{{ tid('edit_form') }}">
+  {% if error %}<p class="{{ look.cls('error') }}" role="alert" data-testid="{{ tid('price_error') }}">Enter a price between €0.10 and €99.99, for example 3.60.</p>{% endif %}
+  {{ m.field('price', 'price_eur', value='%.2f' % item.price_eur, attrs='inputmode="decimal" autocomplete="off" required', id_base='price') }}
+  <div>{{ m.submit('save') }}</div>
+</form>
+<p><a href="/tilldesk/menu">Back to the menu</a></p>
+{% endblock %}

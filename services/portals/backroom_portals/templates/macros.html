@@ -1,0 +1,107 @@
+{#- Chaos-aware building blocks shared by every portal. Import "with context". -#}
+
+{#- Wraps content in `look.depth` extra <div>s (chaos family wrapper_depth). -#}
+{% macro wrap() -%}
+{%- for _ in range(look.depth) %}<div class="{{ look.cls('w') }}">{% endfor -%}
+{{ caller() }}
+{%- for _ in range(look.depth) %}</div>{% endfor -%}
+{%- endmacro %}
+
+{#- The primary action of a form: a <button>, or a link that submits it (control_kind). -#}
+{% macro submit(key, row=None, aria=None) -%}
+{% call wrap() -%}
+{%- if look.as_link -%}
+<a href="#" class="{{ look.cls('btn') }}" data-submit{% if aria %} aria-label="{{ aria }}"{% endif %} data-testid="{{ tid(key, row) }}">{{ t(key) }}</a><button type="submit" tabindex="-1" aria-hidden="true" class="{{ look.cls('sr') }}"></button>
+{%- else -%}
+<button type="submit" class="{{ look.cls('btn') }}"{% if aria %} aria-label="{{ aria }}"{% endif %} data-testid="{{ tid(key, row) }}">{{ t(key) }}</button>
+{%- endif -%}
+{%- endcall %}
+{%- endmacro %}
+
+{#- A labelled input. `attrs` is extra raw attributes (trusted, from templates only). -#}
+{% macro field(key, name, type="text", row=None, value="", attrs="", id_base=None) -%}
+{%- set fid = look.id((id_base or name) ~ ('-' ~ row if row else '')) -%}
+{% call wrap() -%}
+<label for="{{ fid }}">{{ t(key) }}</label>
+<input id="{{ fid }}" name="{{ name }}" type="{{ type }}" value="{{ value }}" {{ attrs | safe }} data-testid="{{ tid(key, row) }}">
+{%- endcall %}
+{%- endmacro %}
+
+{#- Main navigation: sidebar, top bar or hamburger (nav_position). `items` is a list of
+    (href, label key); `sign_out` is the logout form action or None. -#}
+{% macro nav(items, sign_out=None) -%}
+{%- set links -%}
+<ul>
+{%- for href, key in items %}
+  <li><a href="{{ href }}" data-testid="{{ tid(key) }}">{{ t(key) }}</a></li>
+{%- endfor %}
+{%- if sign_out %}
+  <li><form method="post" action="{{ sign_out }}">{{ submit('sign_out') }}</form></li>
+{%- endif %}
+</ul>
+{%- endset -%}
+{%- if look.nav == 'hamburger' -%}
+<details class="{{ look.cls('burger') }}" data-testid="{{ tid('nav') }}">
+  <summary>{{ t('open_menu') }}</summary>
+  <nav aria-label="Main">{{ links }}</nav>
+</details>
+{%- else -%}
+<nav class="{{ look.cls('side' if look.nav == 'sidebar' else 'top') }}" aria-label="Main" data-testid="{{ tid('nav') }}">{{ links }}</nav>
+{%- endif -%}
+{%- endmacro %}
+
+{#- A blocking layer the user must dismiss first (interstitial). Dismissal is remembered
+    in a cookie per (portal, seed, kind), like a real consent banner; every agent run uses
+    a fresh browser context, so each run sees it (docs/CONTRACTS.md §3). -#}
+{% macro interstitial() -%}
+{%- set kind = look.interstitial -%}
+{%- set cookie = portal ~ '_dismissed_' ~ look.seed ~ '_' ~ kind -%}
+<div class="{{ look.cls('overlay') }}" data-interstitial data-testid="chaos-{{ 'cookie-banner' if kind == 'cookie_banner' else 'modal' }}">
+  <div class="{{ look.cls('dialog') }}" role="dialog" aria-modal="true" aria-labelledby="{{ look.id('dlg-title') }}">
+    {%- if kind == 'cookie_banner' %}
+    <h2 id="{{ look.id('dlg-title') }}">Cookies</h2>
+    <p>We use cookies to keep you signed in and to improve this site.</p>
+    <button type="button" class="{{ look.cls('btn') }}" data-dismiss="{{ cookie }}">{{ t('accept_cookies') }}</button>
+    {%- elif kind == 'whats_new_modal' %}
+    <h2 id="{{ look.id('dlg-title') }}">What's new</h2>
+    <p>Faster checkout and a refreshed catalog. Take a look around!</p>
+    <button type="button" class="{{ look.cls('btn') }}" data-dismiss="{{ cookie }}">{{ t('close') }}</button>
+    {%- else %}
+    <h2 id="{{ look.id('dlg-title') }}">Quick survey</h2>
+    <p>How likely are you to recommend us to a colleague?</p>
+    <button type="button" class="{{ look.cls('btn') }}" data-dismiss="{{ cookie }}">{{ t('survey_skip') }}</button>
+    {%- endif %}
+  </div>
+</div>
+{%- endmacro %}
+
+{#- Shared CSS for the chaos parts (overlay, skeleton, nav variants). -#}
+{% macro chaos_css() -%}
+  .{{ look.cls('overlay') }} { position: fixed; inset: 0; background: rgba(20, 24, 30, .45); z-index: 50; display: flex; align-items: center; justify-content: center; }
+  .{{ look.cls('dialog') }} { background: #fff; padding: 18px 22px; max-width: 360px; border: 1px solid #888; }
+  .{{ look.cls('dialog') }} h2 { margin-top: 0; font-size: 17px; }
+  .{{ look.cls('sr') }} { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); border: 0; padding: 0; }
+  .{{ look.cls('skeleton') }} { margin: 18px 24px; color: #888; }
+  nav.{{ look.cls('top') }} ul { display: flex; gap: 4px; list-style: none; margin: 0; padding: 6px 18px; }
+  nav.{{ look.cls('top') }} li a, nav.{{ look.cls('top') }} .{{ look.cls('btn') }} { padding: 4px 10px; }
+  details.{{ look.cls('burger') }} { padding: 6px 18px; }
+  details.{{ look.cls('burger') }} ul { list-style: none; padding: 0; }
+  ul.{{ look.cls('cards') }} { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+  ul.{{ look.cls('cards') }} h2 { font-size: 15px; margin: 0 0 4px; }
+  ul.{{ look.cls('cards') }} > li { background: #fff; border: 1px solid #c8d0d8; padding: 10px; }
+{%- endmacro %}
+
+{#- Tiny vanilla JS: link-submit, dismiss interstitials, delayed reveal. -#}
+{% macro chaos_js() -%}
+<script>
+document.addEventListener("click", function (e) {
+  var a = e.target.closest("a[data-submit]");
+  if (a) { e.preventDefault(); a.closest("form").requestSubmit(); return; }
+  var d = e.target.closest("[data-dismiss]");
+  if (d) { document.cookie = d.dataset.dismiss + "=1; path=/; SameSite=Lax"; d.closest("[data-interstitial]").remove(); }
+});
+document.querySelectorAll("[data-reveal]").forEach(function (el) {
+  setTimeout(function () { el.hidden = false; var s = el.previousElementSibling; if (s) s.remove(); }, +el.dataset.reveal);
+});
+</script>
+{%- endmacro %}

@@ -1,0 +1,25 @@
+# Fictional staff of Hafer & Bohne (Lena, the owner, runs it with six staff).
+hourly_wage_eur: 14.50
+staff:
+  - {id: lena, name: Lena, role: owner}
+  - {id: jonas, name: Jonas, role: barista}
+  - {id: mia, name: Mia, role: barista}
+  - {id: emre, name: Emre, role: barista}
+  - {id: sofia, name: Sofia, role: counter}
+  - {id: lukas, name: Lukas, role: counter}
+  - {id: hannah, name: Hannah, role: baker}
+# Shift templates cover the till's opening hours (sales run 06:00-20:00). Saturdays run
+# three afternoon staff, so a rainy Saturday has one 14:00-18:00 shift to trim (PRD F1
+# card 3). The owner is not on the rota.
+shifts:
+  weekday:
+    - {start: "06:00", end: "14:00", staff: 2}
+    - {start: "14:00", end: "18:00", staff: 2}
+    - {start: "18:00", end: "20:00", staff: 1}
+  saturday:
+    - {start: "06:00", end: "14:00", staff: 2}
+    - {start: "14:00", end: "18:00", staff: 3}
+    - {start: "18:00", end: "20:00", staff: 1}
+  sunday:
+    - {start: "06:00", end: "14:00", staff: 2}
+    - {start: "14:00", end: "20:00", staff: 1}

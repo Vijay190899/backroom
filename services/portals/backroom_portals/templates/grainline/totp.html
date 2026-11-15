@@ -1,0 +1,13 @@
+{% extends "grainline/base.html" %}
+{% block title %}Two-step verification · Grainline Wholesale{% endblock %}
+{% block body %}
+<main>
+  <h1>Two-step verification</h1>
+  <form class="{{ look.cls('box') }}" method="post" action="/grainline/login/totp" data-testid="{{ tid('totp_form') }}">
+    <p class="{{ look.cls('muted') }}">Enter the 6-digit code from your authenticator app.</p>
+    {% if error %}<p class="{{ look.cls('error') }}" role="alert" data-testid="{{ tid('totp_error') }}">That code is not valid. Try again.</p>{% endif %}
+    {{ m.field('totp_code', 'code', attrs='inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]{6,7}" required') }}
+    <div>{{ m.submit('verify') }}</div>
+  </form>
+</main>
+{% endblock %}

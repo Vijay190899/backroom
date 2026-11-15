@@ -69,4 +69,6 @@ jobs:
       - if: steps.detect.outputs.present == 'true'
         run: pnpm -C apps/web typecheck
       - if: steps.detect.outputs.present == 'true'
+        run: pnpm -C apps/web contracts
+      - if: steps.detect.outputs.present == 'true'
         run: pnpm -C apps/web build

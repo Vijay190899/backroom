@@ -1,0 +1,48 @@
+{
+  "provider": "openrouter",
+  "model": "claude-haiku-5-5",
+  "wire_model": "anthropic/claude-haiku-5.5",
+  "sdk_version": "2.8.0",
+  "ran_at": "2026-11-12T15:19:03+00:00",
+  "git_sha": "d1ea0fd",
+  "checks": {
+    "basic": {
+      "ok": true,
+      "detail": "stop_reason=end_turn text='ready'",
+      "ms": 1956,
+      "usd": 3.7999999999999996e-06
+    },
+    "effort": {
+      "ok": true,
+      "detail": "output_config.effort=low accepted; stop_reason=end_turn",
+      "ms": 1020,
+      "usd": 3.7999999999999996e-06
+    },
+    "strict_tools": {
+      "ok": true,
+      "detail": "stop_reason=tool_use input={'sku': 'OAT-1L', 'qty': 24}",
+      "ms": 1003,
+      "usd": 7.94e-05
+    },
+    "structured_outputs": {
+      "ok": true,
+      "detail": "parsed={'item': 'Butter', 'price_eur_per_kg': 8.24}",
+      "ms": 2416,
+      "usd": 4e-05
+    },
+    "prompt_cache": {
+      "ok": true,
+      "detail": "first call cache_write=13617, second call cache_read=13617",
+      "ms": 2611,
+      "usd": 0.001861395
+    },
+    "streaming": {
+      "ok": true,
+      "detail": "5 text deltas; stop_reason=end_turn",
+      "ms": 879,
+      "usd": 2.3e-05
+    }
+  },
+  "total_usd": 0.002011,
+  "recommended_llm_caps_off": ""
+}

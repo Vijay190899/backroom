@@ -1,0 +1,31 @@
+# Bill of materials per menu item (TillDesk ids). Hand-authored; see docs/DATA.md.
+# `uses` maps a Grainline SKU to the amount per item, in the SKU's size unit
+# (kg, l or pcs; backroom_portals.grainline.catalog.PRODUCTS). `other_eur` covers what
+# Grainline doesn't sell (eggs, yeast, bananas, packaging, energy).
+#
+# Franzbrötchen is tuned to the demo story (PRD F1): butter is EUR 0.55 of a EUR 0.93
+# unit cost at EUR 7.10/kg, and EUR 1.02 after the +16% invoice.
+franzbroetchen:
+  uses: {BUTTER-1KG: 0.0775, FLOUR-5KG: 0.120, SUGAR-1KG: 0.025, CINNAMON-500G: 0.004, MILK-1L: 0.050}
+  other_eur: 0.135
+croissant:
+  uses: {BUTTER-1KG: 0.030, FLOUR-5KG: 0.060, SUGAR-1KG: 0.005}
+  other_eur: 0.12
+flat-white:
+  uses: {BEANS-1KG: 0.018, MILK-1L: 0.160, CUP-12OZ-50: 0.4}
+  other_eur: 0.05
+oat-latte:
+  uses: {BEANS-1KG: 0.018, OAT-1L: 0.220, CUP-12OZ-50: 0.4}
+  other_eur: 0.05
+cappuccino:
+  uses: {BEANS-1KG: 0.018, MILK-1L: 0.120, CUP-12OZ-50: 0.4}
+  other_eur: 0.05
+espresso:
+  uses: {BEANS-1KG: 0.009}
+  other_eur: 0.03
+filter-coffee:
+  uses: {BEANS-1KG: 0.015, CUP-12OZ-50: 0.4}
+  other_eur: 0.03
+banana-bread:
+  uses: {BUTTER-1KG: 0.020, FLOUR-5KG: 0.050, SUGAR-1KG: 0.030}
+  other_eur: 0.35

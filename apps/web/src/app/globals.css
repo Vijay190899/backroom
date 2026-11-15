@@ -10,19 +10,25 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-display: var(--font-instrument-serif);
-  --font-heading: var(--font-instrument-serif);
+  --font-display: var(--font-geist-sans);
+  --font-heading: var(--font-geist-sans);
+  --font-serif: var(--font-geist-sans);
   --color-ink: var(--t-ink);
   --color-surface: var(--t-surface);
   --color-subtle: var(--t-subtle);
   --color-line: var(--t-line);
-  --color-caramel: var(--t-accent);
-  --color-caramel-ink: var(--t-accent-ink);
+  --color-press: var(--t-accent);
+  --color-press-ink: var(--t-accent-ink);
   --color-pos: var(--t-pos);
   --color-neg: var(--t-neg);
   --color-explore: var(--t-explore);
   --color-replay: var(--t-replay);
   --color-heal: var(--t-heal);
+  --color-amber: var(--t-amber);
+  --color-glass: var(--t-glass);
+  --color-glass-strong: var(--t-glass-strong);
+  --color-glass-line: var(--t-glass-line);
+  --color-chart-mark: var(--t-chart-1);
   --ease-out-soft: var(--t-ease-out);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -62,7 +68,10 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-:root {
+/* Re-declared on .dark so a dark island inside a light page (the run theater) resolves
+ * these against its own tokens: a custom property's var() is resolved where it is declared. */
+:root,
+.dark {
   --background: var(--t-bg);
   --foreground: var(--t-ink);
   --card: var(--t-surface);
@@ -86,7 +95,7 @@
   --chart-3: var(--t-heal);
   --chart-4: var(--t-muted);
   --chart-5: var(--t-neg);
-  --radius: 0.625rem;
+  --radius: 0.375rem;
   --sidebar: var(--t-bg);
   --sidebar-foreground: var(--t-ink);
   --sidebar-primary: var(--t-ink);
@@ -113,6 +122,17 @@
     @apply bg-background text-foreground;
     font-feature-settings: "ss01", "cv11";
   }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+  ::selection {
+    background: color-mix(in oklch, var(--t-accent) 22%, transparent);
+  }
   :focus-visible {
     outline: 2px solid var(--t-accent);
     outline-offset: 2px;
@@ -126,16 +146,616 @@
 @layer utilities {
   /* Prices, timers and counters keep their width as digits change. */
   .tabular {
-    font-variant-numeric: tabular-nums;
+    font-variant-numeric: tabular-nums lining-nums;
+  }
+  /* Glass panel over the ambient field: translucent fill, hairline, inner highlight. */
+  .glass {
+    background: var(--t-glass-fill);
+    border: 1px solid var(--t-glass-line);
+    box-shadow: var(--t-shadow);
+    backdrop-filter: blur(18px) saturate(1.4);
+    -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  }
+  /* A page section on its glass card, framed like Today's cards: `glass panel`. */
+  .panel {
+    border-radius: var(--t-radius-card);
+    padding: 1.25rem;
+  }
+  @media (width >= 40rem) {
+    .panel {
+      padding: 1.75rem;
+    }
+  }
+  /* Chrome that content scrolls under (header, tab bar, dock): mostly opaque glass. */
+  .glass-solid {
+    background: color-mix(in oklch, var(--t-bg) 84%, transparent);
+    backdrop-filter: blur(28px) saturate(1.5);
+    -webkit-backdrop-filter: blur(28px) saturate(1.5);
+  }
+  /* Ember-to-amber text, for the few words that carry the moment. */
+  .text-ember {
+    background: linear-gradient(100deg, var(--t-accent), var(--t-amber));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  /* Newspaper section label: small, tracked capitals (colour set where used). */
+  .kicker {
+    font-family: var(--font-geist-sans);
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  /* The masthead's thick-and-thin rule. */
+  .rule-double {
+    height: 5px;
+    border-top: 2px solid var(--t-ink);
+    border-bottom: 1px solid var(--t-ink);
+  }
+  /* Text link whose underline draws in from the left on hover. */
+  .link-draw {
+    background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat;
+    transition: background-size var(--t-dur) var(--t-ease-out);
+  }
+  .link-draw:hover,
+  .link-draw:focus-visible {
+    background-size: 100% 1px;
+  }
+  /* One entrance on load (never on scroll); stagger with --enter-delay. */
+  .enter {
+    animation: enter-rise 520ms var(--t-ease-out) both;
+    animation-delay: var(--enter-delay, 0ms);
+  }
+  .enter-rule {
+    transform-origin: left center;
+    animation: enter-rule 720ms var(--t-ease-out) both;
+    animation-delay: var(--enter-delay, 0ms);
+  }
+  .stamp-in {
+    animation: stamp-in 320ms var(--t-ease-out) both;
+  }
+}
+
+/* ---------------------------------------------------------------------------------
+ * Motion layer ("Morning edition", DECISIONS L-71). Every motion shows a state, a step
+ * or real data. Transform and opacity by default; a few one-off moments also animate
+ * paint-only properties (blur, background-size, stroke-dashoffset, clip-path), never
+ * layout. UI under 300 ms, one-off entrances about 1 s.
+ * --------------------------------------------------------------------------------- */
+:root {
+  --t-ease-settle: cubic-bezier(0.22, 1, 0.36, 1); /* entrances settling, no overshoot */
+  --t-ease-sheet: cubic-bezier(0.32, 0.72, 0, 1); /* sheets and drawers */
+  --t-vt-exit: 150ms;
+  --t-vt-enter: 220ms;
+  --t-vt-move: 380ms;
+}
+
+/* The intro (L-78): a 3D café you walk into. Hidden unless html[data-intro="play"]. */
+.intro {
+  display: none;
+}
+html[data-intro="play"] .intro {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: block;
+  background: radial-gradient(120% 90% at 50% 20%, #ffe3c2, #f6d2ae 45%, #e9b98d);
+  transition:
+    opacity 700ms var(--t-ease-out),
+    transform 700ms var(--t-ease-out),
+    filter 700ms var(--t-ease-out);
+}
+html.dark[data-intro="play"] .intro {
+  background: radial-gradient(120% 90% at 50% 20%, #3a2618, #1e140f 50%, #0a0908);
+}
+html[data-intro="play"] body {
+  overflow: hidden;
+}
+.intro.is-leaving {
+  opacity: 0;
+  transform: scale(1.35);
+  filter: blur(6px);
+}
+#intro-stage {
+  opacity: 0;
+  transition: opacity 600ms var(--t-ease-out);
+}
+#intro-stage.is-ready {
+  opacity: 1;
+}
+.intro-model {
+  width: 100%;
+  height: 100%;
+  --poster-color: transparent;
+}
+.intro-title {
+  position: absolute;
+  top: 9vh;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  transform: translateX(-50%);
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  color: var(--t-ink);
+  z-index: 1; /* above the 3D canvas */
+  animation: enter-rise 700ms var(--t-ease-settle) both;
+}
+.intro-mark {
+  width: 0.55em;
+  height: 0.55em;
+  border-radius: 0.14em;
+  background: linear-gradient(135deg, var(--t-accent), var(--t-amber));
+}
+.intro-credit {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  z-index: 1;
+  font-size: 11px;
+  color: var(--t-muted);
+}
+
+/* ---------------------------------------------------------------------------------
+ * The café scene behind the app (L-78). The stage sits at the foot of the screen, in
+ * the background (softened, veiled toward the top where headlines sit); the app drives
+ * rain, the delivery van and the barista through `lib/scene.ts`.
+ * --------------------------------------------------------------------------------- */
+/* The café behind every page (L-82): line-drawn café things at a whisper of contrast,
+ * drifting in two depths. Strongest at the screen edges, faint behind the content column,
+ * so the data always reads first. Only transforms and opacity animate. */
+.cafe-pattern {
+  color: var(--t-ink);
+  transition: color 1.2s ease;
+}
+.cafe-pattern.is-busy {
+  color: var(--t-accent);
+}
+.cafe-field {
+  opacity: 0.075;
+  transition: opacity 1.2s ease;
+  mask-image: radial-gradient(ellipse 62% 70% at 50% 42%, rgb(0 0 0 / 0.28), #000 78%);
+}
+.dark .cafe-field {
+  opacity: 0.09;
+}
+.is-busy .cafe-field {
+  opacity: 0.12;
+}
+.cafe-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(100% + var(--tile));
+  height: calc(100% + var(--tile));
+  animation: cafe-pan linear infinite;
+  will-change: transform;
+}
+.cafe-layer-near {
+  animation-duration: 110s;
+}
+.cafe-layer-far {
+  opacity: 0.7;
+  animation-duration: 170s;
+  animation-direction: reverse;
+}
+@keyframes cafe-pan {
+  to {
+    transform: translate(calc(var(--tile) * -1), calc(var(--tile) * -0.5));
+  }
+}
+/* Fine rain over the field when the brief forecasts it. */
+.cafe-rainfall {
+  opacity: 0;
+  transition: opacity 1.5s ease;
+  background-image: repeating-linear-gradient(
+    105deg,
+    transparent 0 22px,
+    color-mix(in oklch, var(--t-ink) 7%, transparent) 22px 23px,
+    transparent 23px 46px
+  );
+  background-size: 400px 400px;
+  animation: cafe-rain 0.9s linear infinite;
+  mask-image: radial-gradient(ellipse 62% 70% at 50% 42%, rgb(0 0 0 / 0.25), #000 78%);
+}
+.cafe-rainfall.is-on {
+  opacity: 1;
+}
+@keyframes cafe-rain {
+  to {
+    background-position: -100px 400px;
+  }
+}
+/* A supplier order: a line-drawn van crosses the foot of the screen. */
+.cafe-truck {
+  position: absolute;
+  bottom: 1.25rem;
+  left: 0;
+  width: 44px;
+  height: 44px;
+  color: var(--t-ink);
+  opacity: 0;
+  animation: cafe-truck 7s cubic-bezier(0.45, 0, 0.55, 1) forwards;
+}
+@keyframes cafe-truck {
+  0% {
+    opacity: 0;
+    transform: translateX(-60px);
+  }
+  12%,
+  85% {
+    opacity: 0.22;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(calc(100vw + 60px));
+  }
+}
+/* A run finished: a cup rises and fades near the agent dock. */
+.cafe-serve {
+  position: absolute;
+  right: 2.5rem;
+  bottom: 8rem;
+  width: 32px;
+  height: 32px;
+  color: var(--t-accent);
+  animation: cafe-serve 2.6s var(--t-ease-settle) forwards;
+}
+@keyframes cafe-serve {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.7);
+  }
+  30% {
+    opacity: 0.45;
+    transform: translateY(0) scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-70px) scale(0.95);
+  }
+}
+html[data-motion="calm"] .cafe-layer,
+html[data-motion="calm"] .cafe-rainfall {
+  animation: none;
+}
+html[data-motion="calm"] .cafe-truck,
+html[data-motion="calm"] .cafe-serve {
+  display: none;
+}
+
+/* Headline words drop into place on a spring (overshoot, then settle). */
+:root {
+  --t-spring: linear(
+    0, 0.009, 0.035 2.1%, 0.141, 0.281 6.7%, 0.723 12.9%, 0.938 16.7%, 1.017, 1.077, 1.121,
+    1.149 24.3%, 1.159, 1.163, 1.161, 1.154 29.9%, 1.129 32.8%, 1.051 39.6%, 1.017 43.1%,
+    0.991, 0.977 51%, 0.974 53.8%, 0.975 57.1%, 0.997 69.8%, 1.003 76.9%, 1.004 83.8%, 1
+  );
+}
+.word-drop {
+  animation: word-drop 900ms var(--t-spring) both;
+  animation-delay: var(--enter-delay, 0ms);
+}
+@keyframes word-drop {
+  from {
+    transform: translateY(-115%) rotate(-4deg);
+  }
+}
+html[data-motion="calm"] .word-drop,
+html[data-motion="calm"] .enter,
+html[data-motion="calm"] .marker,
+html[data-motion="calm"] .wipe,
+html[data-motion="calm"] .bar-grow,
+html[data-motion="calm"] .edge-draw,
+html[data-motion="calm"] .stamp-in,
+html[data-motion="calm"] .enter-rule {
+  animation: none;
+}
+html[data-motion="calm"] .calm-hidden {
+  display: none;
+}
+html[data-motion="calm"] .animate-pulse {
+  animation: none;
+}
+html[data-motion="calm"]::view-transition-old(*),
+html[data-motion="calm"]::view-transition-new(*),
+html[data-motion="calm"]::view-transition-group(*) {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+}
+
+/* A marker sweep under words Backroom just changed (the rebuilt brief). */
+.marker {
+  --marker: color-mix(in oklch, var(--t-accent) 28%, transparent);
+  background: linear-gradient(var(--marker), var(--marker)) 0 90% / 100% 0.5em no-repeat;
+  animation: marker 1100ms var(--t-ease-settle) both;
+  animation-delay: var(--enter-delay, 0ms);
+  border-radius: 1px;
+}
+.dark .marker {
+  --marker: color-mix(in oklch, var(--t-accent) 40%, transparent);
+}
+@keyframes marker {
+  from {
+    background-size: 0% 0.5em;
+  }
+}
+
+/* Route changes: the content slides by direction, the header stays put. */
+::view-transition {
+  pointer-events: none;
+}
+::view-transition-group(site-header),
+::view-transition-group(tab-bar) {
+  animation: none;
+  z-index: 100;
+}
+::view-transition-old(site-header),
+::view-transition-old(tab-bar) {
+  display: none;
+}
+::view-transition-new(site-header),
+::view-transition-new(tab-bar) {
+  animation: none;
+}
+/* Page changes fade through (L-79): the old page leaves in 120 ms, then the new one rises
+ * into place. They never overlap, so no word of the old page shows through the new one.
+ * No blur filters: on a long page they cost frames. The café hero, the header and the
+ * particle canvas are excluded and simply stay. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+::view-transition-group(ambient),
+::view-transition-group(particles) {
+  animation: none;
+}
+::view-transition-old(ambient),
+::view-transition-old(particles) {
+  display: none;
+}
+::view-transition-new(ambient),
+::view-transition-new(particles) {
+  animation: none;
+}
+/* The page pair, by name (see PageTransition): the old page is gone in 120 ms before the
+ * new one starts at 140 ms, so the two are never on screen together. No group morph. */
+::view-transition-group(page) {
+  animation: none;
+}
+::view-transition-old(page) {
+  animation: 120ms cubic-bezier(0.4, 0, 1, 1) both page-out;
+}
+::view-transition-new(page) {
+  --drift: 14px;
+  animation: 380ms var(--t-ease-out) 140ms both page-in;
+}
+/* Going back drifts the other way where the browser knows the transition's type. */
+html:active-view-transition-type(nav-back)::view-transition-new(page) {
+  --drift: -14px;
+}
+/* Named pieces inside a page (the Skills picks) leave as fast as their page, so nothing
+ * lingers over the next one; their in-page glide (the group) is unaffected. */
+::view-transition-old(skill-pick),
+::view-transition-old(version-pick) {
+  animation-duration: 120ms;
+}
+@keyframes page-out {
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.99);
+  }
+}
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateX(var(--drift)) translateY(10px);
+  }
+}
+/* A story that moves (promoted to lead, columns closing up) glides to its new place. */
+::view-transition-group(.story) {
+  animation-duration: var(--t-vt-move);
+  animation-timing-function: var(--t-ease-settle);
+}
+::view-transition-old(.story-exit) {
+  animation: 180ms ease-in both vt-fade reverse, 180ms ease-in both vt-drop;
+}
+::view-transition-new(.story-enter) {
+  animation: var(--t-vt-enter) ease-out 120ms both vt-fade;
+}
+/* A fact that becomes true draws its edge in. */
+.edge-draw {
+  stroke-dasharray: 1;
+  animation: edge-draw 700ms var(--t-ease-settle) both;
+}
+@keyframes edge-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+
+/* The as-of slider: a hairline track with a press-red square thumb (44 px hit area). */
+.timeline-range {
+  appearance: none;
+  height: 2.75rem;
+  background: transparent;
+  cursor: pointer;
+  touch-action: pan-y;
+}
+.timeline-range::-webkit-slider-runnable-track {
+  height: 2px;
+  background: var(--t-ink);
+}
+.timeline-range::-moz-range-track {
+  height: 2px;
+  background: var(--t-ink);
+}
+.timeline-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -6px;
+  background: var(--t-accent);
+  border: 2px solid var(--t-bg);
+  box-shadow: 0 0 0 1px var(--t-accent);
+}
+.timeline-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 0;
+  background: var(--t-accent);
+  border: 2px solid var(--t-bg);
+}
+
+/* A bar grows from its baseline once, on first show. */
+.bar-grow {
+  transform-origin: left center;
+  animation: bar-grow 760ms var(--t-ease-settle) both;
+  animation-delay: var(--enter-delay, 0ms);
+}
+@keyframes bar-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* The About flow: one line through six steps, a pulse that waits at "You approve".
+ * Phones: a vertical line at the left; wider: a horizontal line through the dots. */
+.flow-track {
+  container-type: size;
+  height: 27rem;
+}
+.flow-line {
+  left: 0.3125rem;
+  top: 0.625rem;
+  bottom: 3.875rem;
+  width: 1px;
+}
+.flow-pulse {
+  left: 0;
+  top: 0.25rem;
+  z-index: 20;
+  animation: flow-down 7s linear infinite;
+}
+@keyframes flow-down {
+  0% { translate: 0 0; opacity: 0; }
+  6% { opacity: 1; }
+  45%, 62% { translate: 0 calc((100cqh - 4.5rem) * 0.8); }
+  94% { opacity: 1; }
+  100% { translate: 0 calc(100cqh - 4.5rem); opacity: 0; }
+}
+@media (width >= 40rem) {
+  .flow-track {
+    container-type: inline-size;
+    height: auto;
+  }
+  .flow-line {
+    left: calc(100% / 12);
+    right: calc(100% / 12);
+    top: 0.375rem;
+    bottom: auto;
+    width: auto;
+    height: 1px;
+  }
+  .flow-pulse {
+    left: calc(100% / 12 - 0.375rem);
+    top: 0;
+    animation-name: flow-across;
+  }
+  @keyframes flow-across {
+    0% { translate: 0 0; opacity: 0; }
+    6% { opacity: 1; }
+    45%, 62% { translate: calc(100cqw * 4 / 6) 0; }
+    94% { opacity: 1; }
+    100% { translate: calc(100cqw * 5 / 6) 0; opacity: 0; }
+  }
+}
+.flow[data-paused] .flow-pulse {
+  animation-play-state: paused;
+}
+/* Calm: at rest on "You approve" (the fifth of six steps). */
+html[data-motion="calm"] .flow-pulse {
+  animation: none;
+  translate: 0 calc((100cqh - 4.5rem) * 0.8);
+}
+@media (width >= 40rem) {
+  html[data-motion="calm"] .flow-pulse {
+    translate: calc(100cqw * 4 / 6) 0;
+  }
+}
+
+/* A healed line re-typed: the new text wipes in left to right. */
+.wipe {
+  animation: wipe 760ms var(--t-ease-settle) both;
+  animation-delay: var(--enter-delay, 0ms);
+}
+@keyframes wipe {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+}
+::view-transition-old(.swap-out) {
+  animation: 140ms ease-in both vt-fade reverse;
+}
+::view-transition-new(.swap-in) {
+  animation: 260ms var(--t-ease-settle) 90ms both vt-fade, 260ms var(--t-ease-settle) 90ms both vt-rise;
+}
+::view-transition-group(skill-pick),
+::view-transition-group(version-pick) {
+  animation-duration: 280ms;
+  animation-timing-function: var(--t-ease-settle);
+}
+@keyframes vt-rise {
+  from {
+    translate: 0 6px;
+  }
+}
+@keyframes vt-fade {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+  }
+}
+@keyframes vt-drop {
+  to {
+    translate: 0 8px;
+  }
+}
+
+@keyframes enter-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@keyframes enter-rule {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes stamp-in {
+  from {
+    opacity: 0;
+    transform: scale(1.08);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+    animation-delay: 0s !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }

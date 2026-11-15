@@ -1,0 +1,115 @@
+{
+  "as_of": "2026-11-13T07:30:00Z",
+  "nodes": [
+    {
+      "id": "business:hafer-und-bohne",
+      "type": "business",
+      "name": "Hafer & Bohne"
+    },
+    {
+      "id": "supplier:grainline",
+      "type": "supplier",
+      "name": "Grainline Wholesale"
+    },
+    {
+      "id": "ingredient:butter",
+      "type": "ingredient",
+      "name": "Butter"
+    },
+    {
+      "id": "ingredient:oat-milk",
+      "type": "ingredient",
+      "name": "Oat milk"
+    },
+    {
+      "id": "product:franzbroetchen",
+      "type": "product",
+      "name": "Franzbrötchen"
+    },
+    {
+      "id": "preference:grainline-order-days",
+      "type": "preference",
+      "name": "Order from Grainline on Tue/Fri"
+    }
+  ],
+  "facts": [
+    {
+      "id": "f_butter_price_1",
+      "subject_id": "ingredient:butter",
+      "predicate": "unit_price_eur_per_kg",
+      "object_id": null,
+      "value": 7.1,
+      "valid_from": "2026-09-14T07:30:00Z",
+      "valid_to": "2026-11-04T07:30:00Z",
+      "confidence": 1.0
+    },
+    {
+      "id": "f_butter_price_2",
+      "subject_id": "ingredient:butter",
+      "predicate": "unit_price_eur_per_kg",
+      "object_id": null,
+      "value": 8.24,
+      "valid_from": "2026-11-04T07:30:00Z",
+      "valid_to": null,
+      "confidence": 0.97
+    },
+    {
+      "id": "f_butter_supplier",
+      "subject_id": "ingredient:butter",
+      "predicate": "supplied_by",
+      "object_id": "supplier:grainline",
+      "value": null,
+      "valid_from": "2026-09-14T07:30:00Z",
+      "valid_to": null,
+      "confidence": 1.0
+    },
+    {
+      "id": "f_oat_supplier",
+      "subject_id": "ingredient:oat-milk",
+      "predicate": "supplied_by",
+      "object_id": "supplier:grainline",
+      "value": null,
+      "valid_from": "2026-09-14T07:30:00Z",
+      "valid_to": null,
+      "confidence": 1.0
+    },
+    {
+      "id": "f_franz_butter",
+      "subject_id": "product:franzbroetchen",
+      "predicate": "uses_ingredient",
+      "object_id": "ingredient:butter",
+      "value": {
+        "grams": 77.5
+      },
+      "valid_from": "2026-09-14T07:30:00Z",
+      "valid_to": null,
+      "confidence": 1.0
+    },
+    {
+      "id": "f_franz_price",
+      "subject_id": "product:franzbroetchen",
+      "predicate": "menu_price_eur",
+      "object_id": null,
+      "value": 3.2,
+      "valid_from": "2026-09-14T07:30:00Z",
+      "valid_to": null,
+      "confidence": 1.0
+    },
+    {
+      "id": "f_order_days",
+      "subject_id": "business:hafer-und-bohne",
+      "predicate": "has_preference",
+      "object_id": "preference:grainline-order-days",
+      "value": {
+        "weekdays": [
+          "tue",
+          "fri"
+        ],
+        "supplier": "supplier:grainline"
+      },
+      "valid_from": "2026-09-29T07:30:00Z",
+      "valid_to": null,
+      "confidence": 0.9
+    }
+  ]
+}

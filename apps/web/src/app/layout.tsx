@@ -1,19 +1,18 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 
+import { IntroOverlay, introInitScript } from "@/components/intro/intro-overlay";
 import { Providers } from "@/components/providers";
 import { AppShell } from "@/components/shell/app-shell";
+import { API_URL } from "@/lib/api";
+import { motionInitScript } from "@/lib/motion-pref";
 import { themeInitScript } from "@/lib/theme";
 
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
-const instrumentSerif = Instrument_Serif({
-  variable: "--font-instrument-serif",
-  subsets: ["latin"],
-  weight: "400",
-});
+// Mono only appears in evidence, the dock and the skill steps, so it is fetched on first use.
+const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"], preload: false });
 
 export const metadata: Metadata = {
   title: { default: "Backroom", template: "%s · Backroom" },
@@ -24,8 +23,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f6f2ec" },
-    { media: "(prefers-color-scheme: dark)", color: "#121010" },
+    { media: "(prefers-color-scheme: light)", color: "#f4f1ec" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0908" },
   ],
 };
 
@@ -34,18 +33,21 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <script dangerouslySetInnerHTML={{ __html: `${themeInitScript};${motionInitScript};${introInitScript}` }} />
+        {/* The brief and health calls go cross-origin: open that connection during HTML parse. */}
+        <link rel="preconnect" href={API_URL} crossOrigin="anonymous" />
       </head>
       <body className="min-h-full">
         <a
           href="#main"
-          className="sr-only rounded-lg bg-ink px-4 py-2 text-background focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50"
+          className="sr-only rounded-md bg-ink px-4 py-2 text-background focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50"
         >
           Skip to content
         </a>
+        <IntroOverlay />
         <Providers>
           <AppShell>{children}</AppShell>
         </Providers>

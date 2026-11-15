@@ -1,0 +1,49 @@
+{% extends "tilldesk/app.html" %}
+{% block title %}Menu · TillDesk{% endblock %}
+{% block main %}
+<h1>Prices on the till</h1>
+{% if saved %}<p class="{{ look.cls('notice') }}" role="status" data-testid="{{ tid('saved_notice') }}">Saved: {{ saved.name }} at €{{ '%.2f' % saved.price_eur }}. Publish the menu to put it on the till.</p>{% endif %}
+{% if published %}<p class="{{ look.cls('notice') }}" role="status" data-testid="{{ tid('published_notice') }}">Menu published. The till now uses the new prices.</p>{% endif %}
+{% macro edit_link(item) -%}
+{% call m.wrap() %}<a href="/tilldesk/menu/{{ item.id }}/edit" aria-label="{{ t('edit') }} {{ item.name }}" data-testid="{{ tid('edit', item.id) }}">{{ t('edit') }}</a>{% endcall %}
+{%- endmacro %}
+{% macro price_cell(item) -%}
+<span data-testid="{{ tid('price', item.id) }}">€{{ '%.2f' % item.published_price_eur }}</span>
+{%- if item.price_eur != item.published_price_eur %} <strong data-testid="{{ tid('draft', item.id) }}">→ €{{ '%.2f' % item.price_eur }} (not published)</strong>{% endif %}
+{%- endmacro %}
+{% macro s_publish() %}
+{#- Publish is always offered: a run that saves the price already live must still find it. -#}
+<div class="{{ look.cls('warn') if unpublished else '' }}">
+  {% if unpublished %}<p data-testid="{{ tid('unpublished') }}">You have price changes that are not on the till yet.</p>
+  {% else %}<p class="{{ look.cls('muted') }}" data-testid="{{ tid('all_live') }}">All prices are live on the till.</p>{% endif %}
+  <form method="post" action="/tilldesk/menu/publish">{{ m.submit('publish_menu') }}</form>
+</div>
+{% endmacro %}
+{% macro s_items() %}
+{% if look.cards %}
+<ul class="{{ look.cls('cards') }}" data-testid="{{ tid('menu') }}">
+  {% for item in items %}
+  <li data-testid="{{ tid('row', item.id) }}">
+    <h2>{{ item.name }}</h2>
+    <p>{{ price_cell(item) }}</p>
+    {{ edit_link(item) }}
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<table data-testid="{{ tid('menu') }}">
+  <thead><tr><th>Item</th><th class="{{ look.cls('num') }}">Price</th><th></th></tr></thead>
+  <tbody>
+  {% for item in items %}
+    <tr data-testid="{{ tid('row', item.id) }}">
+      <th scope="row">{{ item.name }}</th>
+      <td class="{{ look.cls('num') }}">{{ price_cell(item) }}</td>
+      <td>{{ edit_link(item) }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endmacro %}
+{% for s in look.arrange('menu', [s_publish, s_items]) %}{{ s() }}{% endfor %}
+{% endblock %}

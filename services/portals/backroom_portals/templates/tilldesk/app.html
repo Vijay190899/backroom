@@ -1,0 +1,13 @@
+{% extends "tilldesk/base.html" %}
+{% block body %}
+{%- set items_nav = [("/tilldesk/menu", "nav_menu")] -%}
+{% if look.nav == 'sidebar' %}
+<div class="{{ look.cls('layout') }}">
+  {{ m.nav(items_nav, "/tilldesk/logout") }}
+  <main>{% block main %}{% endblock %}</main>
+</div>
+{% else %}
+{{ m.nav(items_nav, "/tilldesk/logout") }}
+<main>{{ self.main() }}</main>
+{% endif %}
+{% endblock %}

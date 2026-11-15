@@ -1,0 +1,24 @@
+[
+  {
+    "id": "grainline.reorder_item",
+    "task": "grainline.reorder_item",
+    "portal": "grainline",
+    "latest_version": 2,
+    "runs": 7,
+    "success_rate": 1.0,
+    "mean_latency_ms": 3369.0,
+    "mean_usd": 0.00044,
+    "updated_at": "2026-11-13T07:32:00Z"
+  },
+  {
+    "id": "tilldesk.change_price",
+    "task": "tilldesk.change_price",
+    "portal": "tilldesk",
+    "latest_version": 1,
+    "runs": 3,
+    "success_rate": 1.0,
+    "mean_latency_ms": 1980.0,
+    "mean_usd": 0.0,
+    "updated_at": "2026-11-12T13:30:00Z"
+  }
+]

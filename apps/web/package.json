@@ -8,14 +8,18 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "next typegen && tsc --noEmit",
+    "contracts": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/lib/contracts.check.mts && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/lib/run-view.check.mts",
     "e2e": "node -e \"console.error('e2e tests land in M3');process.exit(2)\""
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
+    "@google/model-viewer": "4.4.0",
+    "@number-flow/react": "0.6.2",
     "@tanstack/react-query": "^5.107.1",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.2",
     "lucide-react": "^1.72.0",
+    "motion": "14.9.0",
     "next": "16.4.6",
     "react": "19.3.0",
     "react-dom": "19.3.0",

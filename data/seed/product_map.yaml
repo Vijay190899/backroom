@@ -1,0 +1,17 @@
+# Maven "Coffee Shop Sales" product -> Hafer & Bohne menu item (TillDesk id).
+# Rules are checked in order; the first match wins. `detail` matches as a prefix of
+# product_detail. Lines that match nothing (tea, chocolate, syrups, beans, merchandise)
+# are dropped: the café's till doesn't sell them.
+store: "Hell's Kitchen"
+rules:
+  - {type: Barista Espresso, detail: Latte, item: oat-latte}
+  - {type: Barista Espresso, detail: Cappuccino, item: cappuccino}
+  - {type: Barista Espresso, detail: Espresso shot, item: espresso}
+  - {type: Barista Espresso, detail: Ouro Brasileiro shot, item: flat-white}
+  - {type: Gourmet brewed coffee, item: filter-coffee}
+  - {type: Premium brewed coffee, item: filter-coffee}
+  - {type: Organic brewed coffee, item: filter-coffee}
+  - {type: Drip coffee, item: filter-coffee}
+  - {type: Scone, item: franzbroetchen}
+  - {type: Pastry, item: croissant}
+  - {type: Biscotti, item: banana-bread}
