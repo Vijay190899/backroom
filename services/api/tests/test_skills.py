@@ -241,3 +241,19 @@ async def test_a_crashing_run_still_finishes_visibly(tmp_path: Path) -> None:
     assert not result.ok and result.status == "failed"
     assert isinstance(events[-1], RunFinished) and events[-1].status == "failed"
     assert "portals are down" in events[-1].summary
+
+
+def test_param_values_in_descriptions_are_templated_and_rendered_per_run() -> None:
+    from backroom_api.skills.compiler import render_text, template_text
+
+    text = template_text("Set quantity to 24 for the OAT-1L row, not 240 or 2.4", PARAMS)
+    assert text == "Set quantity to {{qty}} for the {{sku}} row, not 240 or 2.4"
+    assert render_text(text, {"qty": 28, "sku": "MILK-1L"}) == (
+        "Set quantity to 28 for the MILK-1L row, not 240 or 2.4"
+    )
+    assert render_text("Open {{unknown}}", {}) == "Open {{unknown}}"
+    step = compile_action(
+        Action(intent="Type 24", action="fill", role="spinbutton", name="Quantity", value="24"),
+        PARAMS,
+    )
+    assert step.intent == "Type {{qty}}"

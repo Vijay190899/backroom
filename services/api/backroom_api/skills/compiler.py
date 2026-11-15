@@ -71,6 +71,28 @@ def template_value(action: str, value: str, params: Mapping[str, Any]) -> str:
     return value
 
 
+def template_text(text: str, params: Mapping[str, Any]) -> str:
+    """Parameter values inside a step's description ("Set quantity to 24") become
+    `{{qty}}`, so a replay with other params never shows the explore run's values."""
+    for key, param in sorted(params.items(), key=lambda kv: -len(str(kv[1]))):
+        if isinstance(param, bool):
+            continue
+        if isinstance(param, str) and len(param) >= 3:
+            text = text.replace(param, "{{" + key + "}}")
+        elif isinstance(param, (int, float)):
+            text = re.sub(rf"(?<![\w.]){re.escape(str(param))}(?![\w.])", "{{" + key + "}}", text)
+    return text
+
+
+def render_text(text: str, params: Mapping[str, Any]) -> str:
+    """The display form of a templated description (unknown names stay as they are)."""
+    return re.sub(
+        r"\{\{([a-z][a-z0-9_]*)\}\}",
+        lambda m: str(params.get(m.group(1), m.group(0))),
+        text,
+    )
+
+
 def fallbacks_for(role: str | None, name: str | None) -> list[Fallback]:
     if not role or not name:
         return []
@@ -97,7 +119,7 @@ def compile_action(act: Action, params: Mapping[str, Any]) -> Step:
     else:
         template = None
     return Step(
-        intent=act.intent,
+        intent=template_text(act.intent, params),
         action=act.action,
         target=target,
         fallbacks=fallbacks_for(act.role, act.name) if act.action != "goto" else [],

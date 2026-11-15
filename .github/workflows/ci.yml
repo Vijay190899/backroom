@@ -29,6 +29,20 @@ jobs:
   python:
     name: Python (ruff · pyright · pytest)
     runs-on: ubuntu-latest
+    # Postgres with pgvector, so the memory, brief and API tests run instead of skipping.
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: backroom
+          POSTGRES_PASSWORD: backroom
+          POSTGRES_DB: backroom
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U backroom"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://backroom:backroom@localhost:5432/backroom
     steps:
       - uses: actions/checkout@v4
       - name: Detect Python workspace

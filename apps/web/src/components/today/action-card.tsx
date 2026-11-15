@@ -220,12 +220,13 @@ export function ActionCard({
 
   return (
     <div className="relative [perspective:1200px]">
-      {/* What a drag will do, revealed behind the card as it moves. */}
+      {/* What a drag will do, revealed behind the card as it moves. Decorative: they must
+          never take a click meant for the card's buttons, and the card paints above them. */}
       {card.executable ? (
         <motion.p
           aria-hidden
           style={{ opacity: approveHint }}
-          className="absolute inset-y-0 left-6 flex items-center gap-2 text-sm font-medium text-pos"
+          className="pointer-events-none absolute inset-y-0 left-6 flex items-center gap-2 text-sm font-medium text-pos"
         >
           Approve <MoveRight className="size-4" />
         </motion.p>
@@ -233,7 +234,7 @@ export function ActionCard({
       <motion.p
         aria-hidden
         style={{ opacity: skipHint }}
-        className="absolute inset-y-0 right-6 flex items-center gap-2 text-sm font-medium text-muted-foreground"
+        className="pointer-events-none absolute inset-y-0 right-6 flex items-center gap-2 text-sm font-medium text-muted-foreground"
       >
         <MoveLeft className="size-4" /> Not now
       </motion.p>
@@ -257,7 +258,7 @@ export function ActionCard({
         onPointerLeave={onPointerLeave}
         whileDrag={{ scale: 1.02, cursor: "grabbing" }}
         className={cn(
-          "glass touch-pan-y rounded-[var(--t-radius-card)] p-6 sm:p-8",
+          "glass relative z-10 touch-pan-y rounded-[var(--t-radius-card)] p-6 sm:p-8",
           lead && "grid gap-8 lg:grid-cols-12 lg:gap-10",
         )}
       >

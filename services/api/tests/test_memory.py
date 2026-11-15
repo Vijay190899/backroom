@@ -35,6 +35,8 @@ def conn() -> Iterator[psycopg.Connection[Any]]:
         pytest.skip("no Postgres reachable (set DATABASE_URL, e.g. Neon)")
     schema = f"test_memory_{uuid.uuid4().hex[:10]}"
     name = sql.Identifier(schema)
+    # pgvector must live in public: created inside a test schema, it would vanish with it
+    connection.execute("create extension if not exists vector schema public")
     connection.execute(sql.SQL("create schema {}").format(name))
     connection.execute(sql.SQL("set search_path to {}, public").format(name))
     connection.execute(cast(LiteralString, MIGRATION.read_text()))
@@ -288,6 +290,8 @@ def test_held_back_invoice_supersedes_when_ingested(
     cli.build(TODAY, 44, out, tmp_path_factory.mktemp("raw2"), offline=True)
     own = psycopg.connect(Settings().database_url, connect_timeout=5)
     name = sql.Identifier(f"test_memory_{uuid.uuid4().hex[:10]}")
+    # pgvector must live in public: created inside a test schema, it would vanish with it
+    own.execute("create extension if not exists vector schema public")
     own.execute(sql.SQL("create schema {}").format(name))
     own.execute(sql.SQL("set search_path to {}, public").format(name))
     try:

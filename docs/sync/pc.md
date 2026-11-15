@@ -11,6 +11,18 @@ Laptop must: pull, then run these commands (`uv sync --all-packages`, `pnpm inst
 Contract changes: anything the laptop's code must adapt to.
 ```
 
+## Sun 15 Nov 2026 · H4 runs, briefs and the API routes, branch pc/h4-runs-api
+Done:
+- Migration `0002_runs.sql` (brief, action, run, run_event); applied by `pnpm seed` and at API start-up.
+- `backroom_api/live/` (repo, RunManager, BriefService) and the routes in `routes/{brief,runs,catalog,errors}.py`: `GET /brief/today` (cached; `?regenerate=1` streams), `POST /actions/{id}/approve` (Idempotency-Key) and `/reject`, `GET /runs/{id}`, `GET /runs/{id}/events` (SSE, Last-Event-ID), `WS /runs/{id}/screen`, `POST /runs/{id}/human` and `/undo`, `GET /skills`, `/skills/{id}/versions`, `GET /memory/graph` (all facts, superseded included), `/memory/facts/{id}`, `GET`/`POST /chaos`. Errors use `{"error": {code, message}}`.
+- Live evidence (real portals, Chromium, OpenRouter): brief generated in 7.3 s, cached 0.26 s; approve → order GW-10482, 28 x OAT-1L, €44.52, events streamed and resumed from Last-Event-ID 60 (61-66); a repeated approve is deduplicated; reject "too steep, max 8%" → preference fact → regenerated card €3.45 (+7.8%, "Kept under your 8% cap"); the price run sent 11 JPEG frames and 6 cursor moves to the screen socket; undo restored €3.20. Through the web app: Approve on Today started a real run (GW-10483) and the run theater played it live.
+- Tests: `test_api_live.py` (10, own Postgres schema, scripted runner). CI now has a Postgres service. `pnpm check`: 370 passed.
+Fixed on the laptop's side, found while testing in the browser:
+- **Today cards: the hidden swipe hints covered the Approve and Not now buttons**, so a mouse click on them did nothing (the browser's own hit test landed on the hint). The hints are now click-through and the card paints above them (`components/today/action-card.tsx`).
+- Step descriptions kept the explore run's values ("Set quantity to 24" on a 28-carton run). They are now templated like values and rendered per run (skills compiled from now on; the dev skills in `var/` predate it).
+Open for H5: the run theater's address bar shows the first step's path, not the current page; reorder has no undo (no cancel-order task).
+Laptop must: `git pull`, `uv sync --all-packages`.
+
 ## Sun 15 Nov 2026 · review of the PC session (merges, H1-H3), branch pc/h3-review
 Fixed:
 - **Secret leak to the model:** the ARIA snapshot shows typed field values, so the vault-held username reached explore/heal prompts. Every prompt now goes through `vault.redact`; a test proves the value never appears.
