@@ -10,11 +10,13 @@ The model never types a secret: it names a vault key (`secret`) and the executor
 value. The model never decides that the task succeeded; the caller checks postconditions.
 """
 
+import asyncio
 import json
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
+import anthropic
 from playwright.async_api import Page
 
 from backroom_api.agents.recorder import RunRecorder
@@ -23,6 +25,7 @@ from backroom_api.browser.snapshot import Observation, observe
 from backroom_api.browser.vault import SecretVault
 from backroom_api.contracts.common import Mode
 from backroom_api.contracts.events import StepFinished, StepStarted
+from backroom_api.llm.meter import BudgetExceededError
 from backroom_api.llm.registry import Role
 from backroom_api.skills.compiler import Action
 from backroom_api.skills.schema import Locator, Step, StepAction
@@ -37,6 +40,7 @@ ACTIONS: tuple[StepAction, ...] = (
     "totp",
     "wait_for",
 )
+LLM_TIMEOUT_S = 30  # one step decision; the SDK default would wait minutes
 _NEEDS_REF = {"click", "fill", "fill_secret", "select", "totp"}
 
 SYSTEM = """You operate a web portal on behalf of a café owner, through tool calls. \
@@ -184,15 +188,31 @@ async def explore(
             return result
         obs = await observe(page)
         refs = {e.ref: e for e in obs.elements}
-        reply = await rec.call(
-            role,
-            system=system,
-            tools=tools(secret_keys, healing=mode == "heal"),
-            messages=[
-                {"role": "user", "content": _turn_text(goal, params, secret_keys, history, obs)}
-            ],
-            max_tokens=1024,
-        )
+        try:
+            reply = await asyncio.wait_for(
+                rec.call(
+                    role,
+                    system=system,
+                    tools=tools(secret_keys, healing=mode == "heal"),
+                    messages=[
+                        {
+                            "role": "user",
+                            # The snapshot shows typed values (a username, a one-time
+                            # code): redact, so secrets never reach a prompt (CLAUDE.md).
+                            "content": vault.redact(
+                                _turn_text(goal, params, secret_keys, history, obs)
+                            ),
+                        }
+                    ],
+                    max_tokens=1024,
+                ),
+                timeout=LLM_TIMEOUT_S,
+            )
+        except (anthropic.APIError, TimeoutError, BudgetExceededError) as exc:
+            # A failed model call ends this attempt cleanly; the caller climbs the ladder
+            # or reports the run as failed instead of crashing it.
+            result.reason = f"model call failed: {type(exc).__name__}"
+            return result
         message = reply.message
         call = next((b for b in message.content if b.type == "tool_use"), None)
         if message.stop_reason != "tool_use" or call is None:

@@ -7,6 +7,8 @@ Either way a run is a success only if every postcondition passes against the por
 state. A skill is stored only after such a run, so a wrong guess can never become a skill.
 """
 
+import asyncio
+import logging
 import uuid
 from collections.abc import Mapping
 from dataclasses import dataclass, field
@@ -28,6 +30,8 @@ from backroom_api.replay.engine import ReplayResult, replay
 from backroom_api.skills.compiler import compile_skill
 from backroom_api.skills.schema import Skill, SkillDiff, SkillStats, Step
 from backroom_api.skills.store import SkillStore
+
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -62,6 +66,7 @@ class SkillRunner:
         self.store = store
         self.admin = admin
         self.vault = vault or SecretVault.from_settings(settings)
+        self._locks: dict[str, asyncio.Lock] = {}
 
     async def run(
         self,
@@ -74,10 +79,53 @@ class SkillRunner:
         on_frame: FrameCallback | None = None,
         force_explore: bool = False,
     ) -> RunResult:
+        """Run one task. Never raises for a run that went wrong: every run ends with a
+        `run.finished` event, so a live client is never left waiting."""
         spec = TASKS[task]
         merged = {**spec.default_params, **(params or {})}
-        run_id = run_id or f"run_{uuid.uuid4().hex[:8]}"
-        rec = RunRecorder(run_id, self.llm, sink)
+        rec = RunRecorder(run_id or f"run_{uuid.uuid4().hex[:8]}", self.llm, sink)
+        # One run per task at a time: two runs healing the same skill would both try to
+        # store the same new version.
+        async with self._locks.setdefault(task, asyncio.Lock()):
+            try:
+                return await self._run(spec, merged, rec, action_id, on_frame, force_explore)
+            except Exception as exc:  # the run must still finish visibly
+                log.exception("run %s crashed", rec.run_id)
+                reason = self.vault.redact(f"{type(exc).__name__}: {exc}")[:300]
+                await rec.emit(
+                    RunFinished,
+                    status="failed",
+                    summary=f"Did not finish: internal error ({reason})",
+                    result={},
+                    undo_available=False,
+                    skill_version=rec.skill_version,
+                    totals=rec.totals(),
+                )
+                return RunResult(
+                    run_id=rec.run_id,
+                    ok=False,
+                    status="failed",
+                    summary="internal error",
+                    mode="explore",
+                    healed=False,
+                    escalated=False,
+                    skill_version=rec.skill_version,
+                    totals=rec.totals(),
+                    failure=reason,
+                    events=rec.events,
+                )
+
+    async def _run(
+        self,
+        spec: TaskSpec,
+        merged: dict[str, Any],
+        rec: RunRecorder,
+        action_id: str,
+        on_frame: FrameCallback | None,
+        force_explore: bool,
+    ) -> RunResult:
+        task = spec.task
+        run_id = rec.run_id
         baseline = await self._orders_before(spec)
         skill = None if force_explore else self.store.latest(task)
         mode: Mode = "replay" if skill else "explore"
@@ -113,6 +161,7 @@ class SkillRunner:
                         params=merged,
                         portal=spec.portal,
                         can_heal=self.llm is not None,
+                        max_usd=self.settings.run_max_usd,
                     )
                     failure = replayed.failure
                     proceed = replayed.ok

@@ -47,6 +47,7 @@ class Settings(BaseSettings):
     llm_ledger_path: Path = REPO_ROOT / "var" / "llm_ledger.jsonl"
     explore_max_steps: int = 25
     explore_max_usd: float = 0.05
+    run_max_usd: float = 0.25  # a run that heals stops (and asks a human) beyond this
     demo_access_code: str = "change-me"
     demo_mode: Literal["live", "replay"] = "live"
 
