@@ -568,31 +568,27 @@ html[data-motion="calm"]::view-transition-group(*) {
 ::view-transition-new(particles) {
   animation: none;
 }
-::view-transition-old(.nav-forward),
-::view-transition-old(.nav-back) {
+/* The page pair, by name (see PageTransition): the old page is gone in 120 ms before the
+ * new one starts at 140 ms, so the two are never on screen together. No group morph. */
+::view-transition-group(page) {
+  animation: none;
+}
+::view-transition-old(page) {
   animation: 120ms cubic-bezier(0.4, 0, 1, 1) both page-out;
 }
-::view-transition-new(.nav-forward) {
+::view-transition-new(page) {
   --drift: 14px;
   animation: 380ms var(--t-ease-out) 140ms both page-in;
 }
-::view-transition-new(.nav-back) {
+/* Going back drifts the other way where the browser knows the transition's type. */
+html:active-view-transition-type(nav-back)::view-transition-new(page) {
   --drift: -14px;
-  animation: 380ms var(--t-ease-out) 140ms both page-in;
 }
-/* Named pieces inside a page (the Skills picks) leave and arrive with their page, instead
- * of cross-fading on their own over the next one. */
-html:active-view-transition-type(nav-forward, nav-back)::view-transition-group(skill-pick),
-html:active-view-transition-type(nav-forward, nav-back)::view-transition-group(version-pick) {
-  animation: none;
-}
-html:active-view-transition-type(nav-forward, nav-back)::view-transition-old(skill-pick),
-html:active-view-transition-type(nav-forward, nav-back)::view-transition-old(version-pick) {
-  animation: 120ms cubic-bezier(0.4, 0, 1, 1) both page-out;
-}
-html:active-view-transition-type(nav-forward, nav-back)::view-transition-new(skill-pick),
-html:active-view-transition-type(nav-forward, nav-back)::view-transition-new(version-pick) {
-  animation: 380ms var(--t-ease-out) 140ms both page-in;
+/* Named pieces inside a page (the Skills picks) leave as fast as their page, so nothing
+ * lingers over the next one; their in-page glide (the group) is unaffected. */
+::view-transition-old(skill-pick),
+::view-transition-old(version-pick) {
+  animation-duration: 120ms;
 }
 @keyframes page-out {
   to {

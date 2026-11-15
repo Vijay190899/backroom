@@ -14,6 +14,17 @@ Notes: surprises, shortcuts, things left undone.
 
 ---
 
+## Sun 15 Nov 2026 · L8 follow-up (page transitions by name) + README banner · branch laptop/l9-run-theater
+Done:
+- Page changes fade through by view-transition name (`page`), so Safari gets the same no-overlap transition as Chrome (DECISIONS L-81).
+- README banner merged into `main` (PR #10) at the owner's request.
+Verify:
+- Headless Chrome on a production build. Navigation runs exactly `old(page) page-out 120 ms` and `new(page) page-in 380 ms @140 ms`, and the frames never show both pages. Skills → Bench: the highlight's old copy is gone in 120 ms. `pnpm check` is green.
+Needs from PC:
+- Pull `main` (it now has the README banner) before merging the laptop branches.
+Notes:
+- Safari could not be automated from the laptop; the owner should confirm by eye.
+
 ## Sun 15 Nov 2026 · L9 · branch laptop/l9-run-theater (stacked on laptop/l8-today)
 Done:
 - Run theater at `/runs/[id]` (PRD F2, DECISIONS L-80):

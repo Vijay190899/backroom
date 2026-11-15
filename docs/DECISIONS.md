@@ -167,3 +167,7 @@ Written on the laptop. Every place where the laptop's work departs from the PRD,
   - Recorded runs play in real time with failed 5 s waits clipped to 0.9 s, with pause, restart and 1×/2×. Live runs follow the stream.
   - Every number on the page is an event field or a sum of them, from one pure fold (`lib/run-view.ts`) that a node check pins against the fixture. Secret values are dropped in the fold.
   *Why:* the PC wires the real stream in H4. The laptop has no Chromium (L-67), so the UI had to be complete and testable on fixtures.
+- **L-81 (L8/L9). Page changes are timed by view-transition name, not class. The README banner was merged into `main` from the laptop.**
+  - The owner still saw both pages on screen at once. The fade-through in L-79 was attached to view-transition classes (`.nav-forward` / `.nav-back`). In a browser that doesn't apply those (the owner uses Safari), the pages fell back to the default 250 ms crossfade, which overlaps. Every page wrapper now shares the name `page`, and the old/new pair is timed on the name itself, part of the core spec: out in 120 ms, in from 140 ms, never together. The Skills highlight's old copy also leaves in 120 ms, no longer gated on `:active-view-transition-type`.
+  - PR #10 (README banner, docs only, CI green) was merged into `main` from the laptop at the owner's explicit request. This deviates from HANDOVER §9.4, which says the PC merges.
+  *Why:* the owner's request. Verified in headless Chrome; Safari could not be driven from the laptop.
