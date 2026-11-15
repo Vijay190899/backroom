@@ -7,20 +7,11 @@
 [![Last commit](https://img.shields.io/github/last-commit/Vijay190899/backroom)](https://github.com/Vijay190899/backroom/commits/main)
 ![Status](https://img.shields.io/badge/status-in%20development-C8742B)
 
-![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
-![Next.js](https://img.shields.io/badge/Next.js-App%20Router-000000?logo=nextdotjs&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-backend-009688?logo=fastapi&logoColor=white)
-![Playwright](https://img.shields.io/badge/Playwright-browser%20agent-2EAD33?logo=playwright&logoColor=white)
-![Postgres](https://img.shields.io/badge/Postgres-pgvector-4169E1?logo=postgresql&logoColor=white)
-![LLM](https://img.shields.io/badge/LLM-Claude%20Haiku%205.5%20%C2%B7%20Sonnet%205.5-D97757?logo=anthropic&logoColor=white)
-![OpenRouter](https://img.shields.io/badge/via-OpenRouter-6566F1?logo=openrouter&logoColor=white)
-![Vercel](https://img.shields.io/badge/web-Vercel-000000?logo=vercel&logoColor=white)
-![AWS](https://img.shields.io/badge/backend-AWS%20Lightsail-FF9900)
-
 **The engine under "Approve all".** Backroom is an agentic back office for a local café. It finds money in the business data, explains it with evidence, and carries out the fix in the owner's web tools: logging in, handling 2FA, clicking through. It gets faster, cheaper and more aligned with the owner every time it runs.
 
 > Independent exploration built for a Founding Engineer interview with Super44. Not affiliated with or endorsed by Super44. All businesses, portals and people are fictional; data is open or synthetic ([docs/DATA.md](docs/DATA.md)).
+
+<p align="center"><img src="docs/assets/demo.gif" alt="The run theater replaying a supplier order: the agent signs in, a button has moved, the healer model repairs the step, and the order is placed" width="100%"></p>
 
 ## What it demonstrates
 
@@ -90,7 +81,7 @@ pnpm probe:llm                  # confirms which LLM features the provider suppo
 Weather data by [Open-Meteo](https://open-meteo.com/) (CC BY 4.0). Holidays by [Nager.Date](https://date.nager.at/). Sales based on the Maven Analytics "Coffee Shop Sales" sample dataset, re-based (see [DATA.md](docs/DATA.md)).
 
 ## Asset attribution
-The 3D café (in the banner and the app's intro) is "Shop" by Shaun Glowa, [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/), via [Poly Pizza](https://poly.pizza), modified: overlapping faces were separated to stop flicker. The café scene animations are from [LottieFiles](https://lottiefiles.com) (Lottie Simple License).
+The 3D café (in the banner and the app's intro) is "Shop" by Shaun Glowa, [CC-BY 3.0](https://creativecommons.org/licenses/by/3.0/), via [Poly Pizza](https://poly.pizza), modified: overlapping faces were separated to stop flicker, and the door was rigged to open. The background drawings are [Lucide](https://lucide.dev) icons (ISC).
 
 ## License
 MIT
