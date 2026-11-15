@@ -39,7 +39,11 @@ exclude = ["**/node_modules", "**/.venv", "apps", "graphify-out"]
 reportMissingTypeStubs = false
 
 [tool.pytest.ini_options]
-testpaths = ["services/api/tests", "services/portals/tests", "data/tests"]
+testpaths = ["services/api/tests", "services/portals/tests", "data/tests", "bench/tests"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 addopts = "-q --import-mode=importlib"
+
+[tool.ruff.lint.per-file-ignores]
+# B3's ground-truth SQL reads best one question per line.
+"bench/backroom_bench/questions.py" = ["E501"]
