@@ -63,8 +63,9 @@ async def check_basic(llm: LLM) -> Check:
         "worker", messages=_user("Reply with the single word: ready"), max_tokens=MAX_TOKENS
     )
     ok = r.message.stop_reason == "end_turn" and bool(r.text.strip())
-    return Check(ok, f"stop_reason={r.message.stop_reason} text={r.text.strip()[:40]!r}",
-                 usd=r.cost.usd)
+    return Check(
+        ok, f"stop_reason={r.message.stop_reason} text={r.text.strip()[:40]!r}", usd=r.cost.usd
+    )
 
 
 async def check_effort(llm: LLM) -> Check:
@@ -72,8 +73,11 @@ async def check_effort(llm: LLM) -> Check:
         "worker", messages=_user("Reply with the single word: ready"), max_tokens=MAX_TOKENS
     )
     ok = r.message.stop_reason == "end_turn"
-    return Check(ok, f"output_config.effort={r.role.effort} accepted; "
-                 f"stop_reason={r.message.stop_reason}", usd=r.cost.usd)
+    return Check(
+        ok,
+        f"output_config.effort={r.role.effort} accepted; stop_reason={r.message.stop_reason}",
+        usd=r.cost.usd,
+    )
 
 
 async def check_strict_tools(llm: LLM) -> Check:
@@ -115,17 +119,24 @@ async def check_structured_outputs(llm: LLM) -> Check:
 async def check_prompt_cache(llm: LLM) -> Check:
     system = [{"type": "text", "text": CACHE_PREFIX, "cache_control": {"type": "ephemeral"}}]
     first = await llm.create(
-        "worker", system=system, messages=_user("How many sections are there? Number only."),
+        "worker",
+        system=system,
+        messages=_user("How many sections are there? Number only."),
         max_tokens=MAX_TOKENS,
     )
     second = await llm.create(
-        "worker", system=system, messages=_user("What does section 7 list? One sentence."),
+        "worker",
+        system=system,
+        messages=_user("What does section 7 list? One sentence."),
         max_tokens=MAX_TOKENS,
     )
     written = first.message.usage.cache_creation_input_tokens or 0
     read = second.message.usage.cache_read_input_tokens or 0
-    return Check(read > 0, f"first call cache_write={written}, second call cache_read={read}",
-                 usd=first.cost.usd + second.cost.usd)
+    return Check(
+        read > 0,
+        f"first call cache_write={written}, second call cache_read={read}",
+        usd=first.cost.usd + second.cost.usd,
+    )
 
 
 async def check_streaming(llm: LLM) -> Check:
@@ -137,8 +148,9 @@ async def check_streaming(llm: LLM) -> Check:
         on_text=deltas.append,
     )
     ok = r.message.stop_reason == "end_turn" and len(deltas) >= 1 and "20" in r.text
-    return Check(ok, f"{len(deltas)} text deltas; stop_reason={r.message.stop_reason}",
-                 usd=r.cost.usd)
+    return Check(
+        ok, f"{len(deltas)} text deltas; stop_reason={r.message.stop_reason}", usd=r.cost.usd
+    )
 
 
 async def _run(name: str, fn: Callable[[LLM], Awaitable[Check]], llm: LLM) -> Check:
@@ -160,7 +172,10 @@ def _git_sha() -> str | None:
     try:
         out = subprocess.run(
             ["git", "rev-parse", "--short", "HEAD"],
-            cwd=REPO_ROOT, capture_output=True, text=True, check=True,
+            cwd=REPO_ROOT,
+            capture_output=True,
+            text=True,
+            check=True,
         )
     except (OSError, subprocess.CalledProcessError):
         return None

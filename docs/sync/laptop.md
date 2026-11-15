@@ -5,6 +5,36 @@ Only the **laptop** edits this file (the PC never does, so it cannot conflict). 
 Entry format:
 
 ```
+## Sun 15 Nov 2026 · L11 · branch laptop/l11-bench (stacked on laptop/l7-brief)
+Done:
+- Bench harness (`bench/backroom_bench`), DECISIONS L-83:
+  - B1: task × chaos seed × cold/warm, with success %, p50/p95, calls, tokens, $ and the target headline;
+  - B2: 20-run learning curve with redesigns at runs 8 and 15;
+  - B3: 30 questions with SQL ground truth on the seeded data, three arms, ±1% grading, an LLM answerer with a cached records prefix;
+  - B5: guard verdicts plus independent re-verification of displayed numbers.
+- Results JSON carries model ids per role, seeds, n, date, git SHA, a `fake` flag and the OpenRouter fee line.
+- CLI: `backroom-bench all|b1|b2|b3|b5 [--fake] [--runner m:f] [--pack m:f] [--briefs DIR]`.
+Verify:
+- `uv run pytest -q bench/tests`: 6 passed (B1 grid, B2 spikes at 8 and 15, grading, B3 on the real ground truth, results header).
+- `uv run backroom-bench all --fake --seeds 3` writes `var/bench-fake/b1,b2,b3,b5.json`.
+- One real B3 call pair: both answers correct, `stop_reason` end_turn, the second call read 138,126 cached tokens, and both are in the ledger.
+- ruff and pyright are clean.
+- Audit (Sonnet): no blockers; 5 should-fix items and 3 nits, all fixed:
+  - real runs never grade fixture briefs;
+  - a skipped benchmark exits non-zero, and a real B3 needs `--pack`;
+  - the B2 header carries its seeds, and its headline adds `warm_success`, `all_ok` and `redesigns_healed`;
+  - the git SHA is marked `-dirty`;
+  - answers get `max_tokens` 1024 and record `stop_reason`;
+  - the budget guard stop writes a partial B3;
+  - decimal commas and the Unicode minus are graded correctly.
+Needs from PC (H7):
+- A `TaskRunner` factory over the skill runner and portals; a `pack_for(question)` over the memory store.
+- Run `pnpm bench`, then commit `bench/results/b1,b2,b3,b5.json`.
+- Save the briefs generated during the bench to `var/bench/briefs/` (B5 reads them).
+Notes:
+- `bench/tests` was added to pytest testpaths.
+- The L8 bench page reads these files once they exist; it is wired on the L9 line in L13, to avoid a conflict with this branch's M0 page.
+
 ## <date time> · L<id> · branch laptop/<id>-<slug>
 Done: what works now.
 Verify: the exact commands to check it (and what you should see).
