@@ -5,6 +5,14 @@ Only the **laptop** edits this file (the PC never does, so it cannot conflict). 
 Entry format:
 
 ```
+## Sun 15 Nov 2026 · L8 follow-up (glass panels on every page; drawings thicker again) · branch laptop/l9-run-theater
+Done:
+- Memory, Skills, Bench and About frame their sections in the same glass panels as Today's cards: a new `.panel` utility (card radius and padding) used as `glass panel`. The inner ink rules became hairlines.
+- The background café drawings are 40% thicker again (1.75 → 2.45 px on screen).
+Verify:
+- Headless Chrome on each page: the panels compute a 20 px radius, 28 px padding and the shadow (Memory 3, Skills 2, Bench 2, About 6); no sideways scroll at 390 px; screenshots checked.
+- `pnpm check` is green.
+
 ## Sun 15 Nov 2026 · L8 follow-up (thicker café drawings) · branch laptop/l9-run-theater
 Done:
 - The background café drawings' lines are 40% thicker (1.25 → 1.75 px on screen); the owner found them almost invisible. The intro stays on phones too (owner's call; `/` on phones stays about 71 on a first visit).

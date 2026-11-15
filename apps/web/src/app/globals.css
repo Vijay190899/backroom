@@ -156,6 +156,16 @@
     backdrop-filter: blur(18px) saturate(1.4);
     -webkit-backdrop-filter: blur(18px) saturate(1.4);
   }
+  /* A page section on its glass card, framed like Today's cards: `glass panel`. */
+  .panel {
+    border-radius: var(--t-radius-card);
+    padding: 1.25rem;
+  }
+  @media (width >= 40rem) {
+    .panel {
+      padding: 1.75rem;
+    }
+  }
   /* Chrome that content scrolls under (header, tab bar, dock): mostly opaque glass. */
   .glass-solid {
     background: color-mix(in oklch, var(--t-bg) 84%, transparent);

@@ -54,7 +54,7 @@ function Tile({ id, tile }: { id: string; tile: typeof NEAR }) {
     <pattern id={id} width={tile.size} height={tile.size} patternUnits="userSpaceOnUse">
       {tile.glyphs.map(({ Icon, x, y, r }, i) => (
         <g key={i} transform={`rotate(${r} ${x + tile.icon / 2} ${y + tile.icon / 2})`}>
-          <Icon x={x} y={y} width={tile.icon} height={tile.icon} strokeWidth={1.75} absoluteStrokeWidth />
+          <Icon x={x} y={y} width={tile.icon} height={tile.icon} strokeWidth={2.45} absoluteStrokeWidth />
         </g>
       ))}
     </pattern>
@@ -110,12 +110,12 @@ export function CafePattern() {
           className="cafe-truck"
           onAnimationEnd={(e) => e.animationName === "cafe-truck" && setLastTrip(deliveries)}
         >
-          <Truck strokeWidth={1.75} absoluteStrokeWidth className="size-full" />
+          <Truck strokeWidth={2.45} absoluteStrokeWidth className="size-full" />
         </span>
       ) : null}
       {serves !== lastServe ? (
         <span key={serves} className="cafe-serve">
-          <Coffee strokeWidth={1.75} absoluteStrokeWidth className="size-full" />
+          <Coffee strokeWidth={2.45} absoluteStrokeWidth className="size-full" />
         </span>
       ) : null}
     </div>

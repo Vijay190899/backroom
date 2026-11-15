@@ -40,7 +40,7 @@ function useSelected(fallback: string | undefined): [string | undefined, (id: st
 
 function Stat({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="border-t border-ink pt-2">
+    <div className="border-t border-line pt-2">
       <dt className="kicker text-muted-foreground">{label}</dt>
       <dd className="mt-1 font-display text-3xl font-medium text-ink tabular">{children}</dd>
     </div>
@@ -105,7 +105,7 @@ function Steps({ version, history }: { version: Skill; history: SkillVersions })
   const rows = annotate(version, diff);
   let changed = 0;
   return (
-    <ol className="border-t border-ink font-mono text-[0.8125rem]">
+    <ol className="border-t border-line font-mono text-[0.8125rem]">
       {rows.map(({ index, step, kind, before }) => {
         const delay = kind === "same" ? 0 : 200 + changed++ * 260;
         return (
@@ -220,7 +220,7 @@ function SkillDetail({ summary, registryLive }: { summary: SkillSummary; registr
               </div>
 
               <h3 className="kicker mt-10 text-ink">Checked after every run</h3>
-              <ul className="mt-3 border-t border-ink">
+              <ul className="mt-3 border-t border-line">
                 {version.postconditions.map((c) => (
                   <li key={`${c.kind}:${c.value}`} className="flex items-start gap-3 border-b border-line py-2.5 text-sm">
                     <ShieldCheck aria-hidden className="mt-0.5 size-4 shrink-0 text-pos" />
@@ -287,12 +287,12 @@ export function SkillsDesk() {
         </div>
       ) : null}
 
-      <div className="grid gap-12 lg:grid-cols-12 lg:gap-10">
-        <section aria-labelledby="registry-heading" className="lg:col-span-4">
+      <div className="grid gap-6 lg:grid-cols-12">
+        <section aria-labelledby="registry-heading" className="glass panel self-start lg:col-span-4">
           <h2 id="registry-heading" className="kicker text-ink">
             The registry
           </h2>
-          <ul className="mt-3 border-t border-ink">
+          <ul className="mt-3 border-t border-line">
             {registry.isPending
               ? [0, 1].map((i) => <li key={i} aria-hidden className="h-24 animate-pulse border-b border-line bg-subtle/60" />)
               : skills.map((s, i) => {
@@ -335,7 +335,7 @@ export function SkillsDesk() {
           </p>
         </section>
 
-        <section aria-label="Skill detail" className="lg:col-span-8 lg:border-l lg:border-line lg:pl-10">
+        <section aria-label="Skill detail" className="glass panel lg:col-span-8">
           {current ? (
             <ViewTransition key={current.id} enter="swap-in" exit="swap-out" default="none">
               <div>
