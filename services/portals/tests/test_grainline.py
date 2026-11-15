@@ -349,6 +349,7 @@ def test_invoice_pdf_shows_vat_per_rate(client: TestClient) -> None:
 
 
 def test_totp_cli_prints_a_valid_code() -> None:
+    import os
     import subprocess
     import sys
 
@@ -357,7 +358,12 @@ def test_totp_cli_prints_a_valid_code() -> None:
         capture_output=True,
         text=True,
         check=True,
-        env={"DATA_SEED": "44", "GRAINLINE_TOTP_SECRET": "", "PATH": ""},
+        env={
+            "DATA_SEED": "44",
+            "GRAINLINE_TOTP_SECRET": "",
+            "PATH": "",
+            "SYSTEMROOT": os.environ.get("SYSTEMROOT", ""),  # Python needs it on Windows
+        },
     ).stdout
     secret, code = (line.split()[1] for line in out.splitlines()[:2])
     assert secret == SECRET and totp.verify(SECRET, code)

@@ -192,3 +192,4 @@ Written on the laptop. Every place where the laptop's work departs from the PRD,
   - `setup` adds a 2 GB swap file for Chromium on the 2 GB box.
   - The web app deploys through Vercel's Git integration (root `apps/web`), with no workflow and no token in the repo.
   *Why:* HANDOVER §9 L12: the server pulls, nobody builds the 4 GB image locally or on the 2 GB server. Seeding the server's data and the first Lightsail run are H8 (PC). The Vercel project needs the owner's account.
+- **16. The laptop's decisions keep their `L-n` ids (L-1 … L-84) instead of being renumbered into the ADR list.** *Why:* code, tests and sync logs cite `L-43` and similar; renumbering would break those references for no gain. New PC decisions continue the plain numbering (17, 18, …). *Alt:* renumber to 16–99 (broken references).
