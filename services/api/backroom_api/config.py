@@ -56,6 +56,14 @@ class Settings(BaseSettings):
     portals_admin_token: str = "change-me"
     web_origin: str = "http://localhost:3000"
 
+    # --- Portal credentials (the secret vault's source; same variables the portals read) ---
+    grainline_user: str = "lena@haferundbohne.example"
+    grainline_password: str = "change-me"
+    grainline_totp_secret: str = ""  # empty: derived from DATA_SEED, as the portals do
+    tilldesk_user: str = "lena"
+    tilldesk_password: str = "change-me"
+    data_seed: int = 44
+
 
 @lru_cache
 def get_settings() -> Settings:

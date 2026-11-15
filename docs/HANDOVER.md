@@ -12,13 +12,13 @@ This file carries everything that lives outside git: the working agreements, the
 |---|---|---|
 | Docs, PRD, plan, CI, public repo | Done | https://github.com/Vijay190899/backroom (README with banner and demo GIF on `main`) |
 | **M0 Foundations** | **Done** | `pnpm check` green; provider probe 6/6 (`bench/results/provider_probe.json`, L10) |
-| **M1 Data + Portals** | Laptop part done (L1–L4); **H1 open** | Grainline + TillDesk portals, chaos engine, `backroom-data` → `data/out/*.parquet`; Postgres load is H1 |
-| **M2 Agent** | **PC: H2, H3 open** | Contracts, skill schema and fixtures are ready (L0) |
+| **M1 Data + Portals** | **Done** (laptop branches merged; H1 done) | `pnpm seed` builds `data/out` and loads Postgres (migrations + world, idempotent) |
+| **M2 Agent** | H2 done; **H3 open** | Browser core in `backroom_api/browser/` (pool, vault, executor, screencast), 19 tests; real Grainline login works |
 | **M3 Brief, memory, UI** | Laptop part done (L5–L9); **H4, H5 open** | Memory, detectors, brief pipeline + number guard, all web screens, run theater on fixtures |
 | **M4 Bench + deploy** | Laptop part done (L11, L12); **H6–H8 open** | Bench harness (fakes), CI image build green, `infra/deploy.sh` |
 | **M5 Polish** | L13 part done; **H9 open** | `/bench` reads results; demo script current |
 
-All laptop work is on branches with draft PRs (§10.1). Nothing from L1 onwards is on `main` yet.
+The laptop branches are merged into `main` (Sun 15 Nov). `.env` on this PC keeps `DATABASE_URL` on local Docker; the Neon URL is `NEON_DATABASE_URL`. `pnpm probe:llm` passes 6/6 on this PC's key.
 
 ### What exists in code (after merging the laptop branches, §10.1)
 - `services/portals/`: Grainline (login + TOTP, catalog, cart, checkout, orders, invoice PDFs) and TillDesk (menu, edit price, publish), with a seeded chaos engine (`POST /_admin/chaos`) of 8+ variant families.

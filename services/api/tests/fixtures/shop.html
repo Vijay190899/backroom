@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Fixture shop</title></head>
+<body>
+<header><nav aria-label="Main"><a href="#cart">Cart</a> <a href="#orders">Orders</a></nav></header>
+<main>
+<h1>Fixture shop</h1>
+<form id="login" onsubmit="event.preventDefault(); document.getElementById('status').textContent='signed in as ' + document.getElementById('u').value + ' (pw length ' + document.getElementById('p').value.length + ')'">
+  <label for="u">Username</label><input id="u" name="u" autocomplete="off">
+  <label for="p">Password</label><input id="p" name="p" type="password">
+  <label for="sz">Size</label>
+  <select id="sz"><option value="s">Small</option><option value="l">Large</option></select>
+  <button type="submit">Sign in</button>
+</form>
+<p id="status" role="status"></p>
+<button id="add" onclick="document.getElementById('count').textContent=String(Number(document.getElementById('count').textContent)+1)">Add to cart</button>
+<p>Items: <output id="count" aria-label="Item count">0</output></p>
+<button id="slow" onclick="this.setAttribute('aria-busy','true');setTimeout(()=>{this.removeAttribute('aria-busy');document.getElementById('done').hidden=false},300)">Load later</button>
+<p id="done" hidden>Loaded</p>
+</main>
+<footer><a href="#cart">Cart</a> <a href="/forbidden.html">Forbidden</a></footer>
+</body></html>
