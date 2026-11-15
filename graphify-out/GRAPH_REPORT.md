@@ -1,7 +1,7 @@
 # Graph Report - backroom laptop work  (2026-11-15)
 
 ## Corpus Check
-- 182 files · ~100,814 words
+- 182 files · ~101,150 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 22 file(s) not represented in the graph (top: (none) 9, .lottie 5, .example 1)
 
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `68608600`
+- Built from commit: `d5bcd1d9`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -131,19 +131,19 @@
 7. `build()` - 30 edges
 8. `Settings` - 29 edges
 9. `L7: brief pipeline with planner, verifier, number guard, reject-to-preference (laptop/l7-brief)` - 28 edges
-10. `TodayBrief()` - 26 edges
+10. `generate()` - 26 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `3. Chaos catalog` --references--> `Look`  [INFERRED]
   docs/CONTRACTS.md → services/portals/backroom_portals/rendering.py
+- `Model price table (USD per 1M tokens; kept in llm/registry.py)` --references--> `Price`  [INFERRED]
+  docs/ARCHITECTURE.md → services/api/backroom_api/llm/registry.py
 - `9.1 Laptop tasks (light)` --references--> `Candidate`  [INFERRED]
   docs/HANDOVER.md → services/api/backroom_api/contracts/candidate.py
 - `Fri 13 Nov 2026 00:40 · L6 · branch laptop/l6-detectors (stacked on laptop/l4-data)` --references--> `Candidate`  [INFERRED]
   docs/sync/laptop.md → services/api/backroom_api/contracts/candidate.py
-- `Model price table (USD per 1M tokens; kept in llm/registry.py)` --references--> `Price`  [INFERRED]
-  docs/ARCHITECTURE.md → services/api/backroom_api/llm/registry.py
-- `L8 part 1: Today screen + Morning edition redesign (laptop/l8-today, Fri 13 Nov)` --references--> `TodayBrief()`  [INFERRED]
-  docs/sync/laptop.md → apps/web/src/components/today/today-brief.tsx
+- `L-71 (L8) Motion built on the platform (React ViewTransition, CSS/WAAPI keyframes, @number-flow/react) instead of the Motion library` --rationale_for--> `PageTransition()`  [INFERRED]
+  docs/DECISIONS.md → apps/web/src/components/motion/page-transition.tsx
 
 ## Import Cycles
 - 2-file cycle: `services/portals/backroom_portals/config.py -> services/portals/backroom_portals/totp.py -> services/portals/backroom_portals/config.py`
@@ -562,7 +562,7 @@ Nodes (5): interval, retries, test, timeout, healthcheck
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `L0: shared contracts (laptop/l0-contracts)` connect `gen_fixtures.py` to `Web zod contracts`, `L5: temporal memory store, writers, context packer (laptop/l5-memory)`, `candidate.py`, `Contract`, `M4 Bench + Deploy (Thu 19:00-23:30)`, `probe.py`, `CONTRACTS.md`, `backroom_portals/__init__.py`, `L-3 (L0) Contract-check wiring outside laptop ownership (check:web, contracts script, allowImportingTsExtensions, CI step)`, `Laptop deviations (L-n log, append-only; PC renumbers on merge)`, `L2: chaos engine with 9 families (laptop/l2-chaos)`?**
-  _High betweenness centrality (0.194) - this node is a cross-community bridge._
+  _High betweenness centrality (0.195) - this node is a cross-community bridge._
 - **Are the 42 inferred relationships involving `Candidate` (e.g. with `Contracts (L0)` and `L-45 (L6) Weekly EUR impact defined per card kind; cards ranked by it`) actually correct?**
   _`Candidate` has 42 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `backroom-api`, `backroom-bench`, `backroom-data` to the rest of the system?**
@@ -570,7 +570,7 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `grainline/routes.py` be split into smaller, more focused modules?**
   _Cohesion score 0.09814563545906829 - nodes in this community are weakly interconnected._
 - **Why does `Laptop deviations (L-n log, append-only; PC renumbers on merge)` connect `Laptop deviations (L-n log, append-only; PC renumbers on merge)` to `L5: temporal memory store, writers, context packer (laptop/l5-memory)`, `gen_fixtures.py`, `action-card.tsx`, `Backroom Product Requirements Document`, `Contract`, `project.yml`, `dependencies`, `format.ts`, `test_llm_client.py`, `api`, `pipeline.py`, `Portals service (FastAPI + Jinja2, backroom_portals)`, `pnpm-workspace.yaml`, `Handover`, `CONTRACTS.md`, `backroom_portals/__init__.py`, `memory-desk.tsx`, `L2: chaos engine with 9 families (laptop/l2-chaos)`, `Chaos engine (one chaos_seed per portal, seeded RNG variant catalog)`, `ADR-9 LLM provider = OpenRouter by default, Anthropic direct as a switch`, `agents.py`, `Cost meter (per-call ledger row: provider, role, model, tokens, cache, $, stop_reason, run_id)`, `Build Plan (Wed 22:00 -> Fri 11:30 freeze)`, `L-3 (L0) Contract-check wiring outside laptop ownership (check:web, contracts script, allowImportingTsExtensions, CI step)`, `Verify every change`?**
-  _High betweenness centrality (0.107) - this node is a cross-community bridge._
+  _High betweenness centrality (0.114) - this node is a cross-community bridge._
 
 ### Low-confidence Hints
 _AMBIGUOUS edges — the extractor was unsure. Verify before acting on these._
