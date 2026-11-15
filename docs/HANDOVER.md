@@ -1,6 +1,6 @@
 # Handover — read this first on a new machine or in a new session
 
-Last updated: Thu 12 Nov 2026 (after M0, two-machine mode). **Interview: Fri 13 Nov afternoon. Code freeze: Fri 11:30.**
+Last updated: Sun 15 Nov 2026. **The laptop tasks L0–L13 are complete. The PC continues with H1–H9: start at §10, the laptop handoff.**
 
 > **Two machines are in use.** The user's light laptop does the *light* tasks (plain code, no Docker, no Chromium); this PC does the *heavy* ones. **The split, the task IDs and the integration rules are in §9.** On the laptop, follow §2b. Each side logs what it finished in its own file under `docs/sync/`.
 
@@ -10,22 +10,28 @@ This file carries everything that lives outside git: the working agreements, the
 
 | Milestone | State | Evidence |
 |---|---|---|
-| Docs, PRD, plan, CI, public repo | Done | https://github.com/Vijay190899/backroom |
-| **M0 Foundations** | **Done, except one gate item** | `pnpm check` green locally and in CI; `/health` 200; web shell verified at 390 and 1440 px in both themes; deploy images build, run, and launch Chromium |
-| M0 gate item still open | `pnpm probe:llm` has **not been run** | needs `OPENROUTER_API_KEY` in `.env` (the user will add credits and a key) |
-| **M1 Data + Portals** | **Not started** — next up | see `docs/BUILD_PLAN.md` → M1 |
-| M2–M5 | Not started | `docs/BUILD_PLAN.md` |
+| Docs, PRD, plan, CI, public repo | Done | https://github.com/Vijay190899/backroom (README with banner and demo GIF on `main`) |
+| **M0 Foundations** | **Done** | `pnpm check` green; provider probe 6/6 (`bench/results/provider_probe.json`, L10) |
+| **M1 Data + Portals** | Laptop part done (L1–L4); **H1 open** | Grainline + TillDesk portals, chaos engine, `backroom-data` → `data/out/*.parquet`; Postgres load is H1 |
+| **M2 Agent** | **PC: H2, H3 open** | Contracts, skill schema and fixtures are ready (L0) |
+| **M3 Brief, memory, UI** | Laptop part done (L5–L9); **H4, H5 open** | Memory, detectors, brief pipeline + number guard, all web screens, run theater on fixtures |
+| **M4 Bench + deploy** | Laptop part done (L11, L12); **H6–H8 open** | Bench harness (fakes), CI image build green, `infra/deploy.sh` |
+| **M5 Polish** | L13 part done; **H9 open** | `/bench` reads results; demo script current |
 
-The user asked to **stop at each milestone gate and show the evidence** before continuing.
+All laptop work is on branches with draft PRs (§10.1). Nothing from L1 onwards is on `main` yet.
 
-### What exists in code
-- `services/api/backroom_api/`: `config.py` (settings), `llm/registry.py` (provider, model mapping, capability flags, prices), `llm/client.py` (the only LLM call path: budget check → call → ledger), `llm/meter.py` (JSONL spend ledger + daily budget guard), `db.py` (sync psycopg pool), `routes/health.py`, `main.py`.
-- `services/portals/backroom_portals/main.py`: **health stub only**. All portal work is M1.
-- `bench/backroom_bench/`: `probe.py` (provider capability probe) and `cli.py`. `bench all` is a stub (M4).
-- `data/backroom_data/cli.py`: **stub** (M1).
-- `apps/web/`: Next.js 16 shell: tokens in `src/styles/tokens.css`, sidebar + phone tab bar, theme toggle, API status pill, five placeholder pages.
-- `infra/`: `docker-compose.yml` (Postgres with pgvector for local dev; `deploy` profile adds api, portals, caddy), two Dockerfiles, Caddyfile.
-- 20 passing Python tests (`services/api/tests`, `services/portals/tests`).
+### What exists in code (after merging the laptop branches, §10.1)
+- `services/portals/`: Grainline (login + TOTP, catalog, cart, checkout, orders, invoice PDFs) and TillDesk (menu, edit price, publish), with a seeded chaos engine (`POST /_admin/chaos`) of 8+ variant families.
+- `data/`: `backroom-data` builds `data/out/*.parquet` (sales, menu, recipes, inventory, rota, holidays, grainline_orders).
+- `services/api/backroom_api/`:
+  - `contracts/` (API, events, skills); `memory/` (temporal facts, supersession, context packer, writers, extractor); `analytics/` (DuckDB detectors);
+  - `brief/` (planner, verifier, deterministic number guard, templates, reject-to-preference loop); `llm/` (registry, client, cost meter).
+- `apps/web/`: Next.js 16 app:
+  - pages: Today, Memory, Skills, Bench, About and the run theater `/runs/[id]`;
+  - also: the 3D café intro, the café pattern background, the agent dock and ⌘K.
+  - Everything runs on fixtures until the API routes exist; screens show "Sample" badges.
+- `bench/backroom_bench/`: harness for B1–B3 and B5 (`backroom-bench all [--fake] [--runner m:f] [--pack m:f]`).
+- `infra/deploy.sh` and `.github/workflows/deploy-images.yml` (GHCR images; the build is green on PR #14).
 
 ## 2. Setup
 
@@ -110,11 +116,7 @@ The full list is `docs/DECISIONS.md` (ADR-1 to ADR-15). The ones a new session i
 
 ## 7. Open items and next steps
 
-1. **User action:** add OpenRouter credits and `OPENROUTER_API_KEY` to `.env`, set a credit limit on the key, then run `pnpm probe:llm`. If any capability fails, set `LLM_CAPS_OFF=<names>` in `.env`, record the result in `docs/DECISIONS.md`, and commit `bench/results/provider_probe.json`.
-2. **All remaining work is split between the laptop and this PC: see §9** (task IDs L0–L13 and H1–H9, with dependencies and gates). `docs/BUILD_PLAN.md` still defines the milestone gates; §9 says who does which part. The Maven download URL and fallback are in `docs/DATA.md`.
-3. **Deploy prerequisites** (needed before M4): an AWS account for Lightsail, a Vercel account. The API image is 4.3 GB, so the first deploy takes a few minutes.
-4. `pnpm e2e` is a placeholder that exits non-zero ("lands in M3").
-5. Serena MCP: connects only when VS Code's PATH contains `uvx` (a full restart of VS Code fixes it).
+Everything left is PC work, listed in order in **§10.2**. Owner decisions still open are in §10.4.
 
 ## 8. Update protocol (keep this file true)
 
@@ -188,3 +190,50 @@ Time check: as of Thu 12 Nov ~14:30 there are about 21 hours to the Fri 11:30 fr
 - **Before the laptop pushes a branch:** `pnpm check` is green; tests are written with fakes or fixtures (no Docker, no Chromium); a sync-log entry says how to verify.
 - **When the PC merges:** `git pull`, `uv sync --all-packages`, `pnpm install`, `pnpm check`, then the task's "done when" check on real services, then a line in `docs/sync/pc.md`.
 - **Secrets:** each machine has its own `.env`. The laptop's `DATABASE_URL` points at Neon and the PC's at local Docker. Never commit either.
+
+## 10. Laptop handoff (Sun 15 Nov 2026): what is done, what the PC does next
+
+### 10.1 Merge plan (do this first)
+The UI branch already contains the whole backend stack, so three merges bring in everything:
+
+1. `laptop/l9-run-theater` (PR #11). It contains L0–L9, L10's probe, L13 part 1 and every UI follow-up.
+2. `laptop/l11-bench` (PR #13, built on L7).
+3. `laptop/l12-deploy` (PR #14, built on `main`).
+
+PRs #1–#9 are earlier views of the same stack and close once #11 is in.
+
+- **Conflicts** appear only in the append-only `docs/DECISIONS.md` and `docs/sync/laptop.md` (keep both sides), and in `graphify-out/` (regenerate it).
+- **Numbering:** the laptop's decisions run L-1 … L-84; renumber them as §9.4 says.
+- **After merging,** per §9.4:
+  - `uv sync --all-packages`, `pnpm install`, `pnpm check` (expect 318 Python tests and the web checks green);
+  - `pnpm seed` to build `data/out`;
+  - re-lock (`uv lock`, `pnpm install`) and commit the lockfiles.
+
+### 10.2 What the PC does next (H-tasks, with the laptop's specific asks)
+Full details are in each branch's `docs/sync/laptop.md` "Needs from PC" entries.
+
+| Task | What to wire or run |
+|---|---|
+| **H1** | Docker Postgres; run `services/api/migrations/*.sql` in name order (reviewed, never run on real Postgres). Then `memory.writers.write_world(conn, Path("data/out"))` after `pnpm seed`. Load the Parquet tables (types in `data/backroom_data/cli.SCHEMAS`). |
+| **H2–H3** | Browser agent on the portals. Portal quirks (L2):<br>• use a fresh context per run;<br>• wait for `[aria-busy]` to clear before each snapshot;<br>• open the hamburger `<details>` before nav links;<br>• link variants are role `link`;<br>• match names exactly.<br>TOTP secret: derived from `DATA_SEED` when `GRAINLINE_TOTP_SECRET` is empty (L1). TillDesk: postcondition `items.<id>.published_price_eur`; you may `goto /tilldesk/menu/{id}/edit`. Time a real seed-7 heal early: it touches 5+ steps (L-24). |
+| **H4** | API routes, all with CORS for the web origin. Shapes are in `contracts/api.py` and `apps/web/src/lib/contracts.ts`.<br>• `GET /brief/today` (SSE with `?regenerate=1`; persist `BriefResult`);<br>• `POST /actions/{id}/approve` → `{run_id}`; `POST /actions/{id}/reject` (extractor + `record_rejection`);<br>• `GET /runs/{id}/events` (SSE, `event:` type, `id:` seq, Last-Event-ID resume);<br>• `WS /runs/{id}/screen` (a frame header, then the JPEG; cursor messages);<br>• `POST /runs/{id}/undo` and `/human`, `POST /chaos` (forward to portals);<br>• `GET /skills`, `/skills/{id}/versions`, `GET /memory/graph` (include superseded facts).<br>The web app needs no code changes: it switches from samples to live data when these respond. |
+| **H5** | Run `DEMO_SCRIPT.md` end to end locally. Run the Playwright 390/1440 screenshots (the formal UI record). The theater's live path (SSE + WS clients in `lib/run-source.ts`, `components/runs/run-screen.tsx`) has only been tested against fixtures. |
+| **H6** | Golden runs (F7: `events.json`, `frames.json`, `frames/*.jpg`). The theater does not read golden frames yet; it shows a schematic for runs without frames. |
+| **H7** | Benchmarks:<br>• `backroom-bench all --runner <your TaskRunner factory> --pack <pack_for(question) over memory>`;<br>• save the briefs generated during the bench to `var/bench/briefs/`;<br>• commit `bench/results/b1,b2,b3,b5.json`; `/bench` shows them after a rebuild.<br>Real B3 costs about $1 (the `ask` role is Sonnet 5.5; the raw dump is about 138k tokens, cached). Try it first with `--fake`. |
+| **H8** | Merge #14 → GHCR `:latest`. Make both packages public (or `docker login` on the server). Write `.env.production` locally (never commit it), with real `API_HOST` / `PORTALS_HOST`. Run `infra/deploy.sh setup ubuntu@<ip>` then `up`, and seed the server's data. Vercel: import the repo with root `apps/web`, keep "include files outside the root directory" on, and set `NEXT_PUBLIC_API_URL`. |
+| **H9** | Three clean rehearsals on the public URL. |
+
+### 10.3 What the laptop delivered (for review)
+| Task | Branch / PR | Notes |
+|---|---|---|
+| L0 contracts, L10 probe | `l0-contracts` #1 | Contract changes for the PC to acknowledge in `docs/sync/pc.md` (L0 notes) |
+| L1–L3 portals + chaos | #2–#4 | 4 Grainline labels added (`update_qty`, `remove`, `prev_page`, `next_page`) |
+| L4 data, L6 detectors, L5 memory, L7 brief | #5–#8 | The reorder is 28 cartons / €44.52 (L-43); the demo script already says so |
+| L8 screens, L9 run theater, L13 part 1 | #9, #11 | The design and its iterations are DECISIONS L-67 … L-82 |
+| L11 bench harness | #13 | L-83 |
+| L12 deploy plumbing | #14 | L-84; the image build is green on the PR |
+
+### 10.4 Open owner decisions and known gaps
+- Lighthouse on phones, `/`: about 71 on a session's first visit because of the 3D intro. The owner chose to keep the intro everywhere for now. Desktop `/` is 94, `/bench` on phones 94, accessibility 100.
+- Nothing is deployed yet: H8 needs the Lightsail login and the owner's Vercel account.
+- Exception to §9.4: on the owner's explicit request, the laptop merged the README PRs (#10, #12) into `main` and wrote this handover section.
