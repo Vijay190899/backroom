@@ -208,3 +208,36 @@ def test_an_obstacle_action_compiles_to_an_optional_step() -> None:
     assert not compile_action(
         Action(intent="Go", action="click", role="link", name="Cart"), PARAMS
     ).optional
+
+
+async def test_a_crashing_run_still_finishes_visibly(tmp_path: Path) -> None:
+
+    from typing import cast
+
+    from backroom_api.agents.portals_admin import PortalAdmin
+    from backroom_api.agents.runner import SkillRunner
+    from backroom_api.browser import BrowserPool, SecretVault
+    from backroom_api.config import Settings
+    from backroom_api.contracts.events import RunFinished
+
+    class DownAdmin:
+        async def state(self, portal: str) -> dict[str, Any]:
+            raise ConnectionError("portals are down")
+
+    events: list[Any] = []
+
+    async def sink(event: Any) -> None:
+        events.append(event)
+
+    runner = SkillRunner(
+        Settings(),
+        None,
+        BrowserPool(),
+        SkillStore(tmp_path),
+        cast(PortalAdmin, DownAdmin()),
+        SecretVault({}),
+    )
+    result = await runner.run("grainline.reorder_item", sink=sink)
+    assert not result.ok and result.status == "failed"
+    assert isinstance(events[-1], RunFinished) and events[-1].status == "failed"
+    assert "portals are down" in events[-1].summary

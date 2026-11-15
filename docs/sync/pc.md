@@ -11,6 +11,16 @@ Laptop must: pull, then run these commands (`uv sync --all-packages`, `pnpm inst
 Contract changes: anything the laptop's code must adapt to.
 ```
 
+## Sun 15 Nov 2026 · review of the PC session (merges, H1-H3), branch pc/h3-review
+Fixed:
+- **Secret leak to the model:** the ARIA snapshot shows typed field values, so the vault-held username reached explore/heal prompts. Every prompt now goes through `vault.redact`; a test proves the value never appears.
+- A model error (API, timeout, daily budget) ended a run without `run.finished`. It now ends that attempt cleanly; model calls in the loop time out after 30 s; any crash in a run still emits `run.finished` (status failed).
+- New `RUN_MAX_USD` (0.25): a healing run stops and asks a human beyond it. Runs of the same task are serialised, so two runs cannot store the same version.
+- CI now installs Chromium, so the 31 browser and agent tests run there instead of skipping.
+Checked and fine: H1 loader (idempotent), H2 executor/vault/allowlist, the H3 compiler, store and postconditions.
+`pnpm check`: 359 passed. Live: cold $0.0028, seed-7 heal $0.0039, warm 1.5 s / 0 calls.
+Laptop must: `git pull`. New optional env var `RUN_MAX_USD`.
+
 ## Sun 15 Nov 2026 · H3 explore, compile, replay, heal (M2 gate)
 Done:
 - `agents/` (explore loop, runner, task specs, postconditions, recorder, portal admin client, CLI, bench adapter), `skills/` (compiler, diff, file store), `replay/engine.py` (heal ladder: fallback → healer (Haiku) → escalation (Sonnet) → ask_human).

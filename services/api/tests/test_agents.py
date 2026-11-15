@@ -254,3 +254,64 @@ async def test_an_absent_optional_step_is_skipped_without_healing(
     assert result.ok and not result.healed and result.changes == []
     assert llm.calls == [] and not kinds(rec.events, HealStarted)
     assert await item_count(page) == "1"
+
+
+async def test_secret_values_never_reach_the_model(page: Page, base_url: str) -> None:
+    # A typed username shows up as the textbox value in the ARIA snapshot; the vault holds
+    # it as a secret, so it must be redacted before the snapshot goes into the prompt.
+    llm = FakeLLM(
+        [
+            lambda p: act(
+                p, "textbox", "Username", intent="User", action="fill_secret",
+                secret="fixture_user",
+            ),
+            finish(True),
+        ]
+    )  # fmt: skip
+    seen: list[str] = []
+    original = llm.create
+
+    async def spy(role: str, **kwargs: Any) -> Any:
+        seen.append(kwargs["messages"][0]["content"])
+        return await original(role, **kwargs)
+
+    llm.create = spy  # type: ignore[method-assign]
+    rec = RunRecorder("run_test", cast(LLM, llm))
+    vault = SecretVault({"fixture_user": "lena.secret@example.test"})
+    executor = Executor(page, vault, Allowlist(base_url, ["/shop.html"]))
+    result = await explore(
+        page=page, executor=executor, rec=rec, vault=vault, goal="Sign in", params={},
+        portal="fixture",
+    )  # fmt: skip
+    assert result.ok and len(seen) == 2
+    assert await page.get_by_role("textbox", name="Username").input_value() == (
+        "lena.secret@example.test"
+    )
+    assert all("lena.secret@example.test" not in prompt for prompt in seen)
+
+
+async def test_a_failed_model_call_ends_the_attempt_instead_of_the_run(
+    page: Page, base_url: str
+) -> None:
+    from backroom_api.llm.meter import BudgetExceededError
+
+    def over_budget(_p: str) -> dict[str, Any]:
+        raise BudgetExceededError("daily budget reached")
+
+    executor, rec, _ = build(page, base_url, [over_budget])
+    result = await explore(
+        page=page, executor=executor, rec=rec, vault=SecretVault({}), goal="x", params={},
+        portal="fixture",
+    )  # fmt: skip
+    assert not result.ok and result.reason == "model call failed: BudgetExceededError"
+
+
+async def test_a_run_over_its_budget_asks_a_human_instead_of_healing(
+    page: Page, base_url: str
+) -> None:
+    executor, rec, llm = build(page, base_url, [])
+    result = await replay(
+        page=page, executor=executor, rec=rec, vault=SecretVault({}),
+        skill=skill_with([click("Add to basket")]), params={}, portal="fixture", max_usd=0.0,
+    )  # fmt: skip
+    assert result.needs_human and llm.calls == [] and "model budget" in (result.failure or "")

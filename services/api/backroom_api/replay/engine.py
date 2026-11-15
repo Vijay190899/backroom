@@ -156,6 +156,7 @@ async def replay(
     params: Mapping[str, Any],
     portal: str,
     can_heal: bool = True,
+    max_usd: float = 0.25,
 ) -> ReplayResult:
     steps = list(skill.steps)
     result = ReplayResult(ok=False, steps=steps)
@@ -203,7 +204,14 @@ async def replay(
 
         # --- the step failed: climb the heal ladder -----------------------------------
         failure = outcome.error or "step failed"
-        if outcome.error_kind == "blocked" or not can_heal or heals >= MAX_HEALS:
+        if rec.usd >= max_usd:
+            failure = f"{failure} (this run reached its ${max_usd:.2f} model budget)"
+        if (
+            outcome.error_kind == "blocked"
+            or not can_heal
+            or heals >= MAX_HEALS
+            or rec.usd >= max_usd
+        ):
             result.failure = failure
             await _give_up(rec, i, failure)
             result.needs_human = True

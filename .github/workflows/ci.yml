@@ -44,7 +44,10 @@ jobs:
       - if: steps.detect.outputs.present == 'true'
         run: uv run pyright
       - if: steps.detect.outputs.present == 'true'
-        run: uv run pytest -q
+        name: Install Chromium (the browser-agent tests skip without it)
+        run: uv run playwright install --with-deps chromium chromium-headless-shell
+      - if: steps.detect.outputs.present == 'true'
+        run: uv run pytest -q -rs
 
   web:
     name: Web (lint · typecheck · build)
