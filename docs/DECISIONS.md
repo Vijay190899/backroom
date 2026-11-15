@@ -185,3 +185,10 @@ Written on the laptop. Every place where the laptop's work departs from the PRD,
   - B5 reports the pipeline's guard verdicts and also re-verifies every displayed number with the guard. On the committed briefs: 33 numbers checked, 0 unbacked.
   - Fakes (`--fake`) write to `var/bench-fake/` with `fake: true`. Only real runs write `bench/results/`.
   *Why:* the harness must run on the laptop against fakes (HANDOVER §9 L11), and the PC's H7 runs it for real. Real B3 cost about $1 (the `ask` role is Sonnet 5.5): one checked call was $0.35 to write the cache, then $0.016 per question.
+
+- **L-84 (L12). Deploy plumbing. Four choices:**
+  - `deploy-images.yml` builds `backroom-api` and `backroom-portals` for linux/amd64 and pushes `:sha` and `:latest` to GHCR from `main`. Pull requests build without pushing, so a broken image shows on the PR.
+  - `infra/deploy.sh` (`setup` / `up` / `status` / `logs`) copies the compose file, Caddyfile and a local, git-ignored `.env.production` to `/opt/backroom`. It writes a server-side override that swaps local builds for the CI images, then pulls and starts. The rest of `infra/` stays the PC's.
+  - `setup` adds a 2 GB swap file for Chromium on the 2 GB box.
+  - The web app deploys through Vercel's Git integration (root `apps/web`), with no workflow and no token in the repo.
+  *Why:* HANDOVER §9 L12: the server pulls, nobody builds the 4 GB image locally or on the 2 GB server. Seeding the server's data and the first Lightsail run are H8 (PC). The Vercel project needs the owner's account.
