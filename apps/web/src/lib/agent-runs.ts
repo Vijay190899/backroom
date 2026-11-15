@@ -9,6 +9,8 @@ export type AgentRun = {
   portal: string | null;
   events: RunEvent[] | null;
   note: string;
+  /** The run theater for this run, when there is one to watch. */
+  href: string | null;
 };
 
 type State = { runs: AgentRun[]; pulse: number };

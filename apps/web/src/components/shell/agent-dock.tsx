@@ -1,7 +1,8 @@
 "use client";
 
 import { AnimatePresence, motion, useAnimationControls } from "motion/react";
-import { Bot, ChevronDown } from "lucide-react";
+import { ArrowUpRight, Bot, ChevronDown } from "lucide-react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -83,11 +84,21 @@ function PlayingRun({ run, open, onToggle }: { run: PlayableRun; open: boolean; 
           >
             <div className="mt-3 border-t border-glass-line pt-3">
               <RunTicker playback={playback} label={run.portal ? `Sample run on ${run.portal}` : "Sample run"} />
+              {run.href ? <TheaterLink href={run.href} /> : null}
             </div>
           </motion.div>
         ) : null}
       </AnimatePresence>
     </>
+  );
+}
+
+function TheaterLink({ href }: { href: string }) {
+  return (
+    <Link href={href} className="link-draw mt-3 inline-flex min-h-11 items-center gap-1 text-sm text-press-ink sm:min-h-0">
+      Open in the run theater
+      <ArrowUpRight aria-hidden className="size-3.5" />
+    </Link>
   );
 }
 
@@ -106,8 +117,9 @@ export function AgentDock() {
     if (pulse) void controls.start({ scale: [1, 1.08, 1], transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] } });
   }, [pulse, controls]);
 
-  // Idle, it only shows on Today (where cards are sent from); with a run it follows you.
-  if (!latest && pathname !== "/") return null;
+  // Idle, it only shows on Today (where cards are sent from); with a run it follows you,
+  // except into the run theater, which shows the run in full.
+  if ((!latest && pathname !== "/") || pathname.startsWith("/runs/")) return null;
 
   return (
     <motion.section
@@ -132,6 +144,11 @@ export function AgentDock() {
             <span role="status" className="block truncate text-sm font-medium text-ink">
               {latest ? latest.note : "Idle · approve a card to send it here"}
             </span>
+            {latest?.href ? (
+              <Link href={latest.href} className="link-draw text-xs text-press-ink">
+                Watch it in the run theater
+              </Link>
+            ) : null}
           </span>
         </div>
       )}

@@ -14,6 +14,38 @@ Notes: surprises, shortcuts, things left undone.
 
 ---
 
+## Sun 15 Nov 2026 · L9 · branch laptop/l9-run-theater (stacked on laptop/l8-today)
+Done:
+- Run theater at `/runs/[id]` (PRD F2, DECISIONS L-80):
+  - a ticker with elapsed time, model calls, tokens, $ and skill version;
+  - a step timeline with a mode, duration and cost for each step, and the heal ladder (fallback, healer model, escalation, you) with what changed;
+  - the browser panel: schematic for the recorded sample, live JPEG frames and the cursor for real runs;
+  - a chaos seed picker, the result with Undo, and an "agent needs you" panel.
+- Plays `fixtures/run-events.json` end to end with pause, restart and 1×/2×. `/runs/run_demo_seed7` is the sample.
+- The dock links to the theater (sample, or the `run_id` returned by approve). An unknown run shows a clear error state with a link to the sample.
+Verify:
+- `pnpm check`: green. `pnpm -C apps/web contracts` now also runs `run-view.check.mts`, which pins the fold on the fixture: 11 steps, 2 heals, 2 calls, $0.0031, 15.68 s, Sign in → Anmelden, the cookie banner inserted. It also covers failed runs, ask_human and secret masking.
+- Headless Chrome on a production build:
+  - mid-heal, the ladder shows fallback ✗ → healer (claude-haiku-5-5) ✓;
+  - pause holds; the result reads "Order GW-10482 placed…";
+  - the dock link opens the theater;
+  - 390 px has no sideways scroll; the light and dark stages render correctly;
+  - the cursor halo tracks the active element.
+- Lighthouse `/runs/run_demo_seed7`: desktop 96, phone 84, accessibility 100, CLS 0.001.
+- Independent audit (Sonnet): 0 blockers, 5 should-fix items, all fixed:
+  - the WS frame/header race;
+  - the halo offset;
+  - failed runs left spinning;
+  - "needs you" staying up after a resume;
+  - one reconnect treated as fatal.
+Needs from PC (H4):
+- `GET /runs/{id}/events` as SSE, with `event: <type>`, `id: <seq>` and Last-Event-ID resume.
+- `WS /runs/{id}/screen`: a frame header, then the JPEG; cursor messages.
+- `POST /runs/{id}/undo`, `POST /runs/{id}/human`, `POST /chaos`.
+- CORS for the web origin on all of these. `approve` must return `run_id`; the dock links to `/runs/{run_id}`.
+Notes:
+- The schematic is for runs without frames. Golden runs (F7: `frames.json` + `frames/*.jpg`) are not wired into the theater yet; that belongs with H4/H6.
+
 ## Sun 15 Nov 2026 · L8 (part 5: café hero band, fade-through pages, intro polish) · branch laptop/l8-today
 Done:
 - The animated café is now a small hero band at the top of every page, above the content, not behind it. Headings are smaller, so the data starts sooner (DECISIONS L-79).

@@ -68,7 +68,10 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-:root {
+/* Re-declared on .dark so a dark island inside a light page (the run theater) resolves
+ * these against its own tokens: a custom property's var() is resolved where it is declared. */
+:root,
+.dark {
   --background: var(--t-bg);
   --foreground: var(--t-ink);
   --card: var(--t-surface);
@@ -301,6 +304,11 @@ html[data-intro="play"] body {
   overflow: hidden;
   pointer-events: none;
   mask-image: linear-gradient(180deg, #000 78%, transparent);
+}
+/* The run theater is dark and focused (PRD principle 3): no café above it. Pure CSS, so
+ * it holds from the server's first paint. */
+.cafe-hero:has(~ main [data-theater]) {
+  display: none;
 }
 .cafe-scene {
   animation: cafe-in 1.4s ease-out both;

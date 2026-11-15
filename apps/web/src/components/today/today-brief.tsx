@@ -144,13 +144,21 @@ export function TodayBrief() {
         portal,
         events,
         note: `${card.title}: approved · no recorded run in the sample`,
+        href: events?.[0] ? `/runs/${events[0].run_id}` : null,
       });
       return;
     }
     try {
-      await approve(brief, card);
+      const { run_id } = await approve(brief, card);
       delivery();
-      startRun({ id: card.id, title: card.title, portal, events: null, note: `${card.title}: the agent has started` });
+      startRun({
+        id: card.id,
+        title: card.title,
+        portal,
+        events: null,
+        note: `${card.title}: the agent has started`,
+        href: `/runs/${encodeURIComponent(run_id)}`,
+      });
       setOne(card.id, "approved");
       setMessage(`${card.title}: approved, the agent is on it.`);
     } catch {
