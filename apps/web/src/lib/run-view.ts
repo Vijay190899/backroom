@@ -146,6 +146,7 @@ export function foldRun(events: readonly RunEvent[]): RunView {
         if (e.action === "goto" && e.value) view.path = e.value;
         break;
       case "step.finished": {
+        if (e.url) view.path = e.url; // where the browser is now (older recordings: goto only)
         const s = byIndex(e.index);
         // A healed step keeps its verdict; a late finish for it only adds its numbers.
         if (s && (s.state === "healed" || s.state === "heal_failed")) {

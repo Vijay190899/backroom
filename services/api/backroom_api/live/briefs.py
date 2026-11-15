@@ -7,6 +7,7 @@ regenerates it under the new rule: "max 8%" turns the €3.60 card into €3.45.
 """
 
 import asyncio
+import json
 import logging
 from collections.abc import AsyncIterator, Callable
 from datetime import date, datetime
@@ -52,7 +53,14 @@ class BriefService:
         return await run_in_threadpool(call)
 
     def _day(self, now: datetime) -> date:
-        return now.astimezone(BONN).date()
+        """The day the brief is for: the day the data was built for (`pnpm seed` writes it to
+        manifest.json), not the clock's. Otherwise, after midnight, every request would miss
+        the cache and pay for a new brief."""
+        try:
+            manifest = json.loads((self.data_dir / "manifest.json").read_text(encoding="utf-8"))
+            return date.fromisoformat(manifest["today"])
+        except (OSError, ValueError, KeyError):
+            return now.astimezone(BONN).date()
 
     async def today(self) -> Brief:
         now = datetime.now(BONN)

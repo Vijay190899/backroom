@@ -11,7 +11,7 @@ import type { GraphFact, GraphNode } from "@/lib/contracts";
 import { useLiveOrSample } from "@/lib/data";
 import { memoryQuery } from "@/lib/queries";
 import { formatDateline, formatEur } from "@/lib/format";
-import { dayOf, endOfDay, layout, PREDICATE, record, timeline, validAt, type Slot } from "@/lib/memory";
+import { dayOf, endOfDay, layout, PREDICATE, record, timeline, validAt, type Slot, isDrawn, labelledTicks, describeValue } from "@/lib/memory";
 import { prefersReducedMotion } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -53,10 +53,11 @@ function FactValue({ fact, nodes }: { fact: GraphFact; nodes: Map<string, GraphN
     );
   }
   const object = fact.object_id ? nodes.get(fact.object_id)?.name : null;
-  const grams = fact.value && typeof fact.value === "object" && "grams" in fact.value ? fact.value.grams : null;
-  if (typeof grams === "number" && object) return <span>{grams} g of {object}</span>;
+  const v = fact.value && typeof fact.value === "object" ? (fact.value as Record<string, unknown>) : null;
+  const amount = v && ["grams", "ml", "pcs"].find((k) => typeof v[k] === "number");
+  if (v && amount && object) return <span>{describeValue({ [amount]: v[amount] })} of {object}</span>;
   if (object) return <span>{object}</span>;
-  return <span>{typeof fact.value === "object" ? JSON.stringify(fact.value) : String(fact.value)}</span>;
+  return <span className="break-words">{describeValue(fact.value)}</span>;
 }
 
 /** The previous value as plain text for the "was …" line, when it is a price. */
@@ -66,6 +67,13 @@ function plainValue(fact: GraphFact): string {
   }
   return "";
 }
+
+const CONTEXT_LABEL: Record<string, string> = {
+  weather_day: "weather day",
+  staff: "staff member",
+  holiday: "holiday",
+  shift: "shift",
+};
 
 function RecordRow({ slot, nodes, focus }: { slot: Slot; nodes: Map<string, GraphNode>; focus: string | null }) {
   const fact = slot.current ?? slot.previous;
@@ -143,9 +151,20 @@ export function MemoryDesk() {
   const day = dayOf(t ?? range?.end ?? 0);
   const at = endOfDay(day);
   const nodes = useMemo(() => new Map((graph?.nodes ?? []).map((n) => [n.id, n])), [graph]);
-  const pos = useMemo(() => layout(graph?.nodes ?? [], narrow), [graph, narrow]);
+  const { pos, minHeight } = useMemo(() => layout(graph?.nodes ?? [], narrow), [graph, narrow]);
+  // Context the graph leaves to the record (weather days, staff, holidays...), by type.
+  const undrawn = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const n of graph?.nodes ?? []) if (!isDrawn(n)) counts.set(n.type, (counts.get(n.type) ?? 0) + 1);
+    return [...counts].map(([type, n]) => `${n} ${CONTEXT_LABEL[type] ?? type.replace(/_/g, " ")}${n === 1 ? "" : "s"}`);
+  }, [graph]);
   const slots = useMemo(() => (graph ? record(graph.nodes, graph.facts, at) : []), [graph, at]);
-  const edges = (graph?.facts ?? []).filter((f) => f.object_id && validAt(f, at));
+  const edges = (graph?.facts ?? []).filter(
+    (f) => f.object_id && validAt(f, at) && pos.has(f.subject_id) && pos.has(f.object_id),
+  );
+  // Edge names on every line only while there are few lines; otherwise for the hovered node.
+  const labelled = (f: { subject_id: string; object_id: string | null }) =>
+    edges.length <= 10 || (focus !== null && (f.subject_id === focus || f.object_id === focus));
   const known = new Set(
     (graph?.facts ?? []).filter((f) => Date.parse(f.valid_from) <= at).flatMap((f) => [f.subject_id, f.object_id ?? ""]),
   );
@@ -183,6 +202,9 @@ export function MemoryDesk() {
   }
 
   const pct = (v: number) => (range ? ((v - range.start) / (range.end - range.start)) * 100 : 0);
+  // Many changes land on nearby days: every one keeps its tick, only some get a date.
+  // 44 px jump targets must not overlap: phones need a wider gap between labelled ticks.
+  const ticks = range ? labelledTicks(range.changes, pct, narrow ? 16 : 7) : new Set<number>();
 
   return (
     <>
@@ -256,32 +278,56 @@ export function MemoryDesk() {
                 }}
                 className="timeline-range w-full"
               />
-              {range.changes.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  aria-label={`Jump to ${shortDate.format(c)}, when the record changed`}
-                  onClick={() => {
-                    stop();
-                    setT(c);
-                    writeUrl(c);
-                  }}
-                  style={{ left: `${pct(c)}%` }}
-                  className="group absolute top-[calc(50%-0.75rem-0.5rem)] flex h-11 w-11 -translate-x-1/2 cursor-pointer flex-col items-center"
-                >
-                  <span aria-hidden className={cn("mt-4 h-3 w-px", c <= day ? "bg-press" : "bg-muted-foreground/50")} />
-                  <span aria-hidden className="mt-1 text-[0.625rem] whitespace-nowrap text-muted-foreground tabular">
-                    {shortDate.format(c)}
-                  </span>
-                </button>
-              ))}
+              {range.changes.map((c) => {
+                // Every change keeps its mark; only spaced-out ones become jump buttons (with
+                // their date), so two 44 px targets never overlap. The slider reaches every day.
+                const mark = <span aria-hidden className={cn("h-3 w-px", c <= day ? "bg-press" : "bg-muted-foreground/50")} />;
+                if (!ticks.has(c)) {
+                  return (
+                    <span
+                      key={c}
+                      aria-hidden
+                      style={{ left: `${pct(c)}%` }}
+                      className="pointer-events-none absolute top-[calc(50%-0.75rem-0.5rem)] mt-4 flex -translate-x-1/2"
+                    >
+                      {mark}
+                    </span>
+                  );
+                }
+                const edge = pct(c) < 6 ? "items-start translate-x-[-0.375rem]" : pct(c) > 94 ? "items-end -translate-x-[calc(100%-0.375rem)]" : "items-center -translate-x-1/2";
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    aria-label={`Jump to ${shortDate.format(c)}, when the record changed`}
+                    onClick={() => {
+                      stop();
+                      setT(c);
+                      writeUrl(c);
+                    }}
+                    style={{ left: `${pct(c)}%` }}
+                    className={cn("group absolute top-[calc(50%-0.75rem-0.5rem)] flex h-11 w-11 cursor-pointer flex-col", edge)}
+                  >
+                    <span className="mt-4 flex">{mark}</span>
+                    <span aria-hidden className="mt-1 text-[0.625rem] whitespace-nowrap text-muted-foreground tabular">
+                      {shortDate.format(c)}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </section>
 
-          <div className="mt-6 grid gap-6 lg:grid-cols-12">
-            <section aria-label="Graph" className="glass panel lg:col-span-7">
+          <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-12">
+            <section aria-label="Graph" className="glass panel min-w-0 lg:col-span-7">
               <h2 className="kicker text-ink">Who and what</h2>
-              <div ref={box} className="relative mt-4 aspect-[4/5] w-full border-t border-line sm:aspect-[16/11]">
+              <div
+                ref={box}
+                // Height from the width (4:5 on phones, 16:11 wider) but never below what the
+                // busiest band needs. Not CSS aspect-ratio: with a min-height it would widen the box.
+                style={{ height: Math.max(minHeight, size.w ? size.w * (narrow ? 5 / 4 : 11 / 16) : 0) || undefined }}
+                className="relative mt-4 min-h-64 w-full border-t border-line"
+              >
                 <svg
                   aria-hidden
                   className="absolute inset-0 size-full overflow-visible"
@@ -304,7 +350,7 @@ export function MemoryDesk() {
                     );
                   })}
                 </svg>
-                {(narrow ? [] : edges).map((f) => {
+                {(narrow ? [] : edges.filter(labelled)).map((f) => {
                   const a = pos.get(f.subject_id);
                   const b = pos.get(f.object_id ?? "");
                   if (!a || !b) return null;
@@ -337,6 +383,7 @@ export function MemoryDesk() {
                       onPointerLeave={() => setFocus(null)}
                       onFocus={() => setFocus(n.id)}
                       onBlur={() => setFocus(null)}
+                      title={n.name}
                       style={{ left: `${p.x}%`, top: `${p.y}%` }}
                       className={cn(
                         // The dot sits exactly on the node's point, so edges meet dots, not labels:
@@ -359,7 +406,9 @@ export function MemoryDesk() {
                         <span className={cn("kicker text-[0.5625rem] text-muted-foreground", !narrow && "mt-1.5")}>{n.type}</span>
                         <span
                           className={cn(
-                            "max-w-[34vw] font-display text-[0.875rem] leading-tight sm:max-w-[9rem] sm:text-base",
+                            // Two lines at most (a rule's sentence would run into the next
+                            // node); the record and the tooltip keep the full text.
+                            "line-clamp-2 max-w-[34vw] font-display text-[0.875rem] leading-tight sm:max-w-[9rem] sm:text-base",
                             isKnown ? "text-ink" : "text-muted-foreground",
                           )}
                         >
@@ -376,9 +425,14 @@ export function MemoryDesk() {
                   );
                 })}
               </div>
+              {undrawn.length ? (
+                <p className="mt-4 text-xs text-muted-foreground">
+                  Also remembered, listed in the record: {undrawn.join(", ")}.
+                </p>
+              ) : null}
             </section>
 
-            <section aria-labelledby="record-heading" className="glass panel lg:col-span-5">
+            <section aria-labelledby="record-heading" className="glass panel min-w-0 lg:col-span-5">
               <h2 id="record-heading" className="kicker text-ink">
                 The record
               </h2>

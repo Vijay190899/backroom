@@ -81,6 +81,7 @@ Nine families, the first variant of each canonical: `language` (en, en_alt, de),
 `GET /runs/{id}/events` streams `RunEvent`s over SSE: `id: <seq>`, `event: <type>`, `data: <JSON>`. `seq` starts at 1 and goes up by 1, so `Last-Event-ID` resumes exactly. Types: `run.started`, `step.started`, `step.finished`, `mode.changed`, `heal.started`, `heal.attempt` (rung `fallback` → `healer` → `escalation` → `human`), `heal.succeeded`, `heal.failed`, `cost.tick`, `ask_human`, `run.finished`.
 
 - Secrets never appear: `step.started.value` is `null` for `fill_secret` and `totp`.
+- `step.finished.url` (**added by the PC in H5**, both schemas, default `null`): the page's path after the step, for the theater's address bar. Older recordings without it fall back to the last `goto`.
 - `cost.tick.totals` and `run.finished.totals` are running totals for the ticker (elapsed, steps, LLM calls, tokens, cache reads, $).
 - Golden runs (F7) are a directory: `events.json` (the same events, with `run.started.recorded = true`, which shows the Replay badge), `frames.json` (`GoldenFrame {file, after_seq, offset_ms, width, height, cursor_x, cursor_y}`) and `frames/*.jpg`.
 - `ask_human` pauses the run until `POST /runs/{id}/human {action: "resume" | "cancel", note}`.

@@ -15,6 +15,7 @@ import json
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
+from urllib.parse import urlsplit
 
 import anthropic
 from playwright.async_api import Page
@@ -179,8 +180,9 @@ async def explore(
     usd0 = rec.usd
     bad_turns = 0
     repeated: dict[str, int] = {}
-    done_here: set[tuple[Any, ...]] = set()  # actions already done on the current page
-    last_url = page.url
+    # action -> the page (snapshot) it was done on. An exact repeat is refused only while
+    # the page is unchanged: then it cannot do anything new (e.g. a masked password field).
+    done_on: dict[tuple[Any, ...], int] = {}
 
     for _ in range(max_steps):
         if rec.usd - usd0 > max_usd:
@@ -236,9 +238,7 @@ async def explore(
         intent = str(args.get("intent") or action)
         problem = _validate(action, args, refs, secret_keys)
         element = refs.get(str(args.get("ref", "")))
-        if page.url != last_url:
-            done_here.clear()
-            last_url = page.url
+        page_key = hash((obs.url, obs.text))
         signature = (
             action,
             element.role if element else None,
@@ -246,7 +246,7 @@ async def explore(
             args.get("value"),
             args.get("secret"),
         )
-        if problem is None and action != "wait_for" and signature in done_here:
+        if problem is None and action != "wait_for" and done_on.get(signature) == page_key:
             problem = (
                 "you already did exactly this on this page. Its effect may not be visible "
                 "(secret fields look empty). Continue with the next step of the goal"
@@ -291,7 +291,7 @@ async def explore(
         )
         url_before = page.url
         outcome = await executor.run(step, {})
-        await finish_step(rec, index, outcome)
+        await finish_step(rec, index, outcome, page.url)
         if not outcome.ok:
             history.append(f"{intent} -> FAILED ({outcome.error_kind}): {outcome.error}")
             repeated[intent] = repeated.get(intent, 0) + 1
@@ -314,7 +314,7 @@ async def explore(
         if mode == "heal" and args.get("completes_step") is True:
             result.ok = True  # the stuck step is done: no extra `finish` round trip
             return result
-        done_here.add(signature)
+        done_on[signature] = page_key
         hidden = " (the value is hidden on the page)" if secret else ""
         history.append(f"{intent} -> ok{hidden}")
 
@@ -341,7 +341,15 @@ def _validate(
     return None
 
 
-async def finish_step(rec: RunRecorder, index: int, outcome: StepOutcome) -> None:
+def page_path(url: str) -> str:
+    """The path (and query) of a page URL, as an address bar shows it."""
+    parts = urlsplit(url)
+    return parts.path + (f"?{parts.query}" if parts.query else "")
+
+
+async def finish_step(
+    rec: RunRecorder, index: int, outcome: StepOutcome, url: str | None = None
+) -> None:
     calls, tin, tout, usd = rec.take_pending()
     rec.step_done()
     await rec.emit(
@@ -354,4 +362,5 @@ async def finish_step(rec: RunRecorder, index: int, outcome: StepOutcome) -> Non
         tokens_out=tout,
         usd=usd,
         error=outcome.error,
+        url=page_path(url) if url else None,
     )

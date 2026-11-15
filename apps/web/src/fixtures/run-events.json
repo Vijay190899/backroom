@@ -36,7 +36,8 @@
     "tokens_in": 0,
     "tokens_out": 0,
     "usd": 0.0,
-    "error": null
+    "error": null,
+    "url": null
   },
   {
     "seq": 4,
@@ -65,7 +66,8 @@
     "tokens_in": 0,
     "tokens_out": 0,
     "usd": 0.0,
-    "error": null
+    "error": null,
+    "url": null
   },
   {
     "seq": 6,
@@ -94,7 +96,8 @@
     "tokens_in": 0,
     "tokens_out": 0,
     "usd": 0.0,
-    "error": null
+    "error": null,
+    "url": null
   },
   {
     "seq": 8,
@@ -123,7 +126,8 @@
     "tokens_in": 0,
     "tokens_out": 0,
     "usd": 0.0,
-    "error": "locator not found: button 'Sign in'"
+    "error": "locator not found: button 'Sign in'",
+    "url": null
   },
   {
     "seq": 10,
@@ -260,7 +264,8 @@
     "tokens_in": 0,
     "tokens_out": 0,
     "usd": 0.0,
-    "error": null
+    "error": null,
+    "url": null
   },
   {
     "seq": 19,
@@ -289,7 +294,8 @@
     "tokens_in": 0,
     "tokens_out": 0,
     "usd": 0.0,
-    "error": null
+    "error": null,
+    "url": null
   },
   {
     "seq": 21,
@@ -315,7 +321,8 @@
     "tokens_in": 0,
     "tokens_out": 0,
     "usd": 0.0,
-    "error": null
+    "error": null,
+    "url": null
   },
   {
     "seq": 23,
@@ -344,7 +351,8 @@
     "tokens_in": 0,
     "tokens_out": 0,
     "usd": 0.0,
-    "error": null
+    "error": null,
+    "url": null
   },
   {
     "seq": 25,
@@ -373,7 +381,8 @@
     "tokens_in": 0,
     "tokens_out": 0,
     "usd": 0.0,
-    "error": "locator not found: button 'Add to cart'"
+    "error": "locator not found: button 'Add to cart'",
+    "url": null
   },
   {
     "seq": 27,
@@ -484,7 +493,8 @@
     "tokens_in": 0,
     "tokens_out": 0,
     "usd": 0.0,
-    "error": null
+    "error": null,
+    "url": null
   },
   {
     "seq": 36,
@@ -513,7 +523,8 @@
     "tokens_in": 0,
     "tokens_out": 0,
     "usd": 0.0,
-    "error": null
+    "error": null,
+    "url": null
   },
   {
     "seq": 38,

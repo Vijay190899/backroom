@@ -340,3 +340,13 @@ def test_chaos_and_error_shapes(client: TestClient) -> None:
     assert invalid.status_code == 422 and invalid.json()["error"]["code"] == "invalid_request"
     missing = client.get("/runs/run_nope")
     assert missing.status_code == 404 and missing.json()["error"]["code"] == "not_found"
+
+
+def test_the_brief_day_is_the_data_day_not_the_clock(client: TestClient, data_dir: Path) -> None:
+    # After midnight the clock moves on but the data does not: keying the cache on the clock
+    # would miss it on every request and pay for a new brief each time.
+    built_for = json.loads((data_dir / "manifest.json").read_text(encoding="utf-8"))["today"]
+    later = datetime(2030, 1, 1, tzinfo=UTC)
+    assert client.app.state.briefs._day(later).isoformat() == built_for  # type: ignore[attr-defined]
+    first = client.get("/brief/today").json()
+    assert client.get("/brief/today").json()["id"] == first["id"]

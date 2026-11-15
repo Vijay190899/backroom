@@ -27,7 +27,7 @@ from backroom_api.config import Settings
 from backroom_api.contracts.common import Mode
 from backroom_api.contracts.events import RunEvent, RunFinished, RunStarted, RunTotals, StepStarted
 from backroom_api.llm.client import LLM
-from backroom_api.replay.engine import AskHumanHook, ReplayResult, replay
+from backroom_api.replay.engine import AskHumanHook, ReplayResult, heal_summary, replay
 from backroom_api.skills.compiler import compile_skill
 from backroom_api.skills.schema import Skill, SkillDiff, SkillStats, Step
 from backroom_api.skills.store import SkillStore
@@ -214,9 +214,11 @@ class SkillRunner:
             used_version = self._store(skill, explored, replayed, spec, merged)
             rec.skill_version = used_version
         wall_ms = rec.totals().elapsed_ms
-        if used_version is not None:
+        # A version's stats count the runs that used it: a heal belongs to the version that
+        # broke (not the one it created), and a first explore used no version at all.
+        if skill is not None:
             self.store.record_run(
-                task, used_version, ok=verified, wall_ms=wall_ms, usd=round(rec.usd, 6)
+                task, skill.version, ok=verified, wall_ms=wall_ms, usd=round(rec.usd, 6)
             )
         needs_human = bool(replayed and replayed.needs_human)
         cancelled = bool(replayed and replayed.cancelled)
@@ -229,12 +231,12 @@ class SkillRunner:
             if needs_human
             else "failed"
         )
-        summary = await self._summary(spec, merged, verified, failure)
+        summary, result = await self._outcome(spec, merged, verified, failure, posts)
         await rec.emit(
             RunFinished,
             status=status,
             summary=summary,
-            result={"postconditions": [p.detail for p in posts]},
+            result=result,
             undo_available=verified and hooks.undoable,
             skill_version=used_version,
             totals=rec.totals(),
@@ -280,7 +282,7 @@ class SkillRunner:
             mode="explore",
         )
         outcome = await executor.run(opening, {})
-        await finish_step(rec, 0, outcome)
+        await finish_step(rec, 0, outcome, page.url)
         if not outcome.ok:
             return ExploreResult(ok=False, reason=outcome.error)
         return await explore(
@@ -325,7 +327,7 @@ class SkillRunner:
                     update={
                         "version": skill.version + 1,
                         "parent_version": skill.version,
-                        "heal_note": " · ".join(replayed.notes)[:500] or "healed",
+                        "heal_note": heal_summary(replayed.changes),
                         "steps": replayed.steps,
                         "stats": SkillStats(),
                         "created_at": datetime.now(UTC),
@@ -344,16 +346,32 @@ class SkillRunner:
             return healed.version
         return skill.version if skill else None
 
-    async def _summary(
-        self, spec: TaskSpec, params: Mapping[str, Any], ok: bool, failure: str | None
-    ) -> str:
+    async def _outcome(
+        self,
+        spec: TaskSpec,
+        params: Mapping[str, Any],
+        ok: bool,
+        failure: str | None,
+        posts: list[PostResult],
+    ) -> tuple[str, dict[str, Any]]:
+        """The run's one-line summary and the result fields an owner reads (the theater
+        formats `*_eur` as money). Checks are counted, their details stay in the log."""
+        checks = f"{sum(p.ok for p in posts)} of {len(posts)} passed" if posts else "not run"
         if not ok:
-            return f"Did not finish: {failure or 'unknown reason'}"
+            return f"Did not finish: {failure or 'unknown reason'}", {"checks": checks}
         state = await self.admin.state(spec.portal)
         if spec.portal == "grainline":
             order = state["orders"][-1]
-            return (
+            summary = (
                 f"Order {order['id']} placed: {params.get('qty')} x {params.get('sku')}, "
                 f"€{order['total_eur']:.2f}"
             )
-        return f"{params.get('item_id')} is now €{float(params['price_eur']):.2f} on the till"
+            return summary, {
+                "order": order["id"],
+                "total_eur": order["total_eur"],
+                "delivery": order["delivery_date"],
+                "checks": checks,
+            }
+        price = float(params["price_eur"])
+        summary = f"{params.get('item_id')} is now €{price:.2f} on the till"
+        return summary, {"item": params.get("item_id"), "price_eur": price, "checks": checks}

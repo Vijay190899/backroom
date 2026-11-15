@@ -3,6 +3,7 @@
 import NumberFlow from "@number-flow/react";
 import { Pause, Play, RotateCcw, Undo2 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { PageHeader } from "@/components/page-header";
@@ -96,9 +97,42 @@ function Ticker({ view }: { view: RunView }) {
  * Chaos (F2): re-skin the portal before the next run, to show healing live. Needs the API;
  * a recorded run shows the seed it ran at.
  */
-function ChaosPicker({ portal, seed, live }: { portal: string | null; seed: number | null; live: boolean }) {
+function ChaosPicker({
+  portal,
+  seed,
+  live,
+  actionId,
+  finished,
+}: {
+  portal: string | null;
+  seed: number | null;
+  live: boolean;
+  actionId: string | null;
+  finished: boolean;
+}) {
   const [picked, setPicked] = useState(seed);
   const [note, setNote] = useState<string | null>(null);
+  const [rerun, setRerun] = useState<"idle" | "busy" | "error">("idle");
+  const router = useRouter();
+  // The same action again, as a new run, on whatever the portal looks like now: the demo's
+  // "break it" beat (DEMO_SCRIPT 1:40). A new key per press; the button is off while busy.
+  async function runAgain() {
+    if (!actionId) return;
+    setRerun("busy");
+    try {
+      const [res, { approveResponseSchema }] = await Promise.all([
+        fetch(`${API_URL}/actions/${encodeURIComponent(actionId)}/approve`, {
+          method: "POST",
+          headers: { "Idempotency-Key": `rerun:${actionId}:${Date.now()}` },
+        }),
+        import("@/lib/contracts"),
+      ]);
+      if (!res.ok) throw new Error(String(res.status));
+      router.push(`/runs/${encodeURIComponent(approveResponseSchema.parse(await res.json()).run_id)}`);
+    } catch {
+      setRerun("error");
+    }
+  }
   async function pick(next: number) {
     if (!portal) return;
     setPicked(next);
@@ -114,7 +148,7 @@ function ChaosPicker({ portal, seed, live }: { portal: string | null; seed: numb
       if (!res.ok) throw new Error(String(res.status));
       const state = chaosStateSchema.parse(await res.json());
       const label = PORTAL_LABEL[state.portal] ?? state.portal;
-      setNote(`${label} now renders seed ${state.seed} (${Object.keys(state.variants).length} variants). Approve again from Today to run on it.`);
+      setNote(`${label} now renders seed ${state.seed} (${Object.keys(state.variants).length} variants).`);
     } catch {
       setPicked(seed);
       setNote("Couldn’t re-skin the portal. Is the API running?");
@@ -143,8 +177,16 @@ function ChaosPicker({ portal, seed, live }: { portal: string | null; seed: numb
           </button>
         ))}
       </div>
+      {live && finished && actionId ? (
+        <Button size="sm" variant="outline" disabled={rerun === "busy"} onClick={() => void runAgain()}>
+          <RotateCcw className="size-4" aria-hidden />
+          {rerun === "busy" ? "Starting…" : `Run again on seed ${picked ?? seed ?? 0}`}
+        </Button>
+      ) : null}
       <p role="status" className="w-full text-xs text-muted-foreground sm:text-right">
-        {note ?? (live ? null : `Recorded at seed ${seed}. Re-skinning a portal needs the live API.`)}
+        {rerun === "error"
+          ? "Couldn’t start the run. Is the API running?"
+          : (note ?? (live ? null : `Recorded at seed ${seed}. Re-skinning a portal needs the live API.`))}
       </p>
     </div>
   );
@@ -185,9 +227,9 @@ function Result({ view, live }: { view: RunView; live: boolean }) {
       <p className="mt-2 text-xl leading-snug font-semibold tracking-[-0.02em] text-ink">{f.summary}</p>
       <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm">
         {resultEntries(f.result).map(([k, v]) => (
-          <div key={k} className="flex gap-2">
+          <div key={k} className="flex min-w-0 gap-2">
             <dt className="text-muted-foreground">{k}</dt>
-            <dd className="font-mono text-ink">{v}</dd>
+            <dd className="min-w-0 font-mono break-words text-ink">{v}</dd>
           </div>
         ))}
       </dl>
@@ -346,7 +388,14 @@ export function RunTheater({ id }: { id: string }) {
             <span className="kicker text-[0.625rem] text-replay">{status === "done" ? "finished" : "● live"}</span>
           )}
           <div className="ml-auto">
-            <ChaosPicker key={view.chaosSeed ?? -1} portal={view.portal} seed={view.chaosSeed} live={live} />
+            <ChaosPicker
+              key={view.chaosSeed ?? -1}
+              portal={view.portal}
+              seed={view.chaosSeed}
+              live={live}
+              actionId={view.actionId}
+              finished={!!view.finished}
+            />
           </div>
         </div>
 
@@ -365,11 +414,11 @@ export function RunTheater({ id }: { id: string }) {
 
         <Ticker view={view} />
 
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-          <div className="order-2 rounded-xl border border-line bg-surface/60 px-4 lg:order-1">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+          <div className="order-2 min-w-0 rounded-xl border border-line bg-surface/60 px-4 lg:order-1">
             <RunTimeline steps={view.steps} finished={!!view.finished} />
           </div>
-          <div className="order-1 lg:order-2">
+          <div className="order-1 min-w-0 lg:order-2">
             <RunScreen view={view} live={live} />
           </div>
         </div>

@@ -60,7 +60,8 @@ backroom/
 | Command | Runs |
 |---|---|
 | `pnpm check` | `uv run ruff check . && uv run pyright && uv run pytest -q && pnpm -C apps/web lint && pnpm -C apps/web typecheck` |
-| `pnpm seed` | `uv run backroom-data all` (download → transform → load Postgres + Parquet) |
+| `pnpm seed` | `uv run backroom-data all` (download → transform → Parquet), then `backroom_api.seed_db` (migrations + memory) |
+| `pnpm demo:reset` | back to the demo's starting point: clears runs and briefs, re-seeds memory, relearns both skills at seed 0, resets the portals (needs the portals running and a model key) |
 | `pnpm bench` | `uv run backroom-bench all` (B1–B5 → `bench/results/*.json`) |
 | `pnpm probe:llm` | `uv run backroom-bench probe` (provider capability probe → `bench/results/provider_probe.json`) |
 | `pnpm dev:lite` | the same three processes without Docker and without a database (the API reports "degraded"). For light machines |

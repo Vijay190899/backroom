@@ -135,6 +135,37 @@ def replacement_changes(
     return changes
 
 
+def _short(text: str, limit: int = 48) -> str:
+    return text if len(text) <= limit else text[: text.rfind(" ", 0, limit)].rstrip(",;:") + "…"
+
+
+def heal_summary(changes: list[StepChange]) -> str:
+    """One short paragraph for a version's heal note, e.g. "Added 1 step: 'Accept the
+    cookie banner'. 12 labels changed: 'Email' → 'E-Mail', ... and 8 more." Never cut
+    mid-word, however many steps changed."""
+    added = [c.after["intent"] for c in changes if c.op == "insert" and c.after]
+    removed = sum(1 for c in changes if c.op == "delete")
+    renamed: list[str] = []
+    for c in changes:
+        if c.op == "update" and c.field == "target" and c.before and c.after:
+            was, now = c.before.get("name"), c.after.get("name")
+            if was != now:
+                renamed.append(f"'{was}' → '{now}'")
+    parts: list[str] = []
+    if added:
+        listed = ", ".join(f"'{_short(a)}'" for a in added[:2])
+        more = f" and {len(added) - 2} more" if len(added) > 2 else ""
+        parts.append(f"Added {len(added)} step{'s' if len(added) != 1 else ''}: {listed}{more}.")
+    if renamed:
+        listed = ", ".join(renamed[:4])
+        more = f" and {len(renamed) - 4} more" if len(renamed) > 4 else ""
+        noun = "label" if len(renamed) == 1 else "labels"
+        parts.append(f"{len(renamed)} {noun} changed: {listed}{more}.")
+    if removed:
+        parts.append(f"Removed {removed} step{'s' if removed != 1 else ''}.")
+    return " ".join(parts) or "Updated locators."
+
+
 def _describe(old: Step, changes: list[StepChange]) -> str:
     parts: list[str] = []
     for c in changes:
@@ -188,7 +219,7 @@ async def replay(
         if step.optional and outcome.error_kind == "locator_not_found":
             # The pop-up or banner is not there this time: nothing to do, nothing to heal.
             outcome = StepOutcome(ok=True, duration_ms=outcome.duration_ms)
-        await finish_step(rec, i, outcome)
+        await finish_step(rec, i, outcome, page.url)
 
         if outcome.ok:
             if outcome.resolved_via not in (None, "target") and outcome.found is not None:

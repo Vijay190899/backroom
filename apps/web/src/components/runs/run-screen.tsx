@@ -31,11 +31,13 @@ type Element = { key: string; step: StepView; target: Locator; banner?: boolean 
 function pageElements(steps: StepView[]): Element[] {
   const from = steps.findLastIndex((s) => s.action === "goto");
   const out: Element[] = [];
-  for (const s of steps.slice(from + 1)) {
+  // Keys use the position in the run, not the step index: a healed step and the healer's
+  // retry of it share an index.
+  for (const [pos, s] of steps.slice(from + 1).entries()) {
     for (const [i, ins] of (s.heal?.inserted ?? []).entries()) {
-      if (ins.target) out.push({ key: `${s.index}-ins-${i}`, step: { ...s, state: "ok" }, target: ins.target, banner: true });
+      if (ins.target) out.push({ key: `${pos}-ins-${i}`, step: { ...s, state: "ok" }, target: ins.target, banner: true });
     }
-    if (s.target) out.push({ key: String(s.index), step: s, target: s.target });
+    if (s.target) out.push({ key: `${pos}`, step: s, target: s.target });
   }
   return out;
 }
