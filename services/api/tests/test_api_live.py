@@ -58,6 +58,8 @@ def database_url() -> Iterator[str]:
     except psycopg.OperationalError:
         pytest.skip("no Postgres reachable (set DATABASE_URL, e.g. Neon)")
     schema = f"test_api_{uuid.uuid4().hex[:10]}"
+    # pgvector must live in public: created inside a test schema, it would vanish with it
+    admin.execute("create extension if not exists vector schema public")
     admin.execute(sql.SQL("create schema {}").format(sql.Identifier(schema)))
     sep = "&" if "?" in base else "?"
     yield f"{base}{sep}options={quote(f'-c search_path={schema},public')}"
