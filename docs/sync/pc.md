@@ -11,6 +11,26 @@ Laptop must: pull, then run these commands (`uv sync --all-packages`, `pnpm inst
 Contract changes: anything the laptop's code must adapt to.
 ```
 
+## Mon 16 Nov 2026 · H8 deploy, branches pc/h8-deploy, pc/h8-docs
+Done:
+- **Live:**
+  - Web: https://backroom-cafe.vercel.app (Vercel, root `apps/web`).
+  - API: https://api.63.186.156.153.sslip.io (Lightsail Frankfurt, docker compose behind Caddy, Let's Encrypt).
+  - Details and runbook: HANDOVER §10.5.
+- **Fixed before the first deploy** (PR #22, ADR-41):
+  - The API image had no golden runs, so `.dockerignore` excluded the whole of `apps/`. It now keeps `apps/web/public/golden`.
+  - `data/out` is shipped by `deploy.sh up` and mounted read-only.
+  - Skills live in a volume.
+  - `deploy.sh up` refuses an environment without a key or access code; `setup` installs security updates; the new `reset` command does `demo:reset --relearn` on the server.
+- **Verified on the server:**
+  - Health ok; four skills learned cold ($0.0076).
+  - `/mode` is replay without the code and live with it; a state-changing route without the code returns 403 `live_mode_locked`.
+  - CORS allows only the Vercel origin.
+  - A replay approval streams from the server (390 px, 0 console errors).
+  - With the API stopped, the site falls back to the sample brief and recorded runs; after a restart the skills are still there.
+- README: Live demo and Benchmarks badges, plus the measured benchmark table.
+Laptop must: `git pull`. Nothing to install. Don't touch `.env.production` (PC only, git-ignored).
+
 ## Mon 16 Nov 2026 · H7 real benchmarks, branch pc/h7-benchmarks
 Done:
 - **B1, first full run** (41323c9, n = 132): 67% cold at seed 0, 58% warm across 20 seeds; every `download_invoice` run failed. Kept in `bench/results/baseline/`. It exposed three product bugs, all fixed with tests (ADR-36):
