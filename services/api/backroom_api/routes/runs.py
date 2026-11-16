@@ -13,6 +13,7 @@ from backroom_api.config import Settings
 from backroom_api.contracts.api import HumanReply, RunSummary, UndoResponse
 from backroom_api.contracts.events import to_sse
 from backroom_api.live import repo
+from backroom_api.live.access import require_live
 from backroom_api.live.runs import RunManager
 from backroom_api.routes.errors import ApiProblem
 
@@ -90,6 +91,7 @@ async def run_screen(websocket: WebSocket, run_id: str) -> None:
 
 @router.post("/runs/{run_id}/human", response_model=RunSummary)
 async def run_human(run_id: str, reply: HumanReply, request: Request) -> RunSummary:
+    require_live(request)
     runs = _runs(request)
     await _row(runs, run_id)
     if not runs.answer(run_id, reply.action):
@@ -100,6 +102,7 @@ async def run_human(run_id: str, reply: HumanReply, request: Request) -> RunSumm
 
 @router.post("/runs/{run_id}/undo", response_model=UndoResponse)
 async def run_undo(run_id: str, request: Request) -> UndoResponse:
+    require_live(request)
     runs = _runs(request)
     row = await _row(runs, run_id)
     undo: Any = row["undo_params"]

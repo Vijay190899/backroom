@@ -5,8 +5,15 @@ from collections.abc import AsyncIterator
 from fastapi import APIRouter, Header, Request
 from fastapi.responses import StreamingResponse
 
-from backroom_api.contracts.api import ApproveResponse, Brief, RejectRequest, RejectResponse
+from backroom_api.contracts.api import (
+    ApproveResponse,
+    Brief,
+    ModeInfo,
+    RejectRequest,
+    RejectResponse,
+)
 from backroom_api.live import repo
+from backroom_api.live.access import access_for, require_live
 from backroom_api.live.briefs import BriefService
 from backroom_api.live.runs import RunManager
 from backroom_api.routes.errors import ApiProblem
@@ -23,11 +30,18 @@ def _runs(request: Request) -> RunManager:
     return request.app.state.runs
 
 
+@router.get("/mode", response_model=ModeInfo)
+async def mode(request: Request) -> ModeInfo:
+    access = access_for(request)
+    return ModeInfo(mode=access.mode, reason=access.reason)
+
+
 @router.get("/brief/today", response_model=Brief)
 async def brief_today(request: Request, regenerate: bool = False) -> Brief | StreamingResponse:
     briefs = _briefs(request)
     if not regenerate:
         return await briefs.today()
+    require_live(request)  # a new brief costs model calls
 
     async def stream() -> AsyncIterator[str]:
         async for event in briefs.regenerate():
@@ -53,6 +67,18 @@ async def approve(
         existing = await runs.db(repo.run_for_key, idempotency_key)
         if existing:
             return ApproveResponse(run_id=existing, action_id=action_id, deduplicated=True)
+    if access_for(request).mode == "replay":
+        # Recorded run of this task: nothing real happens, so the card's status is untouched.
+        try:
+            run_id, deduplicated = await runs.start_golden(
+                action_id=action_id,
+                task=card.task,
+                idempotency_key=idempotency_key,
+                golden_dir=request.app.state.settings.golden_dir,
+            )
+        except LookupError as exc:
+            raise ApiProblem(409, "no_recording", str(exc)) from exc
+        return ApproveResponse(run_id=run_id, action_id=action_id, deduplicated=deduplicated)
     if status == "running":
         raise ApiProblem(409, "already_running", "this action is already running")
     run_id, deduplicated = await runs.start(
@@ -68,6 +94,7 @@ async def approve(
 
 @router.post("/actions/{action_id}/reject", response_model=RejectResponse)
 async def reject(action_id: str, body: RejectRequest, request: Request) -> RejectResponse:
+    require_live(request)  # a rejection teaches the shared memory
     briefs = _briefs(request)
     found = await briefs.db(repo.get_action, action_id)
     if found is None:

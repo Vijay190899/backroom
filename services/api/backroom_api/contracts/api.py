@@ -248,6 +248,18 @@ class InvoiceIngestResponse(Contract):
     superseded_fact_ids: list[str]
 
 
+# --- Mode: GET /mode ----------------------------------------------------------------------
+
+
+class ModeInfo(Contract):
+    """Live (real runs) or replay (recorded runs) for this visitor, and why (PRD F7, §8.6).
+    Live needs the demo access code in `X-Demo-Code`; replay refuses state-changing routes
+    with `live_mode_locked`."""
+
+    mode: Literal["live", "replay"]
+    reason: str
+
+
 # --- Chaos: POST /chaos (dev/demo; forwards to the portals' /_admin/chaos) -----------------
 
 

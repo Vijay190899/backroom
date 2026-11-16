@@ -7,12 +7,15 @@ ones after it, and a slow client skips frames instead of slowing the browser dow
 """
 
 import asyncio
+import itertools
+import json
 import logging
 import uuid
 from collections import OrderedDict
 from collections.abc import AsyncIterator, Callable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any, Literal
 
 from fastapi.concurrency import run_in_threadpool
@@ -21,10 +24,12 @@ from psycopg_pool import ConnectionPool
 from backroom_api.agents.runner import SkillRunner
 from backroom_api.agents.tasks import TASKS
 from backroom_api.browser.screencast import Frame
-from backroom_api.contracts.events import Cursor, FrameMeta, RunEvent
+from backroom_api.contracts.events import Cursor, FrameMeta, RunEvent, run_event_adapter
 from backroom_api.live import repo
+from backroom_api.replay.golden import GOLDEN_FOR_TASK
 
 log = logging.getLogger(__name__)
+MAX_REPLAY_GAP_S = 1.2  # a recorded pause longer than this plays as this
 HUMAN_WAIT_S = 15 * 60  # an unanswered ask_human ends the run as needs_human
 KEEP_CHANNELS = 50  # finished runs kept in memory; older ones replay from Postgres
 ScreenMessage = tuple[FrameMeta, bytes] | Cursor | None  # None: the run is over
@@ -41,6 +46,13 @@ class Channel:
         default_factory=set[asyncio.Queue[ScreenMessage]]
     )
     human: asyncio.Future[str] | None = None
+
+
+def _read_golden(folder: Path) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    events = json.loads((folder / "events.json").read_text(encoding="utf-8"))
+    frames_file = folder / "frames.json"
+    frames = json.loads(frames_file.read_text(encoding="utf-8")) if frames_file.exists() else []
+    return events, frames
 
 
 class RunManager:
@@ -98,6 +110,87 @@ class RunManager:
         self._tasks.add(job)
         job.add_done_callback(self._tasks.discard)
         return run_id, False
+
+    async def start_golden(
+        self, *, action_id: str, task: str, idempotency_key: str | None, golden_dir: Path
+    ) -> tuple[str, bool]:
+        """Replay mode: play the recorded golden run of `task` as this run. Same stream, same
+        theater, `run.started.recorded = true` (the Replay badge); no browser, no model."""
+        name = GOLDEN_FOR_TASK.get(task)
+        folder = golden_dir / name if name else None
+        if folder is None or not (folder / "events.json").exists():
+            raise LookupError(f"no recorded run for {task}")
+        if idempotency_key:
+            existing = await self.db(repo.run_for_key, idempotency_key)
+            if existing:
+                return existing, True
+        run_id = f"run_{uuid.uuid4().hex[:10]}"
+        created = await self.db(
+            repo.create_run,
+            run_id=run_id,
+            action_id=action_id,
+            task=task,
+            portal=TASKS[task].portal,
+            params={"recording": name},
+            idempotency_key=idempotency_key,
+        )
+        if not created:
+            existing = await self.db(repo.run_for_key, idempotency_key or "")
+            return existing or run_id, True
+        self._channel(run_id)
+        job = asyncio.create_task(self._play_golden(run_id, action_id, folder))
+        self._tasks.add(job)
+        job.add_done_callback(self._tasks.discard)
+        return run_id, False
+
+    async def _play_golden(self, run_id: str, action_id: str, folder: Path) -> None:
+        channel = self._channel(run_id)
+        events, frames = await asyncio.to_thread(_read_golden, folder)
+        by_seq: dict[int, list[dict[str, Any]]] = {}
+        for f in frames:
+            by_seq.setdefault(int(f["after_seq"]), []).append(f)
+        frame_no = itertools.count(1)
+        start = datetime.now(UTC)
+        first = datetime.fromisoformat(events[0]["ts"]) if events else start
+        previous = first
+        try:
+            for raw in events:
+                ts = datetime.fromisoformat(raw["ts"])
+                # Original pacing, with long waits (a 5 s locator timeout) shortened.
+                await asyncio.sleep(min((ts - previous).total_seconds(), MAX_REPLAY_GAP_S))
+                previous = ts
+                body = {**raw, "run_id": run_id, "ts": (start + (ts - first)).isoformat()}
+                if body["type"] == "run.started":
+                    body.update(action_id=action_id, recorded=True)
+                if body["type"] == "run.finished":
+                    body["undo_available"] = False  # nothing real happened: nothing to undo
+                event = run_event_adapter.validate_python(body)
+                await self.db(repo.add_event, event)
+                if event.type == "step.started":
+                    channel.step_index = event.index
+                async with channel.changed:
+                    channel.events.append(event)
+                    channel.finished = event.type == "run.finished"
+                    channel.changed.notify_all()
+                for f in by_seq.get(event.seq, []):
+                    jpeg = await asyncio.to_thread((folder / "frames" / f["file"]).read_bytes)
+                    meta = FrameMeta(
+                        seq=next(frame_no),
+                        width=f["width"],
+                        height=f["height"],
+                        ts=datetime.now(UTC),
+                    )
+                    channel.last_frame = (meta, jpeg)
+                    self._fan_out(channel, (meta, jpeg))
+                    if f.get("cursor_x") is not None and f.get("cursor_y") is not None:
+                        cursor = Cursor(
+                            x=f["cursor_x"], y=f["cursor_y"], step_index=channel.step_index
+                        )
+                        self._fan_out(channel, cursor)
+        except Exception:
+            log.exception("golden replay %s", run_id)
+        finally:
+            self._fan_out(channel, None)
 
     async def _undo_params(self, task: str, params: dict[str, Any]) -> dict[str, Any] | None:
         """The inverse action, as {"task", "params"}, or None. A price change is undone by

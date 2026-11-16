@@ -57,7 +57,10 @@ class Settings(BaseSettings):
     portals_base_url: str = "http://localhost:8001"
     portals_admin_token: str = "change-me"
     web_origin: str = "http://localhost:3000"
-    data_dir: Path = REPO_ROOT / "data" / "out"  # what `pnpm seed` builds; the brief reads it
+    data_dir: Path = REPO_ROOT / "data" / "out"
+    golden_dir: Path = (
+        REPO_ROOT / "apps" / "web" / "public" / "golden"
+    )  # recorded runs (F7)  # what `pnpm seed` builds; the brief reads it
 
     # --- Portal credentials (the secret vault's source; same variables the portals read) ---
     grainline_user: str = "lena@haferundbohne.example"

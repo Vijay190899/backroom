@@ -11,11 +11,13 @@ import { RunScreen } from "@/components/runs/run-screen";
 import { RunTimeline } from "@/components/runs/run-timeline";
 import { SampleBadge } from "@/components/sample-badge";
 import { Button } from "@/components/ui/button";
+import { accessHeaders, useMode } from "@/lib/access";
 import { API_URL } from "@/lib/api";
 import type { RunEvent } from "@/lib/contracts";
 import { formatEur } from "@/lib/format";
 import { PORTAL_LABEL, TASK_LABEL } from "@/lib/labels";
-import { SAMPLE_RUN_ID, useRunEvents } from "@/lib/run-source";
+import { useRunEvents } from "@/lib/run-source";
+import { GOLDEN_HEAL, GOLDEN_PREFIX, goldenRunId } from "@/lib/runs";
 import { foldRun, gapMs, type Mode, type RunView } from "@/lib/run-view";
 import { cn } from "@/lib/utils";
 
@@ -103,12 +105,14 @@ function ChaosPicker({
   live,
   actionId,
   finished,
+  runId,
 }: {
   portal: string | null;
   seed: number | null;
   live: boolean;
   actionId: string | null;
   finished: boolean;
+  runId: string;
 }) {
   const [picked, setPicked] = useState(seed);
   const [note, setNote] = useState<string | null>(null);
@@ -123,7 +127,7 @@ function ChaosPicker({
       const [res, { approveResponseSchema }] = await Promise.all([
         fetch(`${API_URL}/actions/${encodeURIComponent(actionId)}/approve`, {
           method: "POST",
-          headers: { "Idempotency-Key": `rerun:${actionId}:${Date.now()}` },
+          headers: { "Idempotency-Key": `rerun:${actionId}:${Date.now()}`, ...accessHeaders() },
         }),
         import("@/lib/contracts"),
       ]);
@@ -140,7 +144,7 @@ function ChaosPicker({
       const [res, { chaosStateSchema }] = await Promise.all([
         fetch(`${API_URL}/chaos`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...accessHeaders() },
           body: JSON.stringify({ portal, seed: next }),
         }),
         import("@/lib/contracts"),
@@ -177,6 +181,11 @@ function ChaosPicker({
           </button>
         ))}
       </div>
+      {!live && portal === "grainline" && runId !== goldenRunId(GOLDEN_HEAL) ? (
+        <Link href={`/runs/${goldenRunId(GOLDEN_HEAL)}`} className="link-draw text-sm text-press-ink">
+          Watch it heal at seed 7 (recorded)
+        </Link>
+      ) : null}
       {live && finished && actionId ? (
         <Button size="sm" variant="outline" disabled={rerun === "busy"} onClick={() => void runAgain()}>
           <RotateCcw className="size-4" aria-hidden />
@@ -215,7 +224,7 @@ function Result({ view, live }: { view: RunView; live: boolean }) {
     setUndo({ state: "busy" });
     try {
       const [res, { undoResponseSchema }] = await Promise.all([
-        fetch(`${API_URL}/runs/${encodeURIComponent(view.runId)}/undo`, { method: "POST" }),
+        fetch(`${API_URL}/runs/${encodeURIComponent(view.runId)}/undo`, { method: "POST", headers: accessHeaders() }),
         import("@/lib/contracts"),
       ]);
       if (!res.ok) {
@@ -283,7 +292,7 @@ function NeedsYou({ view, live }: { view: RunView; live: boolean }) {
     setBusy(true);
     const res = await fetch(`${API_URL}/runs/${encodeURIComponent(view.runId)}/human`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...accessHeaders() },
       body: JSON.stringify({ action, note: null }),
     }).catch(() => null);
     setSent(res?.ok ? (action === "resume" ? "Resuming…" : "Cancelling…") : "Couldn’t send. Try again.");
@@ -318,6 +327,9 @@ function NeedsYou({ view, live }: { view: RunView; live: boolean }) {
 export function RunTheater({ id }: { id: string }) {
   const { events, source, status } = useRunEvents(id);
   const live = source === "live";
+  // Acting on the portals (chaos, run again) needs live mode: the access code (PRD §8.6).
+  const mode = useMode();
+  const canAct = live && mode.data?.mode === "live";
   const head = usePlayhead(events, live);
   const view = useMemo(() => foldRun(events.slice(0, head.shown)), [events, head.shown]);
   const started = events[0]?.type === "run.started" ? events[0] : null;
@@ -331,8 +343,8 @@ export function RunTheater({ id }: { id: string }) {
         <div role="alert" className="border-y border-line py-12 text-center">
           <p className="text-2xl text-ink">This run isn&rsquo;t available.</p>
           <p className="mt-2 text-muted-foreground">The API may be offline, or the run id is wrong.</p>
-          <Link href={`/runs/${SAMPLE_RUN_ID}`} className="link-draw mt-6 inline-block text-press-ink">
-            Watch the recorded sample run
+          <Link href={`/runs/${goldenRunId(GOLDEN_HEAL)}`} className="link-draw mt-6 inline-block text-press-ink">
+            Watch a recorded run instead
           </Link>
         </div>
       </>
@@ -356,7 +368,13 @@ export function RunTheater({ id }: { id: string }) {
         kicker={`Run theater${portal ? ` · ${portal}` : ""}`}
         title={title}
         subtitle={`${started.recorded ? "Recorded" : live ? "Live" : "Sample"} run at chaos seed ${started.chaos_seed}, starting on skill v${started.skill_version ?? "–"}.`}
-        actions={live ? null : <SampleBadge label="Sample run" why="The committed recorded run, played back. No portal is touched." />}
+        actions={
+          live && !started.recorded ? null : source === "recorded" || started.recorded ? (
+            <SampleBadge label="Replay" why="A real run, recorded and played back. No portal is touched now." />
+          ) : (
+            <SampleBadge label="Sample run" why="The committed sample run, played back. No portal is touched." />
+          )
+        }
       />
 
       <section data-theater aria-label="Run" className="dark space-y-4 rounded-[var(--t-radius-card)] border border-line bg-background p-3 text-ink sm:p-5">
@@ -404,9 +422,10 @@ export function RunTheater({ id }: { id: string }) {
               key={view.chaosSeed ?? -1}
               portal={view.portal}
               seed={view.chaosSeed}
-              live={live}
+              live={canAct}
               actionId={view.actionId}
               finished={!!view.finished}
+              runId={id}
             />
           </div>
         </div>
@@ -431,7 +450,12 @@ export function RunTheater({ id }: { id: string }) {
             <RunTimeline steps={view.steps} finished={!!view.finished} />
           </div>
           <div className="order-1 min-w-0 lg:order-2">
-            <RunScreen view={view} live={live} />
+            <RunScreen
+              view={view}
+              live={live}
+              golden={id.startsWith(GOLDEN_PREFIX) ? id.slice(GOLDEN_PREFIX.length) : null}
+              seq={events[head.shown - 1]?.seq ?? 0}
+            />
           </div>
         </div>
 

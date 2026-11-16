@@ -1,0 +1,21 @@
+{
+  "name": "price",
+  "title": "Raise the Franzbrötchen price",
+  "task": "tilldesk.change_price",
+  "chaos_seed": 0,
+  "status": "succeeded",
+  "summary": "franzbroetchen is now €3.45 on the till",
+  "recorded_at": "2026-11-16T00:10:43.452603+00:00",
+  "git_sha": "e1127bd",
+  "totals": {
+    "elapsed_ms": 468,
+    "steps": 8,
+    "llm_calls": 0,
+    "tokens_in": 0,
+    "tokens_out": 0,
+    "cache_read_tokens": 0,
+    "usd": 0.0
+  },
+  "frames": 8,
+  "bytes": 163077
+}

@@ -147,14 +147,14 @@ export function TodayBrief() {
       setOne(card.id, "approved");
       delivery();
       setMessage(`${card.title}: approved (sample brief, no portal was touched).`);
-      // The dock plays the recorded sample run when the fixture has one for this card.
-      const events = await loadSampleRun(card.id).catch(() => null);
+      // With no API, the dock plays the recorded real run of this card's task (F7).
+      const events = await loadSampleRun(card.task).catch(() => null);
       startRun({
         id: card.id,
         title: card.title,
         portal,
         events,
-        note: `${card.title}: approved · no recorded run in the sample`,
+        note: events ? `${card.title}: a recorded run, played back` : `${card.title}: approved · no recorded run for this card`,
         href: events?.[0] ? `/runs/${events[0].run_id}` : null,
       });
       return;

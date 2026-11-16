@@ -6,6 +6,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { API_URL } from "@/lib/api";
 import { PORTAL_LABEL } from "@/lib/labels";
+import type { GoldenFrame } from "@/lib/contracts";
 import type { Locator, RunView, StepView } from "@/lib/run-view";
 import { cn } from "@/lib/utils";
 
@@ -146,13 +147,73 @@ function useScreenFrames(runId: string | null, enabled: boolean) {
 }
 
 /**
- * The browser (F2, right). A live run streams the real page (CDP screencast frames) with
- * the agent's cursor. The recorded sample has no frames, so it draws a schematic of the page
- * from the recorded steps (the elements the agent touched, with their real labels) and
- * says so.
+ * Frames of a golden run (F7): the frame recorded after the latest event played so far,
+ * drawn like a live frame, with the cursor where it was. Static files: no API needed.
  */
-export function RunScreen({ view, live }: { view: RunView; live: boolean }) {
-  const { canvas, frame, cursor } = useScreenFrames(view.runId, live);
+function useGoldenFrames(name: string | null, seq: number) {
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const [index, setIndex] = useState<GoldenFrame[] | null>(null);
+  const [frame, setFrame] = useState<{ width: number; height: number } | null>(null);
+
+  useEffect(() => {
+    if (!name) return;
+    let live = true;
+    void Promise.all([import("@/lib/contracts"), fetch(`/golden/${encodeURIComponent(name)}/frames.json`)])
+      .then(async ([{ goldenFrameSchema }, res]) => {
+        if (live && res.ok) setIndex(goldenFrameSchema.array().parse(await res.json()));
+      })
+      .catch(() => undefined); // no frames: the schematic stays, which says so
+    return () => {
+      live = false;
+    };
+  }, [name]);
+
+  const current = index ? index.findLast((f) => f.after_seq <= seq) ?? null : null;
+  const file = current?.file ?? null;
+  useEffect(() => {
+    if (!name || !file) return;
+    let live = true;
+    const img = new Image();
+    img.onload = () => {
+      const c = canvas.current;
+      if (!live || !c) return;
+      c.width = img.naturalWidth;
+      c.height = img.naturalHeight;
+      c.getContext("2d")?.drawImage(img, 0, 0);
+      setFrame({ width: img.naturalWidth, height: img.naturalHeight });
+    };
+    img.src = `/golden/${encodeURIComponent(name)}/frames/${file}`;
+    return () => {
+      live = false;
+    };
+  }, [name, file]);
+
+  const cursor = current && current.cursor_x != null && current.cursor_y != null ? { x: current.cursor_x, y: current.cursor_y } : null;
+  return { canvas, frame, cursor };
+}
+
+/**
+ * The browser (F2, right). A live run streams the real page (CDP screencast frames) with
+ * the agent's cursor; a golden run plays its recorded frames. The fixture sample has no
+ * frames, so it draws a schematic of the page from the recorded steps (the elements the
+ * agent touched, with their real labels) and says so.
+ */
+export function RunScreen({
+  view,
+  live,
+  golden = null,
+  seq = 0,
+}: {
+  view: RunView;
+  live: boolean;
+  /** A golden run's name, to play its recorded frames. */
+  golden?: string | null;
+  /** The last event played (frames are keyed to it). */
+  seq?: number;
+}) {
+  const streamed = useScreenFrames(view.runId, live);
+  const recorded = useGoldenFrames(golden, seq);
+  const { canvas, frame, cursor } = golden ? recorded : streamed;
   const body = useRef<HTMLDivElement>(null);
   const halo = useRef<HTMLDivElement>(null);
   const elements = pageElements(view.steps);
@@ -186,14 +247,14 @@ export function RunScreen({ view, live }: { view: RunView; live: boolean }) {
           <span className="truncate">{view.path ?? "about:blank"}</span>
         </span>
         <span className={cn("kicker text-[0.625rem]", frame ? "text-replay" : "text-muted-foreground")}>
-          {frame ? "● live" : live ? "connecting" : "schematic"}
+          {frame ? (golden || view.recorded ? "● recorded" : "● live") : live ? "connecting" : "schematic"}
         </span>
       </div>
 
       <div ref={body} className="relative h-[24rem] overflow-hidden p-5 sm:p-6">
         {/* One canvas for the whole run, so drawn frames survive re-renders; the halo is
             placed in the canvas's own box. */}
-        {live ? (
+        {live || golden ? (
           <div className={frame ? "relative" : "hidden"}>
             <canvas ref={canvas} aria-label="The agent's browser" className="block h-auto w-full" />
             {frame && cursor ? (

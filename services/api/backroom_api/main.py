@@ -56,6 +56,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         skills = SkillStore()
         runner = SkillRunner(settings, llm, browsers, skills, admin)
         app.state.pool = pool
+        app.state.ledger = llm.ledger if llm else None  # today's model spend (replay when spent)
         app.state.admin = admin
         app.state.skills = skills
         app.state.runs = RunManager(runner, pool)

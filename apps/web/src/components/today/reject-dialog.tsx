@@ -4,6 +4,7 @@ import { Dialog } from "@base-ui/react/dialog";
 import { useId, useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
+import { ApiFailure } from "@/lib/brief";
 import type { ActionCard } from "@/lib/contracts";
 
 const MAX_REASON = 500;
@@ -38,8 +39,9 @@ export function RejectDialog({
       await onSubmit(text);
       setReason("");
       onOpenChange(false);
-    } catch {
-      setError("That didn't go through. Try again in a moment.");
+    } catch (error) {
+      // The API's own reason when it has one (e.g. live mode needs the access code).
+      setError(error instanceof ApiFailure ? error.message : "That didn't go through. Try again in a moment.");
     } finally {
       setBusy(false);
     }

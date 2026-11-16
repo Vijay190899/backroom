@@ -86,6 +86,8 @@ Nine families, the first variant of each canonical: `language` (en, en_alt, de),
 - `step.finished.url` (**added by the PC in H5**, both schemas, default `null`): the page's path after the step, for the theater's address bar. Older recordings without it fall back to the last `goto`.
 - `cost.tick.totals` and `run.finished.totals` are running totals for the ticker (elapsed, steps, LLM calls, tokens, cache reads, $).
 - Golden runs (F7) are a directory: `events.json` (the same events, with `run.started.recorded = true`, which shows the Replay badge), `frames.json` (`GoldenFrame {file, after_seq, offset_ms, width, height, cursor_x, cursor_y}`) and `frames/*.jpg`.
+- Golden runs are recorded with `uv run python -m backroom_api.replay.golden record` (the demo's four: `reorder`, `reorder-heal`, `price`, `cancel`) into `apps/web/public/golden/<name>/` plus `index.json` and `meta.json`. The web app plays them at `/runs/golden-<name>` with no API; in replay mode the API streams the same files as a normal run (new run id, `recorded = true`, `undo_available = false`).
+- Live or replay is decided per request (`GET /mode` → `ModeInfo {mode, reason}`): live needs `DEMO_MODE=live`, budget left today, and the access code in the `X-Demo-Code` header (open while the code is the default). In replay, approve plays the task's golden run and leaves the card's status alone; reject, `?regenerate=1`, `POST /chaos`, undo and human answers return 403 `live_mode_locked` with the reason.
 - `ask_human` pauses the run until `POST /runs/{id}/human {action: "resume" | "cancel", note}`.
 - `WS /runs/{id}/screen`: a `{"type":"frame", seq, width, height, ts}` text message, then the binary JPEG; `{"type":"cursor", x, y, step_index}` moves the halo.
 

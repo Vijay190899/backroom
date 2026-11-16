@@ -11,6 +11,15 @@ Laptop must: pull, then run these commands (`uv sync --all-packages`, `pnpm inst
 Contract changes: anything the laptop's code must adapt to.
 ```
 
+## Mon 16 Nov 2026 · H6 golden runs and replay mode, branch pc/h6-golden-runs
+Done:
+- Recorder `python -m backroom_api.replay.golden record`: the demo's four runs recorded from the real stack (reorder 1.1 s, reorder-heal at seed 7 36.5 s / 14 calls / $0.0041, price, cancel), 1.9 MB in `apps/web/public/golden/`. Skills are snapshotted and restored, portals reset.
+- Web: `/runs/golden-<name>` plays a recording with its frames and cursor, with no API at all (verified with the API stopped: Offline pill, Replay badge, "● recorded" frames). With no API, approving a card on Today plays its task's recording. `pnpm contracts` checks every golden run (schemas, recorded flag, seq, frames on disk).
+- API replay mode (DECISIONS 31-33): `GET /mode`; live needs the access code (`X-Demo-Code`), budget left and `DEMO_MODE=live`. In replay, approve streams the golden run as a normal run (Replay badge, frames on the screen socket, card untouched); reject, regenerate, chaos, undo and human answers return 403 `live_mode_locked` with the reason, which the reject dialog now shows. Web: `?code=` is kept in the browser and sent on every acting call; the status pill shows this visitor's mode with the reason as its tooltip.
+- Verified live with `DEMO_ACCESS_CODE=demo-test`: without the code the pill says Replay, approving the price card played the recording through the API, and reject showed "Live mode needs the demo access code"; with `?code=demo-test` the pill says Live and the code leaves the address bar.
+- `pnpm check`: 379 passed; UI audit 0 findings on 24 views (with a golden run as the run page).
+Laptop must: `git pull`, `uv sync --all-packages`, `pnpm install`. Contract additions: `ModeInfo` / `GET /mode` (both sides).
+
 ## Mon 16 Nov 2026 · Order undo with Grainline's cutoff, branch pc/order-undo
 Done:
 - New task `grainline.cancel_order {order_id}` (contract `SkillTask` on both sides; label "Cancel an order"); postconditions can select a record by id (`orders.{{order_id}}.status`).

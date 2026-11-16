@@ -5,17 +5,33 @@ import type { RunEvent } from "@/lib/contracts";
 export { describeChange } from "@/lib/run-view";
 
 /**
- * The committed sample run (fixtures/run-events.json), parsed like any API payload.
- * It belongs to one action; any other card has no recorded run to show.
+ * Golden runs (PRD F7): real runs recorded with `python -m backroom_api.replay.golden record`
+ * and served as static files from /golden/<name>/, so they play with no API at all.
  */
-export async function loadSampleRun(actionId: string): Promise<RunEvent[] | null> {
-  const [{ runEventSchema }, fixture] = await Promise.all([
+export const GOLDEN_FOR_TASK: Partial<Record<string, string>> = {
+  "grainline.reorder_item": "reorder",
+  "grainline.cancel_order": "cancel",
+  "tilldesk.change_price": "price",
+};
+/** The reorder healing itself after the seed-7 redesign (DEMO_SCRIPT 1:40). */
+export const GOLDEN_HEAL = "reorder-heal";
+export const GOLDEN_PREFIX = "golden-";
+export const goldenRunId = (name: string) => `${GOLDEN_PREFIX}${name}`;
+
+export async function loadGoldenRun(name: string, signal?: AbortSignal): Promise<RunEvent[] | null> {
+  const [{ runEventSchema }, res] = await Promise.all([
     import("@/lib/contracts"),
-    import("@/fixtures/run-events.json"),
+    fetch(`/golden/${encodeURIComponent(name)}/events.json`, { signal }),
   ]);
-  const events = runEventSchema.array().parse(fixture.default);
-  const start = events[0];
-  return start?.type === "run.started" && start.action_id === actionId ? events : null;
+  if (!res.ok) return null;
+  return runEventSchema.array().parse(await res.json());
+}
+
+/** What plays when the API is unreachable and a card is approved: the recorded real run of
+ *  that card's task, if there is one. */
+export async function loadSampleRun(task: string | null): Promise<RunEvent[] | null> {
+  const name = task ? GOLDEN_FOR_TASK[task] : undefined;
+  return name ? loadGoldenRun(name) : null;
 }
 
 /** Playback pacing: about 2× real time, with failed waits (5 s timeouts) clipped. */
