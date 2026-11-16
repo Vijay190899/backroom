@@ -35,7 +35,12 @@ from backroom_api.contracts.events import (
     StepStarted,
 )
 from backroom_api.llm import registry
-from backroom_api.skills.compiler import compile_action, fallbacks_for, render_text
+from backroom_api.skills.compiler import (
+    compile_action,
+    fallbacks_for,
+    render_text,
+    template_name,
+)
 from backroom_api.skills.diff import field_changes
 from backroom_api.skills.schema import Fallback, Locator, Skill, Step, StepChange
 
@@ -223,7 +228,9 @@ async def replay(
 
         if outcome.ok:
             if outcome.resolved_via not in (None, "target") and outcome.found is not None:
-                found = Locator(role=outcome.found.role, name=outcome.found.name)
+                found = Locator(
+                    role=outcome.found.role, name=template_name(outcome.found.name, params)
+                )
                 promoted = step.model_copy(
                     update={"target": found, "fallbacks": remembered_fallbacks(found, step)}
                 )

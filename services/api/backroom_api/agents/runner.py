@@ -21,6 +21,7 @@ from backroom_api.agents.postconditions import PostResult, check
 from backroom_api.agents.recorder import EventSink, RunRecorder
 from backroom_api.agents.tasks import TASKS, TaskSpec
 from backroom_api.browser import Allowlist, BrowserPool, Executor, SecretVault
+from backroom_api.browser.downloads import DownloadLog
 from backroom_api.browser.executor import CursorCallback
 from backroom_api.browser.screencast import FrameCallback, Screencast
 from backroom_api.config import Settings
@@ -168,6 +169,7 @@ class SkillRunner:
         failure: str | None = None
         async with self.pool.session(allow) as page:
             executor = Executor(page, self.vault, allow, on_cursor=hooks.on_cursor)
+            downloads = DownloadLog(page)
             cast = Screencast(page, on_frame) if on_frame else None
             if cast:
                 await cast.start()
@@ -200,6 +202,7 @@ class SkillRunner:
                             admin=self.admin,
                             portal=spec.portal,
                             baseline_orders=baseline,
+                            downloads=downloads,
                         )
                         for p in spec.postconditions
                     ]
@@ -362,6 +365,14 @@ class SkillRunner:
         if not ok:
             return f"Did not finish: {failure or 'unknown reason'}", {"checks": checks}
         state = await self.admin.state(spec.portal)
+        if spec.task == "grainline.download_invoice":
+            invoice = str(params["invoice_id"])
+            proof = next((p.detail for p in posts if p.ok), "")
+            return f"Invoice {invoice} downloaded ({proof.split('(')[-1].rstrip(')')})", {
+                "invoice": invoice,
+                "file": f"{invoice}.pdf",
+                "checks": checks,
+            }
         if spec.task == "grainline.cancel_order":
             order_id = str(params["order_id"])
             return f"Order {order_id} cancelled", {

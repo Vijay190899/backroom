@@ -25,6 +25,7 @@ from playwright.async_api import Locator, Page
 from backroom_api.browser.allowlist import Allowlist, NavigationBlockedError
 from backroom_api.browser.snapshot import parse_snapshot, wait_until_idle
 from backroom_api.browser.vault import SecretVault, UnknownSecretError
+from backroom_api.skills.compiler import render_text
 from backroom_api.skills.schema import (
     CssFallback,
     Expect,
@@ -78,6 +79,26 @@ def render(template: str, params: Mapping[str, Any]) -> str:
         return str(params[name])
 
     return _PARAM_RE.sub(sub, template)
+
+
+def with_params(step: Step, params: Mapping[str, Any]) -> Step:
+    """The step with `{{param}}` in its locator names filled in for this run."""
+
+    def fill(text: str) -> str:
+        return render_text(text, params) if "{{" in text else text
+
+    target = (
+        step.target.model_copy(update={"name": fill(step.target.name)}) if step.target else None
+    )
+    fallbacks: list[Fallback] = []
+    for fb in step.fallbacks:
+        if isinstance(fb, LabelFallback):
+            fallbacks.append(fb.model_copy(update={"label": fill(fb.label)}))
+        elif isinstance(fb, TextFallback):
+            fallbacks.append(fb.model_copy(update={"text": fill(fb.text)}))
+        else:
+            fallbacks.append(fb)
+    return step.model_copy(update={"target": target, "fallbacks": fallbacks})
 
 
 def display_value(step: Step, params: Mapping[str, Any]) -> str | None:
@@ -173,6 +194,7 @@ class Executor:
     async def run(
         self, step: Step, params: Mapping[str, Any], timeout_ms: int | None = None
     ) -> StepOutcome:
+        step = with_params(step, params)
         """Run one step. `timeout_ms` caps the step's own timeout (replay uses a shorter one)."""
         timeout = min(step.timeout_ms, timeout_ms) if timeout_ms else step.timeout_ms
         started = time.monotonic()

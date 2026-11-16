@@ -86,8 +86,10 @@ class Postcondition(Contract):
     `equals` is rendered with the params, then parsed as JSON when it parses (so "3.6"
     is the number 3.6 and equals 3.60) and kept as a string otherwise ("placed")."""
 
-    kind: Literal["url_matches", "text_visible", "portal_state"]
-    value: str  # regex, text, or a dotted state path such as "orders.last.status"
+    kind: Literal["url_matches", "text_visible", "portal_state", "file_downloaded"]
+    # regex, text, a dotted state path ("orders.last.status"), or for `file_downloaded` the
+    # expected file name ("{{invoice_id}}.pdf"): the browser must have received that file.
+    value: str
     equals: str | None = None  # for portal_state: expected value (templated)
 
 

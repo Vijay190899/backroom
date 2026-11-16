@@ -49,6 +49,25 @@ TASKS: dict[str, TaskSpec] = {
         ],
         default_params={"sku": "OAT-1L", "qty": 24},
     ),
+    "grainline.download_invoice": TaskSpec(
+        task="grainline.download_invoice",
+        portal="grainline",
+        start_path="/grainline/login",
+        goal=(
+            "Download the PDF of Grainline invoice {invoice_id}. Sign in first. Then open the "
+            "invoices page from the navigation and use the download control for exactly that "
+            "invoice. Finish right after clicking it: the file arrives in the background."
+        ),
+        params_schema={
+            "type": "object",
+            "properties": {"invoice_id": {"type": "string", "pattern": r"^INV-\d{6}$"}},
+            "required": ["invoice_id"],
+        },
+        postconditions=[
+            Postcondition(kind="file_downloaded", value="{{invoice_id}}.pdf"),
+        ],
+        default_params={"invoice_id": "INV-204107"},
+    ),
     "grainline.cancel_order": TaskSpec(
         task="grainline.cancel_order",
         portal="grainline",

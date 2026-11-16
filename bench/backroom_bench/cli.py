@@ -39,6 +39,51 @@ def _briefs(directory: Path) -> list[Brief]:
     ]
 
 
+async def _browser_benches(
+    args: argparse.Namespace,
+    runner: Any,
+    which: set[str],
+    seeds: list[int],
+    settings: Any,
+    out: Path,
+    written: list[Path],
+) -> None:
+    if "b1" in which:
+        body = await browser.b1(runner, seeds, seed0_repeats=args.seed0_repeats)
+        written.append(
+            results.write(
+                "B1",
+                body,
+                settings=settings,
+                seeds=seeds,
+                n=len(body["runs"]),
+                fake=args.fake,
+                out_dir=out,
+            )
+        )
+    if "b2" in which:
+        body = await browser.b2(runner)
+        written.append(
+            results.write(
+                "B2",
+                body,
+                settings=settings,
+                seeds=list(browser.B2_SEEDS),
+                n=len(body["series"]),
+                fake=args.fake,
+                out_dir=out,
+            )
+        )
+
+
+async def _briefs_cmd(n: int) -> int:
+    from backroom_bench import brief_gen
+
+    written, usd = await brief_gen.generate(n, BENCH_BRIEFS, get_settings())
+    print(f"wrote {len(written)} briefs to {BENCH_BRIEFS.relative_to(ROOT)} (${usd:.4f})")
+    return 0
+
+
 async def _run(args: argparse.Namespace) -> int:
     settings = get_settings()
     out = FAKE_OUT if args.fake else Path(args.out)
@@ -59,32 +104,12 @@ async def _run(args: argparse.Namespace) -> int:
             skipped += sorted(which & {"b1", "b2"})
             which -= {"b1", "b2"}
         else:
-            if "b1" in which:
-                body = await browser.b1(runner, seeds)
-                written.append(
-                    results.write(
-                        "B1",
-                        body,
-                        settings=settings,
-                        seeds=seeds,
-                        n=len(body["runs"]),
-                        fake=args.fake,
-                        out_dir=out,
-                    )
-                )
-            if "b2" in which:
-                body = await browser.b2(runner)
-                written.append(
-                    results.write(
-                        "B2",
-                        body,
-                        settings=settings,
-                        seeds=list(browser.B2_SEEDS),
-                        n=len(body["series"]),
-                        fake=args.fake,
-                        out_dir=out,
-                    )
-                )
+            try:
+                await _browser_benches(args, runner, which, seeds, settings, out, written)
+            finally:
+                close = getattr(runner, "close", None)
+                if close is not None:  # the real runner restores the demo's skills
+                    await close()
 
     if "b3" in which:
         con = memory_bench.connect()
@@ -156,6 +181,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(prog="backroom-bench")
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("probe", help="check which LLM features the active provider supports")
+    gen = sub.add_parser("briefs", help="generate the briefs B5 grades (real models, PC)")
+    gen.add_argument("--n", type=int, default=10)
     for name in ("all", "b1", "b2", "b3", "b5"):
         p = sub.add_parser(name, help=f"run {'B1-B3 and B5' if name == 'all' else name.upper()}")
         p.add_argument(
@@ -163,10 +190,13 @@ def main() -> None:
         )
         p.add_argument("--out", default=str(results.RESULTS_DIR))
         p.add_argument("--seeds", type=int, default=20, help="B1 chaos seeds 0..N-1")
+        p.add_argument("--seed0-repeats", type=int, default=5, help="B1 cold runs at seed 0")
         p.add_argument("--runner", help="B1/B2 runner factory, module:callable")
         p.add_argument("--pack", help="B3 context pack, module:callable (question -> text)")
         p.add_argument("--briefs", help="B5: a directory of brief JSONs generated during the bench")
     args = parser.parse_args()
     if args.command == "probe":
         raise SystemExit(probe.main())
+    if args.command == "briefs":
+        raise SystemExit(asyncio.run(_briefs_cmd(args.n)))
     raise SystemExit(asyncio.run(_run(args)))
