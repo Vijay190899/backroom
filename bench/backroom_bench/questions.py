@@ -6,6 +6,13 @@ from dataclasses import dataclass
 from typing import Literal
 
 Kind = Literal["number", "count", "text"]
+# Fixed before any real B3 run, from what memory is built to hold (ARCHITECTURE §7,
+# memory/writers.py): menu prices, recipes, ingredient prices from invoices, suppliers, staff,
+# holidays, weather and the owner's rules. Sales, transactions, orders, stock, the rota and
+# wages are analytics: detectors compute them with SQL over DuckDB, and the memory graph
+# never stores them. B3 reports accuracy on all 30 and per scope.
+Scope = Literal["memory", "analytics"]
+MEMORY_SCOPE = frozenset({"q01", "q02", "q03", "q04", "q07", "q08", "q09", "q22", "q23", "q24"})
 
 
 @dataclass(frozen=True)
@@ -14,6 +21,10 @@ class Question:
     text: str
     sql: str
     kind: Kind = "number"
+
+    @property
+    def scope(self) -> Scope:
+        return "memory" if self.id in MEMORY_SCOPE else "analytics"
 
 
 Q = Question
