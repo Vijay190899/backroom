@@ -1,9 +1,17 @@
 """Context packer (PRD §8.3): the compact, token-budgeted facts an agent run sees.
 
 task -> seed entities (`seeds_for`) -> facts valid at `as_of` within 2 hops -> ranked
-by (hop, recency, confidence) -> one compact triple per line, until the token budget is
-spent. The business's standing preferences and rules always come first, so a learned
-cap ("max 8%") reaches every brief. The pack ships with the run (ContextPack).
+by (hop, recency, confidence) -> taken in rank order until the token budget is spent.
+The business's standing preferences and rules always come first, so a learned cap
+("max 8%") reaches every brief. The pack ships with the run (ContextPack).
+
+The text is grouped by entity: a header with the entity's id and its name, then one
+indented line per fact. Names are information ("holiday:2026-05-25" is "Whit Monday"), and
+a group is easy to count ("how many items are on the menu?") and repeats no ids:
+
+    product:croissant "Butter croissant"
+      menu_price_eur 2.6 (since 2026-05-24)
+      uses_ingredient ingredient:butter {"grams":30.0} (since 2026-05-24)
 
 Two more sources, both ranked behind what the task names directly:
 - **History** of the named entities: facts a newer one replaced, marked "from ... until
@@ -73,7 +81,8 @@ def seeds_for(conn: Connection[Any], task: str) -> list[str]:
     return found
 
 
-def _triple(fact: dict[str, Any]) -> str:
+def _fact_line(fact: dict[str, Any]) -> str:
+    """A fact without its subject (the group's header names it)."""
     obj = fact["object_id"] or ""
     if fact["value"] is not None:
         value = json.dumps(fact["value"], separators=(",", ":"), sort_keys=True)
@@ -85,7 +94,42 @@ def _triple(fact: dict[str, Any]) -> str:
         when = f"from {start} until {end}"
     else:
         when = f"since {start}"
-    return f"{fact['subject_id']} {fact['predicate']} {obj} ({when}{confidence})"
+    return f"{fact['predicate']} {obj} ({when}{confidence})"
+
+
+def _header(entity_id: str, names: dict[str, str]) -> str:
+    name = names.get(entity_id)
+    return f"{entity_id} {json.dumps(name, ensure_ascii=False)}" if name else entity_id
+
+
+def render(
+    ranked: list[dict[str, Any]], names: dict[str, str], budget_tokens: int
+) -> tuple[str, list[str]]:
+    """The grouped text of the longest rank-order prefix of `ranked` that fits the budget,
+    and the ids of the facts in it. A fact that does not fit ends the pack, so a smaller
+    budget always keeps a prefix of a larger one."""
+    groups: dict[str, list[str]] = {}
+    fact_ids: list[str] = []
+    chars = -1  # the newlines between lines: one fewer than the lines
+    for f in ranked:
+        subject, line = f["subject_id"], "  " + _fact_line(f)
+        cost = len(line) + 1 + (len(_header(subject, names)) + 1 if subject not in groups else 0)
+        if math.ceil((chars + cost) / CHARS_PER_TOKEN) > budget_tokens:
+            break
+        chars += cost
+        groups.setdefault(subject, []).append(line)
+        fact_ids.append(f["id"])
+    # Groups appear in rank order; inside one, facts sort by predicate (stable, so rank
+    # order holds within a predicate), which keeps a product's price lines together.
+    text = "\n".join(
+        "\n".join([_header(subject, names), *sorted(lines, key=_predicate)])
+        for subject, lines in groups.items()
+    )
+    return text, fact_ids
+
+
+def _predicate(line: str) -> str:
+    return line.lstrip().split(" ", 1)[0]
 
 
 HISTORY_SQL = """
@@ -153,15 +197,14 @@ def pack(
             item[1]["id"],
         ),
     )
-    lines: list[str] = []
-    fact_ids: list[str] = []
-    for _, f in ranked:
-        line = _triple(f)
-        if estimate_tokens("\n".join([*lines, line])) > budget_tokens:
-            break
-        lines.append(line)
-        fact_ids.append(f["id"])
-    text = "\n".join(lines)
+    names = {
+        r[0]: r[1]
+        for r in conn.execute(
+            "select id, name from entity where id = any(%s)",
+            [sorted({f["subject_id"] for _, f in ranked})],
+        )
+    }
+    text, fact_ids = render([f for _, f in ranked], names, budget_tokens)
     return ContextPack(
         as_of=as_of,
         fact_ids=fact_ids,

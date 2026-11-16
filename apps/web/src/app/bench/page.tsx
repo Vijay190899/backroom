@@ -75,11 +75,19 @@ function BenchHeadline({ id }: { id: string }) {
       </p>
     );
   }
+  const first = headline(id, "baseline");
   return (
     <div className="self-start sm:text-right">
       <p className="font-display text-3xl text-ink tabular">{h.value}</p>
       <p className="mt-1 text-sm text-muted-foreground">{h.detail}</p>
       <p className="mt-1 font-mono text-[11px] text-muted-foreground">{h.meta}</p>
+      {first && first.meta !== h.meta && (
+        <p className="mt-3 border-t border-line pt-2 text-xs text-muted-foreground">
+          <span className="kicker mr-1.5 text-[0.625rem]">First full run</span>
+          <span className="text-ink tabular">{first.value}</span>
+          <span className="font-mono text-[11px]"> · {first.meta}</span>
+        </p>
+      )}
     </div>
   );
 }
@@ -106,7 +114,7 @@ export default function BenchPage() {
       <PageHeader
         kicker="How well it works"
         title="Bench"
-        subtitle="Backroom measures itself. The provider probe below is a real run; the benchmarks run on the main machine once the whole stack is together, and stay empty until then."
+        subtitle="Backroom measures itself. Every number here comes from a committed result file and names the commit that produced it. Where the first full run found bugs, it stays beside the run after the fixes; a benchmark that hasn't run says so."
       />
 
       <section aria-labelledby="probe-heading" className="glass panel">
