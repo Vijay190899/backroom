@@ -275,3 +275,20 @@ def test_heal_summary_is_short_and_never_cut_mid_word() -> None:
     assert note.startswith("Added 1 step: 'Accept the cookie banner to clear the dialog…'.")
     assert "6 labels changed: 'Email' → 'E-Mail', 'Password' → 'Passwort'" in note
     assert note.endswith("and 2 more.") and len(note) < 260
+
+
+def test_postconditions_select_records_by_id() -> None:
+    state = {"orders": [{"id": "GW-1", "status": "placed"}, {"id": "GW-2", "status": "cancelled"}]}
+    assert walk(state, "orders.GW-1.status", None) == "placed"
+    assert walk(state, "orders.GW-2.status", None) == "cancelled"
+    with pytest.raises(LookupError):
+        walk(state, "orders.GW-9.status", None)
+
+
+def test_the_cancel_task_compiles_to_a_parameterised_path() -> None:
+    step = compile_action(
+        Action(intent="Open order GW-10482", action="goto", value="/grainline/orders/GW-10482"),
+        {"order_id": "GW-10482"},
+    )
+    assert step.value_template == "/grainline/orders/{{order_id}}"
+    assert step.intent == "Open order {{order_id}}"

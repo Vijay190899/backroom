@@ -5,8 +5,9 @@
 - Postgres: runs, briefs and actions are deleted; memory goes back to the seeded world, so
   no preference has been learned yet (the 8% cap is learned live, PRD F4).
 - Portals: orders, carts and price edits are wiped and every chaos seed is back to 0.
-- `--relearn`: both skills are forgotten and learned again by a cold explore at seed 0
-  (about $0.005 with the default models; needs the portals running and a model key).
+- `--relearn`: every skill is forgotten and learned again by a cold explore at seed 0
+  (reorder, then cancelling that order, then a price change; about $0.008 with the
+  default models; needs the portals running and a model key).
   The portals are reset again afterwards, so the learning runs leave no trace.
 """
 
@@ -45,13 +46,18 @@ async def relearn(settings: Settings, admin: PortalAdmin) -> list[str]:
     pool = BrowserPool(max_contexts=1)
     runner = SkillRunner(settings, LLM(settings), pool, store, admin)
     lines: list[str] = []
+    last_order: str | None = None
     try:
         for task, spec in TASKS.items():
             store.delete(task)
             await admin.set_chaos(spec.portal, 0)
-            result = await runner.run(task, action_id="act_demo_setup")
+            # Cancelling needs an order: the one the reorder just placed.
+            params = {"order_id": last_order} if task == "grainline.cancel_order" else None
+            result = await runner.run(task, params, action_id="act_demo_setup")
             if not result.ok:  # a cold explore can stumble; one more try before failing
-                result = await runner.run(task, action_id="act_demo_setup")
+                result = await runner.run(task, params, action_id="act_demo_setup")
+            if task == "grainline.reorder_item":
+                last_order = result.result.get("order")
             t = result.totals
             lines.append(
                 f"{task}: {result.status}, skill v{result.skill_version}, "

@@ -68,8 +68,15 @@ def database_url() -> Iterator[str]:
 
 
 class FakeAdmin:
+    def __init__(self) -> None:
+        # The order the fake reorder "places"; tests move its delivery and status.
+        self.order = {"id": "GW-10482", "status": "placed", "delivery_date": "2099-01-02"}
+
     async def state(self, portal: str) -> dict[str, Any]:
-        return {"items": {"franzbroetchen": {"published_price_eur": 3.20}}, "orders": []}
+        return {
+            "items": {"franzbroetchen": {"published_price_eur": 3.20}},
+            "orders": [self.order],
+        }
 
     async def chaos(self) -> list[dict[str, Any]]:
         return [{"portal": "grainline", "seed": 0, "variants": {"language": "en"}}]
@@ -88,9 +95,11 @@ class FakeRunner:
         self.admin = FakeAdmin()
         self.ask = False
         self.params: list[dict[str, Any]] = []
+        self.tasks: list[str] = []
 
     async def run(self, task: str, params: dict[str, Any], **kw: Any) -> Any:
         self.params.append(dict(params))
+        self.tasks.append(task)
         rec = RunRecorder(kw["run_id"], None, kw["sink"])
         spec = TASKS[task]
         await rec.emit(
@@ -129,11 +138,14 @@ class FakeRunner:
             tokens_out=0,
             usd=0.0,
         )
+        result: dict[str, Any] = {}
+        if task == "grainline.reorder_item":
+            result = {"order": self.admin.order["id"], "undo_until": "2099-01-01"}
         await rec.emit(
             RunFinished,
             status=status,
             summary=f"{task} done",
-            result={},
+            result=result,
             undo_available=status == "succeeded" and kw["undoable"],
             skill_version=1,
             totals=rec.totals(),
@@ -280,13 +292,45 @@ def test_a_price_change_can_be_undone_once(client: TestClient) -> None:
     wait_finished(client, undo.json()["run_id"])
     fake = cast(FakeRunner, client.app.state.fake)  # type: ignore[attr-defined]
     assert fake.params[-1] == {"item_id": "franzbroetchen", "price_eur": 3.20}  # the old price
+    unknown = client.post("/runs/run_nope/undo")
+    assert unknown.status_code == 404
+
+
+def test_a_reorder_is_undone_by_cancelling_its_order_before_the_cutoff(client: TestClient) -> None:
+    fake = cast(FakeRunner, client.app.state.fake)  # type: ignore[attr-defined]
     order = card(client, "stockout")
-    order_run = client.post(
-        f"/actions/{order['id']}/approve", headers={"Idempotency-Key": "k-no-undo"}
+    run_id = client.post(
+        f"/actions/{order['id']}/approve", headers={"Idempotency-Key": "k-order-undo"}
     ).json()["run_id"]
-    wait_finished(client, order_run)
-    no_undo = client.post(f"/runs/{order_run}/undo")
-    assert no_undo.status_code == 409 and no_undo.json()["error"]["code"] == "no_undo"
+    wait_finished(client, run_id)
+    finished = sse(client.get(f"/runs/{run_id}/events").text)[-1]
+    assert finished["undo_available"] is True and finished["result"]["undo_until"] == "2099-01-01"
+    undo = client.post(f"/runs/{run_id}/undo")
+    assert undo.status_code == 200
+    wait_finished(client, undo.json()["run_id"])
+    assert fake.tasks[-1] == "grainline.cancel_order"
+    assert fake.params[-1] == {"order_id": "GW-10482"}  # exactly the order this run placed
+
+
+def test_an_order_past_grainlines_cutoff_is_not_undone(client: TestClient) -> None:
+    fake = cast(FakeRunner, client.app.state.fake)  # type: ignore[attr-defined]
+    order = card(client, "stockout")
+    run_id = client.post(
+        f"/actions/{order['id']}/approve", headers={"Idempotency-Key": "k-too-late"}
+    ).json()["run_id"]
+    wait_finished(client, run_id)
+    started = len(fake.tasks)
+    try:
+        fake.admin.order["delivery_date"] = "2000-01-01"  # delivered: the cutoff has passed
+        late = client.post(f"/runs/{run_id}/undo")
+        assert late.status_code == 409 and late.json()["error"]["code"] == "too_late"
+        assert "day before delivery" in late.json()["error"]["message"]
+        fake.admin.order.update(delivery_date="2099-01-02", status="cancelled")
+        gone = client.post(f"/runs/{run_id}/undo")
+        assert gone.json()["error"]["code"] == "already_cancelled"
+    finally:
+        fake.admin.order.update(delivery_date="2099-01-02", status="placed")
+    assert len(fake.tasks) == started  # nothing was attempted
 
 
 def test_reject_records_the_reason_and_the_brief_regenerates(client: TestClient) -> None:

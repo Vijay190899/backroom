@@ -1,6 +1,6 @@
 # Handover — read this first on a new machine or in a new session
 
-Last updated: Mon 16 Nov 2026. **Laptop tasks L0–L13 complete; PC has done H1–H5 (M3 gate: the demo script works end to end). Next: reorder undo (branch), then H6 golden runs, H7 benchmarks, H8 deploy.**
+Last updated: Mon 16 Nov 2026. **Laptop tasks L0–L13 complete; PC has done H1–H5 (M3 gate: the demo script works end to end). Order undo is done too. Next: H6 golden runs, H7 benchmarks, H8 deploy.**
 
 > **Two machines are in use.** The user's light laptop does the *light* tasks (plain code, no Docker, no Chromium); this PC does the *heavy* ones. **The split, the task IDs and the integration rules are in §9.** On the laptop, follow §2b. Each side logs what it finished in its own file under `docs/sync/`.
 

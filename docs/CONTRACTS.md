@@ -66,7 +66,9 @@ Nine families, the first variant of each canonical: `language` (en, en_alt, de),
 
 `Skill {id, task, portal, version, parent_version, heal_note, params_schema, steps[], postconditions[], stats, created_at}`, `Step {intent, action, target, fallbacks, value_template, expect, timeout_ms}` (PRD §8.2).
 
-- `id` equals the task: `grainline.reorder_item`, `grainline.download_invoice`, `tilldesk.change_price`, `localboard.post_special` (P1). One skill per task; versions count up from 1.
+- `id` equals the task: `grainline.reorder_item`, `grainline.download_invoice`, `grainline.cancel_order` (**added by the PC**: the undo of a reorder, params `{order_id}`), `tilldesk.change_price`, `localboard.post_special` (P1). One skill per task; versions count up from 1.
+- In a `portal_state` path, a list segment is a position (`0`), `last`, or a record's `id`: `orders.{{order_id}}.status` equals `cancelled`.
+- Undo: a price change is undone by setting the price that was live before; a reorder by `grainline.cancel_order` on the order it placed. Grainline cancels only until the day before delivery: the reorder's result carries `undo_until`, and `POST /runs/{id}/undo` answers 409 `too_late` after it (or `already_cancelled`) without starting a run.
 - Locator order: `target` (ARIA role + name), then `fallbacks` in order (`{label}`, `{text}`, `{css}`).
 - `value_template`: `{{param}}` must be declared in `params_schema.properties`; `{{secret:key}}` is resolved by the vault and is allowed only in `fill_secret` and `totp` steps (the schema enforces both).
 - `goto` and `press` need a `value_template` (the path or the key).

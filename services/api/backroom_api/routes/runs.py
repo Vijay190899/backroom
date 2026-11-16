@@ -2,10 +2,14 @@
 
 import asyncio
 from collections.abc import AsyncIterator
+from datetime import date
+from typing import Any
 
 from fastapi import APIRouter, Header, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 
+from backroom_api.agents.portals_admin import PortalAdmin
+from backroom_api.config import Settings
 from backroom_api.contracts.api import HumanReply, RunSummary, UndoResponse
 from backroom_api.contracts.events import to_sse
 from backroom_api.live import repo
@@ -98,13 +102,42 @@ async def run_human(run_id: str, reply: HumanReply, request: Request) -> RunSumm
 async def run_undo(run_id: str, request: Request) -> UndoResponse:
     runs = _runs(request)
     row = await _row(runs, run_id)
-    if not row["undo_available"] or row["undo_params"] is None:
+    undo: Any = row["undo_params"]
+    if not row["undo_available"] or not undo or not undo.get("params"):
         raise ApiProblem(409, "no_undo", "this run cannot be undone")
+    task, params = str(undo["task"]), dict(undo["params"])
+    if task == "grainline.cancel_order":
+        await _check_cancel_cutoff(request, str(params["order_id"]))
     new_id, _ = await runs.start(
         action_id=str(row["action_id"]),
-        task=str(row["task"]),
-        params=dict(row["undo_params"]),  # type: ignore[arg-type]
+        task=task,
+        params=params,
         idempotency_key=f"undo:{run_id}",  # undoing twice starts one undo run
         undo_of=run_id,
     )
     return UndoResponse(run_id=new_id, undo_of=run_id)
+
+
+async def _check_cancel_cutoff(request: Request, order_id: str) -> None:
+    """Grainline cancels an order only until the day before delivery. Checked against the
+    supplier's own state first, so a late undo is refused clearly, not attempted."""
+    admin: PortalAdmin = request.app.state.admin
+    settings: Settings = request.app.state.settings
+    try:
+        orders = (await admin.state("grainline"))["orders"]
+    except Exception as exc:
+        raise ApiProblem(503, "portals_unavailable", "Grainline did not answer") from exc
+    order = next((o for o in orders if o["id"] == order_id), None)
+    if order is None:
+        raise ApiProblem(409, "no_undo", f"Grainline has no order {order_id}")
+    if order["status"] != "placed":
+        raise ApiProblem(409, "already_cancelled", f"order {order_id} is already {order['status']}")
+    today = settings.portals_today or date.today()
+    delivery = date.fromisoformat(str(order["delivery_date"]))
+    if delivery <= today:
+        raise ApiProblem(
+            409,
+            "too_late",
+            f"Grainline cancels only until the day before delivery; {order_id} arrives "
+            f"{delivery:%a %d %b}. Contact Grainline to return it.",
+        )

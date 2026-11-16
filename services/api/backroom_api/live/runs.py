@@ -100,8 +100,11 @@ class RunManager:
         return run_id, False
 
     async def _undo_params(self, task: str, params: dict[str, Any]) -> dict[str, Any] | None:
-        """The inverse action, if there is one: a price change is undone by setting the
-        price that is live now. (Cancelling an order has no task yet.)"""
+        """The inverse action, as {"task", "params"}, or None. A price change is undone by
+        setting the price that is live now; a reorder by cancelling the order it places
+        (its id is only known when the run ends, so `params` is filled in then)."""
+        if task == "grainline.reorder_item":
+            return {"task": "grainline.cancel_order", "params": None}
         if task != "tilldesk.change_price":
             return None
         try:
@@ -109,7 +112,10 @@ class RunManager:
             item = state["items"][params["item_id"]]
         except Exception:  # no undo is better than a wrong one
             return None
-        return {"item_id": params["item_id"], "price_eur": item["published_price_eur"]}
+        return {
+            "task": task,
+            "params": {"item_id": params["item_id"], "price_eur": item["published_price_eur"]},
+        }
 
     async def _execute(
         self,
@@ -122,6 +128,16 @@ class RunManager:
         channel = self._channel(run_id)
 
         async def sink(event: RunEvent) -> None:
+            if (
+                event.type == "run.finished"
+                and undo_params is not None
+                and undo_params["params"] is None
+                and event.result.get("order")
+            ):
+                # The order exists now: record how to cancel it before anyone can see
+                # the run finish (and press Undo).
+                undo = {**undo_params, "params": {"order_id": event.result["order"]}}
+                await self.db(repo.set_undo, run_id, undo)
             await self.db(repo.add_event, event)
             if event.type == "step.started":
                 channel.step_index = event.index

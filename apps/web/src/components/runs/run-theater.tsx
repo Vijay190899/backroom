@@ -192,8 +192,11 @@ function ChaosPicker({
   );
 }
 
+const UNTIL = new Intl.DateTimeFormat("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: "Europe/Berlin" });
+
 function resultEntries(result: Record<string, unknown>): [string, string][] {
-  return Object.entries(result).map(([k, v]) => [
+  // The undo deadline is shown on the Undo button itself.
+  return Object.entries(result).filter(([k]) => k !== "undo_until").map(([k, v]) => [
     k.replace(/_eur$/, "").replace(/_/g, " "),
     k.endsWith("_eur") && typeof v === "number" ? formatEur(v) : String(v),
   ]);
@@ -202,7 +205,9 @@ function resultEntries(result: Record<string, unknown>): [string, string][] {
 /** On completion (F2): what happened, the totals, and Undo where the portal supports it. */
 function Result({ view, live }: { view: RunView; live: boolean }) {
   const f = view.finished;
-  const [undo, setUndo] = useState<{ state: "idle" | "busy" | "error" } | { state: "done"; runId: string }>({ state: "idle" });
+  const [undo, setUndo] = useState<
+    { state: "idle" | "busy" } | { state: "error"; message: string } | { state: "done"; runId: string }
+  >({ state: "idle" });
   if (!f) return null;
   const heals = view.heals;
   async function doUndo() {
@@ -213,10 +218,15 @@ function Result({ view, live }: { view: RunView; live: boolean }) {
         fetch(`${API_URL}/runs/${encodeURIComponent(view.runId)}/undo`, { method: "POST" }),
         import("@/lib/contracts"),
       ]);
-      if (!res.ok) throw new Error(String(res.status));
+      if (!res.ok) {
+        // The API says why (e.g. Grainline's cancellation cutoff has passed): show that.
+        const body = (await res.json().catch(() => null)) as { error?: { message?: string } } | null;
+        setUndo({ state: "error", message: body?.error?.message ?? "Couldn’t undo. Try again." });
+        return;
+      }
       setUndo({ state: "done", runId: undoResponseSchema.parse(await res.json()).run_id });
     } catch {
-      setUndo({ state: "error" });
+      setUndo({ state: "error", message: "Couldn’t undo. Is the API running?" });
     }
   }
   return (
@@ -241,7 +251,9 @@ function Result({ view, live }: { view: RunView; live: boolean }) {
         {f.undo_available ? (
           <Button variant="outline" disabled={!live || undo.state === "busy" || undo.state === "done"} onClick={() => void doUndo()}>
             <Undo2 aria-hidden className="size-4" />
-            Undo
+            {typeof f.result.undo_until === "string"
+              ? `Undo (until ${UNTIL.format(new Date(`${f.result.undo_until}T12:00:00Z`))})`
+              : "Undo"}
           </Button>
         ) : null}
         <p role="status" className="text-sm text-muted-foreground">
@@ -254,7 +266,7 @@ function Result({ view, live }: { view: RunView; live: boolean }) {
               </Link>
             </>
           ) : null}
-          {undo.state === "error" ? "Couldn’t undo. Try again." : null}
+          {undo.state === "error" ? undo.message : null}
         </p>
       </div>
     </section>

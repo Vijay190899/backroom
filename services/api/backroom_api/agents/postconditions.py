@@ -41,8 +41,8 @@ def _same(actual: Any, expected: Any) -> bool:
 
 
 def walk(state: Mapping[str, Any], path: str, baseline_orders: int | None) -> Any:
-    """Follow a dotted path. `last` is the final list element, and only valid if the list
-    grew past `baseline_orders` (for `orders`)."""
+    """Follow a dotted path. In a list, a number is a position, `last` the final element
+    (only valid if `orders` grew past `baseline_orders`), anything else a record's `id`."""
     node: Any = state
     parts = path.split(".")
     for i, part in enumerate(parts):
@@ -55,8 +55,15 @@ def walk(state: Mapping[str, Any], path: str, baseline_orders: int | None) -> An
                 if parts[i - 1 : i] == ["orders"] and not grew:
                     raise LookupError("no new order appeared during this run")
                 node = items[-1]
-            else:
+            elif part.isdigit():
                 node = items[int(part)]
+            else:  # a list of records: pick the one with this id ("orders.GW-10482.status")
+                match = next(
+                    (x for x in items if isinstance(x, dict) and x.get("id") == part), None
+                )
+                if match is None:
+                    raise LookupError(f"no {part!r} in the portal state")
+                node = match
         elif isinstance(node, dict):
             mapping: dict[str, Any] = node  # type: ignore[assignment]
             if part not in mapping:
