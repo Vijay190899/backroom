@@ -231,7 +231,8 @@ async def explore(
             result.summary = str(args.get("summary", ""))
             result.ok = bool(args.get("success"))
             if not result.ok:
-                result.reason = "agent gave up"
+                # The agent's own words: the failure table should say why, not just that.
+                result.reason = f"agent gave up: {result.summary}"[:300]
             return result
 
         action = str(args.get("action", ""))

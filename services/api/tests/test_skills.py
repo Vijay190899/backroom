@@ -292,3 +292,24 @@ def test_the_cancel_task_compiles_to_a_parameterised_path() -> None:
     )
     assert step.value_template == "/grainline/orders/{{order_id}}"
     assert step.intent == "Open order {{order_id}}"
+
+
+def test_a_forced_reexplore_saves_the_next_version(tmp_path: Path) -> None:
+    from types import SimpleNamespace
+
+    from backroom_api.agents.runner import SkillRunner
+    from backroom_api.agents.tasks import TASKS
+    from backroom_api.browser import BrowserPool, SecretVault
+    from backroom_api.config import Settings
+    from backroom_api.skills.compiler import Action
+
+    explored = SimpleNamespace(
+        actions=[Action(intent="Go", action="click", role="link", name="Cart")]
+    )
+
+    store = SkillStore(tmp_path)
+    runner = SkillRunner(Settings(), None, BrowserPool(), store, None, SecretVault({}))  # type: ignore[arg-type]
+    spec = TASKS["grainline.reorder_item"]
+    assert runner._store(None, explored, None, spec, {}) == 1  # type: ignore[arg-type]
+    assert runner._store(None, explored, None, spec, {}) == 2  # type: ignore[arg-type]
+    assert store.latest(spec.task).heal_note == "Relearned by exploring"  # type: ignore[union-attr]

@@ -100,7 +100,7 @@ async def test_secrets_never_reach_outcomes_or_logs(
     ex2 = make_exec(page, tricky, base_url)
     bad = await ex2.run(step("click", "button", "Nonexistent", timeout_ms=200), {})
     assert not bad.ok and bad.error is not None
-    assert "Nonexistent" not in bad.error and "«secret:grainline_password»" in bad.error
+    assert "Nonexistent" not in bad.error and "«hidden»" in bad.error
     assert PASSWORD not in caplog.text and "Nonexistent" not in caplog.text
 
 

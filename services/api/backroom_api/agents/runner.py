@@ -313,7 +313,7 @@ class SkillRunner:
         spec: TaskSpec,
         params: Mapping[str, Any],
     ) -> int | None:
-        """Persist what a verified run learned. Returns (version used, newly stored skill)."""
+        """Persist what a verified run learned. Returns the version used."""
         if skill is None and explored is not None:
             compiled = compile_skill(
                 task=spec.task,
@@ -324,6 +324,11 @@ class SkillRunner:
                 params_schema=spec.params_schema,
                 postconditions=spec.postconditions,
             )
+            existing = self.store.versions(spec.task)
+            if existing:  # a forced re-explore: the new skill is the next version, not v1
+                compiled = compiled.model_copy(
+                    update={"version": existing[-1] + 1, "heal_note": "Relearned by exploring"}
+                )
             self.store.save(compiled)
             return compiled.version
         if skill is not None and replayed is not None and replayed.healed and replayed.changes:
