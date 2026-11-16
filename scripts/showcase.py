@@ -6,18 +6,24 @@ Story: the morning brief -> tap Approve -> the agent's run (a warm replay, $0) -
 heal at seed 7" (the recorded run on a redesigned portal, real browser frames) -> the bench.
 It drives the public site in replay mode: no access code, no model calls, nothing changes on
 the server. A camera follows the action: it closes in on each button before the click and
-on the part of the page where the result lands, then eases back out. Writes
-docs/assets/showcase.webp (plays inline in the README) and var/showcase.mp4 (for sharing).
+on the part of the page where the result lands, then eases back out. Writes, at 60 fps,
+docs/assets/showcase.avif (AV1: plays inline in the README) and var/showcase.mp4 (for
+sharing), plus docs/assets/showcase.webp at 12 fps for browsers without animated AVIF.
+`--reuse` encodes the last recording again (kept in var/) without recording.
 """
 
 import argparse
 import asyncio
 import base64
 import bisect
+import functools
 import io
+import itertools
 import math
+import pickle
+import subprocess
 import time
-from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
@@ -120,12 +126,14 @@ class Camera:
     def wide(self, ease_s: float = EASE_S) -> None:
         self.show(0, 0, W, ease_s)
 
-    def frame(self, box: Box, *, zoom: float | None = None, pad: float = 40) -> None:
+    def frame(
+        self, box: Box, *, zoom: float | None = None, pad: float = 40, ease_s: float = EASE_S
+    ) -> None:
         """Frame a box: fitted with some padding, or centred on it at a set zoom."""
         x0, y0 = max(box[0], 0), max(box[1], 0)
         x1, y1 = min(box[0] + box[2], W), min(box[1] + box[3], H)  # the visible part
         w = W / zoom if zoom else max(x1 - x0 + 2 * pad, (y1 - y0 + 2 * pad) * W / H)
-        self.show((x0 + x1 - w) / 2, (y0 + y1 - w * H / W) / 2, w)
+        self.show((x0 + x1 - w) / 2, (y0 + y1 - w * H / W) / 2, w, ease_s)
 
     def at(self, t: float) -> Window:
         start, target, since, ease_s = WIDE, WIDE, -math.inf, 1.0
@@ -240,12 +248,11 @@ async def record(url: str) -> tuple[list[tuple[float, bytes]], dict[str, float],
         seeds = theater.locator('[role="radiogroup"][aria-label="Chaos seed"]')
         await point(page, heal_link, cam, frame=await box_of(seeds, heal_link), leaves=True)
 
-        # The heal: the same order on a redesigned, German-language portal.
+        # The heal: the same order on a redesigned, German-language portal. It plays at 1x
+        # here and HEAL_SPEED x in the video (camera moves slowed to match).
         await page.wait_for_url("**/runs/golden-reorder-heal")
         speed = theater.get_by_role("radio", name="2×")  # noqa: RUF001 (the UI label)
-        await speed.wait_for()
-        await point(page, speed, cam, zoom=ZMAX, settle_ms=800)
-        await page.wait_for_timeout(200)
+        await speed.wait_for()  # the recorded run has loaded
         await scroll_to(theater, offset=88)
         await page.wait_for_timeout(700)
         # The right pane starts at the "Tokens" cell, past the step list's text, so no line
@@ -254,12 +261,13 @@ async def record(url: str) -> tuple[list[tuple[float, bytes]], dict[str, float],
         pane = W - gap
         _, sy, _, sh = await box_of(theater.locator(":scope > div.grid > div:nth-child(2) > div"))
         marks["heal_start"] = time.time()
-        cam.show(gap, sy + sh / 2 - pane * H / W / 2, pane)  # the redesigned portal
-        await page.wait_for_timeout(3500)
+        slow = EASE_S * HEAL_SPEED
+        cam.show(gap, sy + sh / 2 - pane * H / W / 2, pane, slow)  # the redesigned portal
+        await page.wait_for_timeout(7000)
         steps = await box_of(theater.locator('ol[aria-label="Steps"]'))
         bottom = min(steps[1] + steps[3], H)  # where each new step and its heal appear
-        cam.frame((steps[0], bottom - 340, steps[2], 340), zoom=1.6)
-        deadline = time.monotonic() + 40
+        cam.frame((steps[0], bottom - 340, steps[2], 340), zoom=1.6, ease_s=slow)
+        deadline = time.monotonic() + 90
         while time.monotonic() < deadline:
             text = await page.evaluate("() => document.body.innerText")
             if "Order GW-" in text and "placed" in text:
@@ -288,93 +296,143 @@ async def record(url: str) -> tuple[list[tuple[float, bytes]], dict[str, float],
         return rec.frames, marks, cam
 
 
-HEAL_SPEED = 1.5  # the heal plays at 2x in the theater; the video adds 1.5x on top
-WEBP_SIZE, WEBP_FPS = (1200, 750), 12
+FPS = 60  # the README animation and the MP4
+HEAL_SPEED = 3.0  # the heal plays at 1x in the theater, 3x in the video: every third frame
+WEBP_SIZE, WEBP_FPS = (1200, 750), 12  # the fallback for browsers without animated AVIF
+CAPTURE = ROOT / "var/showcase-capture.pkl"  # the last recording, for --reuse
+# Colour as browsers expect it: BT.709 primaries and matrix; sRGB transfer for the image.
+YUV = ["-vf", "scale=out_color_matrix=bt709:out_range=tv,format=yuv420p"]
+TAGS = ["-color_primaries", "bt709", "-colorspace", "bt709", "-color_range", "tv"]
+
+
+def ffmpeg() -> str:
+    import imageio_ffmpeg  # pyright: ignore[reportMissingImports]  (a bundled ffmpeg)
+
+    return imageio_ffmpeg.get_ffmpeg_exe()
+
+
+def h264(ff: str) -> list[str]:
+    """The GPU's H.264 encoder (NVENC) when there is one, else libx264."""
+    probe = [ff, "-v", "error", "-f", "lavfi", "-i", "color=s=256x256:d=0.1"]
+    nvenc = subprocess.run([*probe, "-c:v", "h264_nvenc", "-f", "null", "-"], capture_output=True)
+    if nvenc.returncode:
+        return ["-c:v", "libx264", "-preset", "slow", "-crf", "21"]
+    return ["-c:v", "h264_nvenc", "-preset", "p7", "-tune", "hq", "-rc", "vbr", "-cq", "23",
+            "-b:v", "0"]  # fmt: skip
 
 
 def encode(
-    frames: list[tuple[float, bytes]], marks: dict[str, float], cam: Camera, webp: Path, mp4: Path
+    frames: list[tuple[float, bytes]], marks: dict[str, float], cam: Camera, outs: dict[str, Path]
 ) -> None:
     from PIL import Image  # pyright: ignore[reportMissingImports]  (uv run --with pillow)
 
     t0, t1 = frames[0][0], max(frames[-1][0], marks.get("end", 0.0))
     stamps = [ts for ts, _ in frames]
-    sizes = Counter(Image.open(io.BytesIO(f)).size for _, f in frames)  # reads headers only
-    print("frame sizes:", dict(sizes))
-    decoded: dict[int, Image.Image] = {}
+
+    @functools.lru_cache(maxsize=16)
+    def source(i: int) -> Image.Image:
+        return Image.open(io.BytesIO(frames[i][1])).convert("RGB")
 
     def timeline(fps: int) -> list[Shot]:
-        """Source time advances 1x, except HEAL_SPEED x through the long middle of the heal."""
+        """Source time advances 1x, except HEAL_SPEED x through the long middle of the heal.
+        Each step takes the newest frame by a few ms past it, so jitter in the frame times
+        doesn't show one frame twice and skip the next."""
         out, t = [], t0
         while t < t1:
-            i = max(0, bisect.bisect_right(stamps, t) - 1)
+            i = max(0, bisect.bisect_right(stamps, t + 0.008) - 1)
             x, y, w = cam.at(t)
-            out.append((i, (round(x, 1), round(y, 1), round(w, 1))))
+            out.append((i, (round(x, 2), round(y, 2), round(w, 2))))
             fast = marks.get("heal_start", t1) <= t < marks.get("heal_end", t0)
             t += (HEAL_SPEED if fast else 1.0) / fps
         return out
 
     def render(shot: Shot, size: tuple[int, int]) -> Image.Image:
         i, (x, y, w) = shot
-        if i not in decoded:  # the timeline only moves forward: keep one frame decoded
-            decoded.clear()
-            decoded[i] = Image.open(io.BytesIO(frames[i][1])).convert("RGB")
-        img = decoded[i]
+        img = source(i)
         sx, sy = img.width / W, img.height / H  # frame px per viewport px
         h = w * H / W
         crop = (x * sx, y * sy, min((x + w) * sx, img.width), min((y + h) * sy, img.height))
         return img.resize(size, Image.Resampling.LANCZOS, box=crop)
 
-    # Identical neighbours become one frame that is shown longer. (Left to the encoder, a
-    # repeated frame is dropped without its time, so still moments play too fast.)
-    step = 1000 / WEBP_FPS
-    shots: list[Shot] = []
-    durations: list[float] = []
-    for shot in timeline(WEBP_FPS):
-        if shots and shot == shots[-1]:
-            durations[-1] += step
-        else:
-            shots.append(shot)
-            durations.append(step)
-    small = [render(s, WEBP_SIZE) for s in shots]
-    webp.parent.mkdir(parents=True, exist_ok=True)
+    def runs(shots: list[Shot]) -> list[tuple[Shot, int]]:
+        """Identical neighbours as (shot, how many)."""
+        out: list[tuple[Shot, int]] = []
+        for s in shots:
+            if out and out[-1][0] == s:
+                out[-1] = (s, out[-1][1] + 1)
+            else:
+                out.append((s, 1))
+        return out
+
+    ff = ffmpeg()
+    for path in outs.values():
+        path.parent.mkdir(parents=True, exist_ok=True)
+    # One pass at 60 fps into one ffmpeg: AV1 as an animated AVIF for the README (AV1 has
+    # no encoder on this GPU, so libaom), H.264 as an MP4 for sharing (NVENC if present).
+    cmd = [
+        ff, "-y", "-v", "error", "-f", "rawvideo", "-pix_fmt", "rgb24", "-s", f"{W}x{H}",
+        "-r", str(FPS), "-i", "-",
+        *YUV, *TAGS, "-color_trc", "iec61966-2-1", "-c:v", "libaom-av1", "-crf", "30",
+        "-b:v", "0", "-cpu-used", "6", "-row-mt", "1", "-tiles", "2x2", "-g", "300",
+        "-aom-params", "tune-content=screen", "-f", "avif", str(outs["avif"]),
+        *YUV, *TAGS, "-color_trc", "bt709", *h264(ff), "-g", "120",
+        "-movflags", "+faststart", str(outs["mp4"]),
+    ]  # fmt: skip
+    began = time.monotonic()
+    video = runs(timeline(FPS))
+    proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+    assert proc.stdin
+    with ThreadPoolExecutor() as pool:  # Pillow lets go of the GIL to decode and resize
+        for batch in itertools.batched(video, 48):
+            images = pool.map(lambda s: render(s, (W, H)).tobytes(), [s for s, _ in batch])
+            for (_, n), data in zip(batch, images, strict=True):
+                for _ in range(n):
+                    proc.stdin.write(data)
+        proc.stdin.close()
+        assert proc.wait() == 0, "ffmpeg failed"
+        frames_out = sum(n for _, n in video)
+        print(f"{frames_out} frames at {FPS} fps ({frames_out / FPS:.1f} s) in "
+              f"{time.monotonic() - began:.0f} s")  # fmt: skip
+        for key in ("avif", "mp4"):
+            print(f"  {outs[key].relative_to(ROOT)}: {outs[key].stat().st_size / 1e6:.1f} MB")
+
+        # The fallback: an animated WebP. A run of identical frames becomes one frame shown
+        # longer (left to the encoder, a repeated frame is dropped without its time).
+        step = 1000 / WEBP_FPS
+        still = runs(timeline(WEBP_FPS))
+        small = list(pool.map(lambda s: render(s, WEBP_SIZE), [s for s, _ in still]))
+    durations = [round(n * step) for _, n in still]
     small[0].save(
-        webp, save_all=True, append_images=small[1:], duration=[round(d) for d in durations],
-        loop=0, quality=70, method=6,
+        outs["webp"], save_all=True, append_images=small[1:], duration=durations, loop=0,
+        quality=70, method=4,
     )  # fmt: skip
-    print(
-        f"{webp.relative_to(ROOT)}: {len(small)} frames, {sum(durations) / 1000:.1f} s, "
-        f"{webp.stat().st_size / 1e6:.1f} MB"
-    )
-    del small
-
-    import imageio_ffmpeg  # pyright: ignore[reportMissingImports]  (a bundled ffmpeg)
-
-    mp4.parent.mkdir(parents=True, exist_ok=True)
-    writer = imageio_ffmpeg.write_frames(
-        str(mp4), (W, H), fps=30, codec="libx264",
-        output_params=["-crf", "20", "-preset", "slow", "-movflags", "+faststart"],
-    )  # fmt: skip
-    writer.send(None)
-    last: tuple[Shot, bytes] | None = None
-    for shot in timeline(30):
-        if last is None or last[0] != shot:
-            last = (shot, render(shot, (W, H)).tobytes())
-        writer.send(last[1])
-    writer.close()
-    print(f"{mp4.relative_to(ROOT)}: {mp4.stat().st_size / 1e6:.1f} MB")
+    print(f"  {outs['webp'].relative_to(ROOT)}: {len(small)} frames at {WEBP_FPS} fps, "
+          f"{outs['webp'].stat().st_size / 1e6:.1f} MB")  # fmt: skip
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Record the README showcase from the live site.")
     ap.add_argument("--url", default="https://backroom-cafe.vercel.app/")
+    ap.add_argument("--reuse", action="store_true", help="encode the last recording again")
     args = ap.parse_args()
-    frames, marks, cam = asyncio.run(record(args.url))
-    heal = [ts for ts, _ in frames if marks["heal_start"] <= ts < marks["heal_end"]]
-    fps = len(heal) / (marks["heal_end"] - marks["heal_start"])
-    print(f"captured {len(frames)} screencast frames ({fps:.0f} fps through the heal), "
+    if args.reuse:
+        with CAPTURE.open("rb") as f:
+            frames, marks, cam = pickle.load(f)  # our own file, written below
+    else:
+        frames, marks, cam = asyncio.run(record(args.url))
+        CAPTURE.parent.mkdir(parents=True, exist_ok=True)
+        with CAPTURE.open("wb") as f:
+            pickle.dump((frames, marks, cam), f, protocol=pickle.HIGHEST_PROTOCOL)
+    gaps = [b - a for (a, _), (b, _) in itertools.pairwise(frames)]
+    heal = [g for (ts, _), g in zip(frames, gaps, strict=False)
+            if marks["heal_start"] <= ts < marks["heal_end"]]  # fmt: skip
+    print(f"captured {len(frames)} frames ({len(heal) / sum(heal):.0f} fps through the heal), "
           f"{len(cam.shots)} camera shots")  # fmt: skip
-    encode(frames, marks, cam, ROOT / "docs/assets/showcase.webp", ROOT / "var/showcase.mp4")
+    encode(frames, marks, cam, {
+        "avif": ROOT / "docs/assets/showcase.avif",
+        "webp": ROOT / "docs/assets/showcase.webp",
+        "mp4": ROOT / "var/showcase.mp4",
+    })  # fmt: skip
 
 
 if __name__ == "__main__":
