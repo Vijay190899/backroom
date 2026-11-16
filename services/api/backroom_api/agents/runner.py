@@ -12,7 +12,7 @@ import logging
 import uuid
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from backroom_api.agents.explore import ExploreResult, explore, finish_step
@@ -49,6 +49,7 @@ class RunResult:
     postconditions: list[PostResult] = field(default_factory=list[PostResult])
     failure: str | None = None
     events: list[RunEvent] = field(default_factory=list[RunEvent])
+    result: dict[str, Any] = field(default_factory=dict[str, Any])  # as in run.finished
 
 
 @dataclass(frozen=True)
@@ -254,6 +255,7 @@ class SkillRunner:
             postconditions=posts,
             failure=None if verified else failure,
             events=rec.events,
+            result=result,
         )
 
     # --- pieces ---------------------------------------------------------------------------
@@ -360,16 +362,26 @@ class SkillRunner:
         if not ok:
             return f"Did not finish: {failure or 'unknown reason'}", {"checks": checks}
         state = await self.admin.state(spec.portal)
+        if spec.task == "grainline.cancel_order":
+            order_id = str(params["order_id"])
+            return f"Order {order_id} cancelled", {
+                "order": order_id,
+                "status": "cancelled",
+                "checks": checks,
+            }
         if spec.portal == "grainline":
             order = state["orders"][-1]
             summary = (
                 f"Order {order['id']} placed: {params.get('qty')} x {params.get('sku')}, "
                 f"€{order['total_eur']:.2f}"
             )
+            # Grainline cancels until the day before delivery: the undo's deadline.
+            last_day = date.fromisoformat(order["delivery_date"]) - timedelta(days=1)
             return summary, {
                 "order": order["id"],
                 "total_eur": order["total_eur"],
                 "delivery": order["delivery_date"],
+                "undo_until": last_day.isoformat(),
                 "checks": checks,
             }
         price = float(params["price_eur"])

@@ -33,6 +33,7 @@ export const candidateKindSchema = z.enum(["stockout", "margin_erosion", "weathe
 export const skillTaskSchema = z.enum([
   "grainline.reorder_item",
   "grainline.download_invoice",
+  "grainline.cancel_order",
   "tilldesk.change_price",
   "localboard.post_special",
 ]);

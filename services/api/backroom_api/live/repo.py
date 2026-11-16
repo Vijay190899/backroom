@@ -162,6 +162,11 @@ def add_event(conn: Connection[Any], event: RunEvent) -> None:
     conn.commit()
 
 
+def set_undo(conn: Connection[Any], run_id: str, undo: dict[str, Any]) -> None:
+    conn.execute("update run set undo_params = %s where id = %s", [Jsonb(undo), run_id])
+    conn.commit()
+
+
 def events_after(conn: Connection[Any], run_id: str, after: int) -> list[RunEvent]:
     rows = conn.execute(
         "select body from run_event where run_id = %s and seq > %s order by seq", [run_id, after]

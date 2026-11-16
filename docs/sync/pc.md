@@ -11,6 +11,16 @@ Laptop must: pull, then run these commands (`uv sync --all-packages`, `pnpm inst
 Contract changes: anything the laptop's code must adapt to.
 ```
 
+## Mon 16 Nov 2026 · Order undo with Grainline's cutoff, branch pc/order-undo
+Done:
+- New task `grainline.cancel_order {order_id}` (contract `SkillTask` on both sides; label "Cancel an order"); postconditions can select a record by id (`orders.{{order_id}}.status`).
+- A reorder's result has `undo_until` (the day before delivery); its run records the undo (cancel that order) before `run.finished` is visible. `POST /runs/{id}/undo` checks Grainline's state first: 409 `too_late` after the cutoff, `already_cancelled` if so; nothing is attempted.
+- Theater: "Undo (until Mon 16 Nov)"; the API's reason is shown when it refuses. `pnpm demo:reset` also learns the cancel task (reorder, then cancel that order).
+- Live: first undo (cold explore) cancelled GW-10485 in 11.8 s, 8 calls, $0.0015; the second replayed in 0.5 s, 0 calls, $0 (GW-10486); through the theater, GW-10487 cancelled. Grainline's state shows `cancelled` each time.
+- Tests: undo cancels exactly the placed order; refused after the cutoff and when already cancelled; select-by-id paths; the cancel path compiles to `/grainline/orders/{{order_id}}`. DECISIONS 30.
+- Graph memory refreshed after the M3 gate (docs and code).
+Laptop must: `git pull`, `uv sync --all-packages`, `pnpm install`. New optional env var `PORTALS_TODAY` is now read by the API too (it already existed for the portals).
+
 ## Mon 16 Nov 2026 · H5 integration: the demo script end to end, branch pc/h5-integration
 Every beat of `docs/DEMO_SCRIPT.md` was run in the browser on live data (real portals, Chromium, OpenRouter), starting from `pnpm demo:reset`:
 - 0:00 Today: 3 live cards, Franzbrötchen at €3.60, no cap yet. 0:30 evidence: butter +16.1%, margin 71% → 68% (target 70%).

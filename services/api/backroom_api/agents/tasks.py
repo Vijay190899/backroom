@@ -49,6 +49,27 @@ TASKS: dict[str, TaskSpec] = {
         ],
         default_params={"sku": "OAT-1L", "qty": 24},
     ),
+    "grainline.cancel_order": TaskSpec(
+        task="grainline.cancel_order",
+        portal="grainline",
+        start_path="/grainline/login",
+        goal=(
+            "Cancel Grainline order {order_id}. Sign in first. Then open the order's page "
+            "directly with action `goto` and the path /grainline/orders/{order_id}, and use "
+            "its cancel control. Finish when the page says the order is cancelled."
+        ),
+        params_schema={
+            "type": "object",
+            "properties": {"order_id": {"type": "string", "pattern": r"^GW-\d{5}$"}},
+            "required": ["order_id"],
+        },
+        postconditions=[
+            Postcondition(
+                kind="portal_state", value="orders.{{order_id}}.status", equals="cancelled"
+            ),
+        ],
+        # No default: it only makes sense for an order that exists (the undo supplies it).
+    ),
     "tilldesk.change_price": TaskSpec(
         task="tilldesk.change_price",
         portal="tilldesk",

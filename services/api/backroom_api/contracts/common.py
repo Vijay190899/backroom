@@ -14,6 +14,7 @@ CandidateKind = Literal["stockout", "margin_erosion", "weather_demand"]
 SkillTask = Literal[
     "grainline.reorder_item",
     "grainline.download_invoice",
+    "grainline.cancel_order",  # the undo of a reorder (added by the PC with order undo)
     "tilldesk.change_price",
     "localboard.post_special",
 ]

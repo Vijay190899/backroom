@@ -1,5 +1,6 @@
 """Runtime settings, read from the environment and the repo-root `.env`."""
 
+from datetime import date
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
@@ -65,6 +66,9 @@ class Settings(BaseSettings):
     tilldesk_user: str = "lena"
     tilldesk_password: str = "change-me"
     data_seed: int = 44
+    # The portals' "today" (same variable they read); None = the real date. Undo checks
+    # Grainline's cancellation cutoff against it.
+    portals_today: date | None = None
 
 
 @lru_cache
