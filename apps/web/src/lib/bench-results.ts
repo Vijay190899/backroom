@@ -38,6 +38,9 @@ const schemas = {
   }),
   B5: header.extend({
     verification: z.object({ verified: rate, numbers_checked: z.number() }),
+    guard: z
+      .object({ cards: z.number(), model_copy_passed_first_try: rate, template_fallbacks: z.number() })
+      .optional(),
   }),
 };
 export type BenchId = keyof typeof schemas;
@@ -99,7 +102,18 @@ export function headline(id: string): { value: string; detail: string; meta: str
   }
   if (id === "B5") {
     const r = benchResult("B5");
-    return r && { value: pct(r.verification.verified), detail: `of ${r.verification.numbers_checked} displayed numbers verified`, meta: meta(r) };
+    if (!r) return null;
+    const g = r.guard;
+    const firstTry = g && g.model_copy_passed_first_try !== null ? Math.round(g.model_copy_passed_first_try * g.cards) : null;
+    return {
+      value: pct(r.verification.verified),
+      detail:
+        `of ${r.verification.numbers_checked} displayed numbers verified` +
+        (g && firstTry !== null
+          ? ` · the model's copy passed the guard first time on ${firstTry} of ${g.cards} cards, ${g.template_fallbacks} fell back to template copy`
+          : ""),
+      meta: meta(r),
+    };
   }
   return null;
 }
