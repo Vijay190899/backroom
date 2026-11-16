@@ -5,7 +5,10 @@
 [![CI](https://github.com/Vijay190899/backroom/actions/workflows/ci.yml/badge.svg)](https://github.com/Vijay190899/backroom/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/github/license/Vijay190899/backroom)](LICENSE)
 [![Last commit](https://img.shields.io/github/last-commit/Vijay190899/backroom)](https://github.com/Vijay190899/backroom/commits/main)
-![Status](https://img.shields.io/badge/status-in%20development-C8742B)
+[![Live demo](https://img.shields.io/badge/live%20demo-backroom--cafe.vercel.app-C8742B)](https://backroom-cafe.vercel.app)
+[![Benchmarks](https://img.shields.io/badge/benchmarks-B1%20%C2%B7%20B2%20%C2%B7%20B3%20%C2%B7%20B5-2E7D5B)](https://backroom-cafe.vercel.app/bench)
+
+**Live demo: [backroom-cafe.vercel.app](https://backroom-cafe.vercel.app).** Visitors see replay mode: real recorded runs, played through the same run theater. Live mode (real browser runs and model calls) needs the owner's access code.
 
 **The engine under "Approve all".** Backroom is an agentic back office for a local café. It finds money in the business data, explains it with evidence, and carries out the fix in the owner's web tools: logging in, handling 2FA, clicking through. It gets faster, cheaper and more aligned with the owner every time it runs.
 
@@ -25,14 +28,14 @@
 
 ## Benchmarks
 
-_To be measured: populated from [`bench/results/`](bench/results) with provider, model IDs, seeds, n and git SHA._
+Measured on the real stack. Every number comes from [`bench/results/`](bench/results), which records the provider, model IDs, seeds, n and git SHA; the [bench page](https://backroom-cafe.vercel.app/bench) shows them beside the first full run. The first run found three bugs, and the fixes are in [DECISIONS](docs/DECISIONS.md) ADR-36.
 
-| Benchmark | Result |
-|---|---|
-| B1 Browser success under 20 chaos seeds | — |
-| B2 Warm replay latency / cost | — |
-| B3 Memory context pack vs raw dump (accuracy · tokens) | — |
-| B5 Numbers verified by the number guard | — |
+| Benchmark | Result | First full run |
+|---|---|---|
+| B1 Browser success, 3 tasks × 20 chaos seeds, cold and warm (n = 132) | **100%** cold at seed 0 (95% CI 80–100%), **100%** warm across seeds (94–100%), every redesign healed | 67% · 58% |
+| B2 The same task 20 times, redesigns at runs 8 and 15 | learns in 16 s for $0.003, then **0.7 s at $0** per run | – |
+| B3 Context pack vs raw dump, 10 memory questions | **80%** at **0.9%** of the dump's tokens (the 20 analytics questions are for SQL) | 40% |
+| B5 Displayed numbers verified by the number guard | **178 / 178** | – |
 
 ## Architecture
 
