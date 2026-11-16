@@ -95,15 +95,29 @@ class SpendLedger:
         self._budget = daily_budget_usd
         self._lock = threading.Lock()
         self._warned_damaged = False
+        self._cached: tuple[float, str, float] | None = None  # (monotonic time, day, total)
 
     @staticmethod
     def _today() -> str:
         return datetime.now(UTC).date().isoformat()
 
-    def spent_today(self) -> float:
+    def spent_today(self, max_age_s: float = 0.0) -> float:
+        """Today's spend. With `max_age_s`, a total read that recently is reused (this
+        process's own calls are added to it as they are recorded); the API's per-request mode
+        check uses that, so a flood of requests doesn't re-read the ledger each time. The
+        budget guard before a model call always reads the file."""
+        today = self._today()
+        cached = self._cached
+        fresh = cached and cached[1] == today and time.monotonic() - cached[0] < max_age_s
+        if max_age_s > 0 and cached and fresh:
+            return cached[2]
+        total = self._read_total(today)
+        self._cached = (time.monotonic(), today, total)
+        return total
+
+    def _read_total(self, today: str) -> float:
         if not self._path.exists():
             return 0.0
-        today = self._today()
         total = 0.0
         damaged = 0
         with self._lock, file_lock(self._lock_path):
@@ -135,3 +149,6 @@ class SpendLedger:
         line = (json.dumps(asdict(record)) + "\n").encode("utf-8")
         with self._lock, file_lock(self._lock_path), self._path.open("ab") as f:
             f.write(line)  # one write of one whole line, under the lock
+        cached = self._cached
+        if cached and record.ts.startswith(cached[1]):
+            self._cached = (cached[0], cached[1], cached[2] + record.usd)

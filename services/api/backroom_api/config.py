@@ -51,6 +51,9 @@ class Settings(BaseSettings):
     run_max_usd: float = 0.25  # a run that heals stops (and asks a human) beyond this
     demo_access_code: str = "change-me"
     demo_mode: Literal["live", "replay"] = "live"
+    # Requests per client IP per minute (backroom_api/ratelimit.py); 0 switches a limit off.
+    rate_limit_read_per_min: int = 240
+    rate_limit_write_per_min: int = 30
 
     # --- Infra ---
     database_url: str = "postgresql://backroom:backroom@localhost:5432/backroom"

@@ -34,7 +34,8 @@ def access_for(request: Request) -> Access:
     if settings.demo_mode == "replay":
         return Access("replay", "This demo is serving recorded runs.")
     ledger = getattr(request.app.state, "ledger", None)  # None without a model key
-    if ledger is not None and ledger.spent_today() >= settings.llm_daily_budget_usd:
+    # A total read within 5 s is reused: this runs on every request (see SpendLedger).
+    if ledger is not None and ledger.spent_today(max_age_s=5.0) >= settings.llm_daily_budget_usd:
         return Access("replay", "Today's model budget is spent, so recorded runs are served.")
     if settings.demo_access_code in DEFAULT_CODES:
         return Access("live", "Local development: live mode is open.")

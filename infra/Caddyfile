@@ -1,7 +1,36 @@
-{$API_HOST} {
-	reverse_proxy api:8000
+# No visitor IPs in any log: Caddy keeps no access log, and its error log (e.g. a 502 while the
+# API restarts) has the client address and headers removed.
+{
+	log default {
+		format filter {
+			wrap json
+			fields {
+				request>remote_ip delete
+				request>client_ip delete
+				request>remote_port delete
+				request>headers delete
+			}
+		}
+	}
 }
 
-{$PORTALS_HOST} {
-	reverse_proxy portals:8001
+# Only the API is public. The mock portals stay on the internal Docker network: the API's
+# browser reaches them as http://portals:8001, and nobody else needs to.
+{$API_HOST} {
+	# Request bodies are a few hundred bytes (a rejection reason, a human answer).
+	request_body {
+		max_size 1MB
+	}
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		X-Robots-Tag "noindex, nofollow"
+	}
+	# Caddy replaces any X-Forwarded-For a client sends with the real client address, so the
+	# API's rate limiter can't be dodged with a forged header. SSE responses are flushed at once.
+	reverse_proxy api:8000 {
+		header_down -Server
+	}
 }

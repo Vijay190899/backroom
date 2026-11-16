@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { FlowDiagram } from "@/components/about/flow-diagram";
@@ -139,6 +140,27 @@ export default function AboutPage() {
           Lucide
         </a>{" "}
         icon set (ISC).
+        <br />
+        Data: weather data by{" "}
+        <a href="https://open-meteo.com/" className="link-draw text-ink">
+          Open-Meteo.com
+        </a>{" "}
+        (
+        <a href="https://creativecommons.org/licenses/by/4.0/" className="link-draw text-ink">
+          CC BY 4.0
+        </a>
+        ; aggregated to daily values); public holidays from{" "}
+        <a href="https://date.nager.at" className="link-draw text-ink">
+          Nager.Date
+        </a>
+        ; sales patterns derived from Maven Analytics&rsquo; &ldquo;Coffee Shop Sales&rdquo; practice
+        dataset (rescaled, re-dated and renamed; no raw rows are published).
+        <br />
+        The brief&rsquo;s wording comes from AI models; every number is computed by code.{" "}
+        <Link href="/legal" className="link-draw text-ink">
+          Privacy and legal notice
+        </Link>
+        .
       </p>
     </PageTransition>
   );

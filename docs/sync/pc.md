@@ -11,6 +11,22 @@ Laptop must: pull, then run these commands (`uv sync --all-packages`, `pnpm inst
 Contract changes: anything the laptop's code must adapt to.
 ```
 
+## Mon 16 Nov 2026 · Security and EU legal pass, branch pc/hardening
+Done (ADR-42, ADR-43):
+- **API:** per-IP rate limits (240 reads and 30 writes a minute; 429 with `Retry-After`; inside CORS); a cached budget read for the per-request mode check; no access logs.
+- **Infra:**
+  - Caddy serves only the API, with security headers, a 1 MB body cap and IP-free error logs; the portals are internal.
+  - Docker logs rotate.
+  - SSH: no root login.
+- **Web:**
+  - CSP and security headers, checked on a production build with 0 violations.
+  - `/legal`: the privacy and legal notice, linked from a footer on every page; the operator's details come from Vercel env.
+  - Open-Meteo, Nager.Date and Maven credits on About.
+  - `shadcn` moved to devDependencies.
+- **Docs:** interview and company references, and real people's names, removed (git history keeps them).
+- **Audits:** pip-audit and `pnpm audit --prod` clean; no secrets anywhere in git history; only ports 22, 80 and 443 open.
+Laptop must: `git pull`, `pnpm install`.
+
 ## Mon 16 Nov 2026 · H8 deploy, branches pc/h8-deploy, pc/h8-docs
 Done:
 - **Live:**

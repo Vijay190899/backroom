@@ -12,4 +12,4 @@ COPY bench bench
 RUN uv sync --frozen --no-dev --package backroom-portals
 
 EXPOSE 8001
-CMD ["uv", "run", "--no-sync", "uvicorn", "backroom_portals.main:app", "--host", "0.0.0.0", "--port", "8001"]
+CMD ["uv", "run", "--no-sync", "uvicorn", "backroom_portals.main:app", "--host", "0.0.0.0", "--port", "8001", "--no-access-log"]

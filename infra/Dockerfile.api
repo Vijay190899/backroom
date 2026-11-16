@@ -17,4 +17,6 @@ COPY apps/web/public/golden apps/web/public/golden
 RUN uv sync --frozen --no-dev --package backroom-api
 
 EXPOSE 8000
-CMD ["uv", "run", "--no-sync", "uvicorn", "backroom_api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Client IPs come from Caddy's X-Forwarded-For (only Caddy reaches this port) for the rate
+# limiter. No access log: visitor IPs are not written anywhere.
+CMD ["uv", "run", "--no-sync", "uvicorn", "backroom_api.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*", "--no-access-log"]
