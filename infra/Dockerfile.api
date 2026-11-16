@@ -11,6 +11,9 @@ COPY services/api services/api
 COPY services/portals services/portals
 COPY data data
 COPY bench bench
+# Replay mode plays the recorded golden runs (Settings.golden_dir). data/out is not baked
+# in: infra/deploy.sh ships it and mounts it, so the server runs on the same data as the bench.
+COPY apps/web/public/golden apps/web/public/golden
 RUN uv sync --frozen --no-dev --package backroom-api
 
 EXPOSE 8000

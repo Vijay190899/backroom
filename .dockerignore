@@ -1,10 +1,17 @@
 .git
 .venv
 node_modules
-apps
+# The web app is deployed by Vercel, except the golden runs: the API plays them in replay mode.
+apps/*
+!apps/web
+apps/web/*
+!apps/web/public
+apps/web/public/*
+!apps/web/public/golden
 graphify-out
 var
 data/raw
 data/out
 **/__pycache__
 .env
+.env.*
