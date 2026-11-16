@@ -63,6 +63,9 @@ const BENCHMARKS = [
   },
 ];
 
+/** A line never starts with a separator: the space before each "·" doesn't break. */
+const keepDots = (text: string) => text.replaceAll(" · ", " · ");
+
 /** A benchmark's measured headline, or an honest "not run yet" until its results exist. */
 function BenchHeadline({ id }: { id: string }) {
   const h = headline(id);
@@ -79,14 +82,16 @@ function BenchHeadline({ id }: { id: string }) {
   return (
     <div className="self-start sm:text-right">
       <p className="font-display text-3xl text-ink tabular">{h.value}</p>
-      <p className="mt-1 text-sm text-muted-foreground">{h.detail}</p>
-      <p className="mt-1 font-mono text-[11px] text-muted-foreground">{h.meta}</p>
+      <p className="mt-1 text-sm text-pretty text-muted-foreground">{keepDots(h.detail)}</p>
+      <p className="mt-1 font-mono text-[11px] text-muted-foreground">{keepDots(h.meta)}</p>
       {first && first.meta !== h.meta && (
-        <p className="mt-3 border-t border-line pt-2 text-xs text-muted-foreground">
-          <span className="kicker mr-1.5 text-[0.625rem]">First full run</span>
-          <span className="text-ink tabular">{first.value}</span>
-          <span className="font-mono text-[11px]"> · {first.meta}</span>
-        </p>
+        <div className="mt-3 border-t border-line pt-2 text-xs text-muted-foreground">
+          <p>
+            <span className="kicker mr-1.5 text-[0.625rem]">First full run</span>
+            <span className="text-ink tabular">{first.value}</span>
+          </p>
+          <p className="mt-0.5 font-mono text-[11px]">{keepDots(first.meta)}</p>
+        </div>
       )}
     </div>
   );
@@ -218,7 +223,7 @@ export default function BenchPage() {
           {BENCHMARKS.map((b) => (
             <li
               key={b.id}
-              className="grid gap-x-8 gap-y-2 border-b border-line py-5 sm:grid-cols-[4rem_1fr_14rem]"
+              className="grid gap-x-8 gap-y-2 border-b border-line py-5 sm:grid-cols-[4rem_1fr_14rem] lg:grid-cols-[4rem_1fr_20rem]"
             >
               <span className="font-display text-3xl text-press-ink">{b.id}</span>
               <div>

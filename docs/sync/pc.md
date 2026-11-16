@@ -11,6 +11,24 @@ Laptop must: pull, then run these commands (`uv sync --all-packages`, `pnpm inst
 Contract changes: anything the laptop's code must adapt to.
 ```
 
+## Mon 16 Nov 2026 · H7 real benchmarks, branch pc/h7-benchmarks
+Done:
+- **B1, first full run** (41323c9, n = 132): 67% cold at seed 0, 58% warm across 20 seeds; every `download_invoice` run failed. Kept in `bench/results/baseline/`. It exposed three product bugs, all fixed with tests (ADR-36):
+  - the "Open menu" `<summary>` is role `generic`, so it is now learned by its text;
+  - the invoices page is past the 12k snapshot cut, so explore has a new `find` tool;
+  - after a heal, the 600 ms locate timeout also capped the click.
+- **B1 after the fixes** (7ec59d4, same design): 0 failures. 100% cold at seed 0 (95% CI 80–100%), 100% warm across 20 seeds (94–100%), every redesigned seed healed, $0.31.
+- **B2** (1605fc0): learns in 16 s for $0.003, then replays in 0.7 s at $0. The redesign at run 8 heals with the model (34 s, $0.004); the one at run 15 heals from remembered fallbacks at $0.
+- **B3** (1605fc0): the context pack answers 80% of the 10 memory questions (40% in the first run) at 0.9% of the raw dump's tokens. The 20 analytics questions are for SQL (labels committed before any run, ADR-35). Packer changes: entity history, kinds a question names, and grouping under the entity's name (ADR-40).
+- **B5** (3969c90): 178 of 178 displayed numbers verified over 10 generated briefs; the model's copy passed first time on 30 of 30 cards.
+- **Bug found by running B1 and B3 at once:** two processes overwrote each other's LLM ledger records on Windows, and the torn line stopped every budget check. The ledger now takes a cross-process lock (ADR-11, amended). A four-process test reproduces the old crash and passes now.
+- **Bug found while checking `/bench`:** `pnpm dev:api` and `infra/Dockerfile.api` start `backroom_api.main:app`, but H4 had dropped the module-level `app` (only `create_app()` was left), so neither could start the API. It is restored (cheap at import; the pool and browsers are built in `lifespan`). A new test resolves every `module:attr` in `package.json` and both Dockerfiles, and it fails without the fix. This would have broken H8.
+- Also: secrets redacted as «hidden» (ADR-37), the `file_downloaded` postcondition and templated element names (ADR-38), result files carry the SHA from the start of the run (ADR-39). `/bench` shows each first full run beside the current one.
+- `pnpm check`: 390 passed. `/bench` checked at 390 and 1440 px, light and dark: no horizontal scroll, 0 console errors with the API up.
+Laptop must: `git pull`, `uv sync --all-packages`, `pnpm install`.
+Contract changes (CONTRACTS §4): `file_downloaded`; a step may have `target: null` with `fallbacks: [{text}]`; `{{param}}` inside a locator name. The context pack's text is now grouped by entity.
+Known gap: an absent pop-up step costs 0.8 s per replay (HANDOVER §10.4).
+
 ## Mon 16 Nov 2026 · H6 golden runs and replay mode, branch pc/h6-golden-runs
 Done:
 - Recorder `python -m backroom_api.replay.golden record`: the demo's four runs recorded from the real stack (reorder 1.1 s, reorder-heal at seed 7 36.5 s / 14 calls / $0.0041, price, cancel), 1.9 MB in `apps/web/public/golden/`. Skills are snapshotted and restored, portals reset.

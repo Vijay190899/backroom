@@ -86,7 +86,13 @@ export function headline(id: string, run: Run = "current"): { value: string; det
   if (id === "B2") {
     const r = benchResult("B2", run);
     const p50 = r?.headline.warm_p50_ms;
-    return r && { value: p50 === null || p50 === undefined ? "–" : `${(p50 / 1000).toFixed(1)} s`, detail: `warm p50 · $${r.headline.warm_usd.toFixed(4)} warm · ${pct(r.headline.warm_success)} succeeded`, meta: meta(r) };
+    if (!r) return null;
+    const usd = r.headline.warm_usd === 0 ? "$0" : `$${r.headline.warm_usd.toFixed(4)}`;
+    return {
+      value: p50 === null || p50 === undefined ? "–" : `${(p50 / 1000).toFixed(1)} s`,
+      detail: `warm p50 · ${usd} warm · ${pct(r.headline.warm_success)} succeeded`,
+      meta: meta(r),
+    };
   }
   if (id === "B3") {
     const r = benchResult("B3", run);

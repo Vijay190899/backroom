@@ -1,6 +1,6 @@
 # Handover — read this first on a new machine or in a new session
 
-Last updated: Mon 16 Nov 2026. **Laptop tasks L0–L13 complete; PC has done H1–H5 (M3 gate: the demo script works end to end). Order undo and H6 (golden runs, replay mode, access code) are done too. Next: H7 benchmarks, H8 deploy.**
+Last updated: Mon 16 Nov 2026. **Laptop tasks L0–L13 complete; PC has done H1–H5 (M3 gate: the demo script works end to end). Order undo, H6 (golden runs, replay mode, access code) and H7 (real benchmarks, with the first full run kept as a baseline) are done too. Next: H8 deploy, then H9.**
 
 > **Two machines are in use.** The user's light laptop does the *light* tasks (plain code, no Docker, no Chromium); this PC does the *heavy* ones. **The split, the task IDs and the integration rules are in §9.** On the laptop, follow §2b. Each side logs what it finished in its own file under `docs/sync/`.
 
@@ -15,7 +15,7 @@ This file carries everything that lives outside git: the working agreements, the
 | **M1 Data + Portals** | **Done** (laptop branches merged; H1 done) | `pnpm seed` builds `data/out` and loads Postgres (migrations + world, idempotent) |
 | **M2 Agent** | **Done** (H2, H3; gate met) | Explore → compile → replay → heal on the real portals; evidence in `docs/sync/pc.md` (H3) and `bench/results/m2_gate.txt` |
 | **M3 Brief, memory, UI** | **Done** (L5–L9, H4, H5; gate met) | Memory, detectors, brief pipeline + number guard, all web screens, run theater on fixtures |
-| **M4 Bench + deploy** | Laptop part done (L11, L12); H6 done; **H7, H8 open** | Bench harness (fakes), CI image build green, `infra/deploy.sh` |
+| **M4 Bench + deploy** | Laptop part done (L11, L12); H6, H7 done; **H8 open** | Real results in `bench/results/b1,b2,b3,b5.json`, first full runs in `bench/results/baseline/` (ADR-34–40); CI image build green; `infra/deploy.sh` |
 | **M5 Polish** | L13 part done; **H9 open** | `/bench` reads results; demo script current |
 
 The laptop branches are merged into `main` (Sun 15 Nov). `.env` on this PC keeps `DATABASE_URL` on local Docker; the Neon URL is `NEON_DATABASE_URL`. `pnpm probe:llm` passes 6/6 on this PC's key.
@@ -31,7 +31,12 @@ The laptop branches are merged into `main` (Sun 15 Nov). `.env` on this PC keeps
   - also: the 3D café intro, the café pattern background, the agent dock and ⌘K.
   - The API routes exist (H4): with the API up, every screen is live; without it, they fall back to the samples with a "Sample" badge.
 - `services/api/backroom_api/{browser,agents,skills,replay}/`: the browser agent (H2–H3). Run a task by hand: `uv run python -m backroom_api.agents.cli run grainline.reorder_item [--seed 7] [--cold]` (needs `pnpm dev:portals`).
-- `bench/backroom_bench/`: harness for B1–B3 and B5 (`backroom-bench all [--fake] [--runner m:f] [--pack m:f]`).
+- `bench/backroom_bench/`: harness for B1–B3 and B5 (`backroom-bench all [--fake] [--runner m:f] [--pack m:f]`). The real runs on this PC:
+  - B1: `backroom-bench b1 --runner backroom_api.agents.bench_runner:factory --seeds 20 --seed0-repeats 5` (132 runs, about 45 min, about $0.31).
+  - B2: `backroom-bench b2 --runner backroom_api.agents.bench_runner:factory`.
+  - B3: `backroom-bench b3 --pack backroom_api.agents.bench_runner:pack_for` (about $1.25, mostly the raw dump's cached tokens).
+  - B5: `backroom-bench b5 --briefs var/bench/briefs` (no model calls; the briefs come from `backroom-bench briefs --n 10`).
+  - Start from `pnpm demo:reset`. A run needs more than the demo's `LLM_DAILY_BUDGET_USD=3`, so set it for that shell only (`LLM_DAILY_BUDGET_USD=10`). The benches restore the demo's skills and portals when they finish.
 - `infra/deploy.sh` and `.github/workflows/deploy-images.yml` (GHCR images; the build is green on PR #14).
 
 ## 2. Setup
@@ -238,3 +243,8 @@ Full details are in each branch's `docs/sync/laptop.md` "Needs from PC" entries.
 - Lighthouse on phones, `/`: about 71 on a session's first visit because of the 3D intro. The owner chose to keep the intro everywhere for now. Desktop `/` is 94, `/bench` on phones 94, accessibility 100.
 - Nothing is deployed yet: H8 needs the Lightsail login and the owner's Vercel account.
 - Exception to §9.4: on the owner's explicit request, the laptop merged the README PRs (#10, #12) into `main` and wrote this handover section.
+- **Known gap (H7): an absent pop-up step costs 0.8 s on every replay.**
+  - Evidence: B2 runs 16–20 take 1.6 s instead of 0.7 s. The skill's optional cookie step, learned at seed 7, waits its full `OPTIONAL_TIMEOUT_MS` at seed 13, which has no banner. Each pop-up a heal adds can cost this.
+  - Proposed fix: treat optional steps as obstacle handlers. Skip one at once when its element isn't on the settled page, and run it only when a later step is blocked, before climbing the heal ladder.
+  - Not done in H7: it changes the replay engine, so B1 and B2 would need a rerun. B2's warm p50 is 0.73 s against the 5 s target.
+- **Known limits in B3** (ADR-40): the pack is 80% on memory questions. The answerer won't work out a percentage from two price facts, and the memory doesn't record who is on the rota.
