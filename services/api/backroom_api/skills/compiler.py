@@ -42,6 +42,7 @@ class Action:
     url_before: str = ""
     url_after: str = ""
     obstacle: bool = False  # it only cleared a pop-up/banner/menu that may not come back
+    by_text: bool = False  # located by its visible text (no role a locator can name)
 
 
 def _number(text: str) -> float | None:
@@ -122,7 +123,7 @@ def template_name(name: str, params: Mapping[str, Any]) -> str:
 
 def compile_action(act: Action, params: Mapping[str, Any]) -> Step:
     name = template_name(act.name, params) if act.name else None
-    target = Locator(role=act.role, name=name) if act.role and name else None
+    target = Locator(role=act.role, name=name) if act.role and name and not act.by_text else None
     if act.action in ("fill_secret", "totp"):
         template: str | None = "{{secret:" + str(act.secret) + "}}"
     elif act.value is not None:
@@ -133,7 +134,13 @@ def compile_action(act: Action, params: Mapping[str, Any]) -> Step:
         intent=template_text(act.intent, params),
         action=act.action,
         target=target,
-        fallbacks=fallbacks_for(act.role, name) if act.action != "goto" else [],
+        fallbacks=(
+            [TextFallback(text=name)]
+            if act.by_text and name
+            else fallbacks_for(act.role, name)
+            if act.action != "goto"
+            else []
+        ),
         value_template=template,
         expect=_path_expect(act.url_before, act.url_after) if act.action != "goto" else None,
         optional=act.obstacle,

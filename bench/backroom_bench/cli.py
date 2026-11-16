@@ -59,6 +59,7 @@ async def _browser_benches(
                 n=len(body["runs"]),
                 fake=args.fake,
                 out_dir=out,
+                sha=args.sha,
             )
         )
     if "b2" in which:
@@ -72,6 +73,7 @@ async def _browser_benches(
                 n=len(body["series"]),
                 fake=args.fake,
                 out_dir=out,
+                sha=args.sha,
             )
         )
 
@@ -86,6 +88,7 @@ async def _briefs_cmd(n: int) -> int:
 
 async def _run(args: argparse.Namespace) -> int:
     settings = get_settings()
+    args.sha = results.git_sha()  # the commit the run starts on, for every file it writes
     out = FAKE_OUT if args.fake else Path(args.out)
     which = {"b1", "b2", "b3", "b5"} if args.command == "all" else {args.command}
     seeds = list(range(args.seeds))
@@ -146,6 +149,7 @@ async def _run(args: argparse.Namespace) -> int:
                     n=len(memory_bench.QUESTIONS),
                     fake=args.fake,
                     out_dir=out,
+                    sha=args.sha,
                 )
             )
 
@@ -166,7 +170,13 @@ async def _run(args: argparse.Namespace) -> int:
             }
             written.append(
                 results.write(
-                    "B5", body, settings=settings, n=len(briefs), fake=args.fake, out_dir=out
+                    "B5",
+                    body,
+                    settings=settings,
+                    n=len(briefs),
+                    fake=args.fake,
+                    out_dir=out,
+                    sha=args.sha,
                 )
             )
 

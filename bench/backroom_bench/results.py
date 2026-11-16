@@ -91,12 +91,14 @@ def write(
     n: int,
     fake: bool = False,
     out_dir: Path = RESULTS_DIR,
+    sha: str | None = None,
 ) -> Path:
-    """Write `<out_dir>/<bench_id>.json` with the reproducibility header first."""
+    """Write `<out_dir>/<bench_id>.json` with the reproducibility header first. `sha` is
+    the commit the run *started* on (a long run must not take a later commit's name)."""
     payload = {
         "id": bench_id,
         "ran_at": datetime.now(UTC).isoformat(timespec="seconds"),
-        "git_sha": git_sha(),
+        "git_sha": sha or git_sha(),
         "provider": settings.llm_provider,
         "models": models(settings),
         "seeds": list(seeds),

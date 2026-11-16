@@ -194,8 +194,9 @@ class Executor:
     async def run(
         self, step: Step, params: Mapping[str, Any], timeout_ms: int | None = None
     ) -> StepOutcome:
+        """Run one step. `timeout_ms` caps how long to *look* for its element (replay after a
+        heal uses a short one); acting and checking the result keep the step's own timeout."""
         step = with_params(step, params)
-        """Run one step. `timeout_ms` caps the step's own timeout (replay uses a shorter one)."""
         timeout = min(step.timeout_ms, timeout_ms) if timeout_ms else step.timeout_ms
         started = time.monotonic()
         via: str | None = None
@@ -210,7 +211,7 @@ class Executor:
                     "blocked", "navigation failed: blocked by the allowlist or unreachable"
                 )
             if step.expect is not None:
-                await self._check_expect(step.expect, timeout)
+                await self._check_expect(step.expect, step.timeout_ms)
         except StepError as exc:
             return self._fail(started, exc.kind, str(exc), via)
         except NavigationBlockedError as exc:
@@ -243,7 +244,8 @@ class Executor:
         self, step: Step, params: Mapping[str, Any], timeout_ms: int
     ) -> tuple[str | None, str | None, SkillLocator | None]:
         action = step.action
-        timeout = timeout_ms
+        locate = timeout_ms  # how long to look for the element
+        timeout = step.timeout_ms  # how long the action itself may take
         if action == "goto":
             assert step.value_template is not None
             url = self.allowlist.check_document(
@@ -263,7 +265,7 @@ class Executor:
         if action == "extract" and step.target is None and not step.fallbacks:
             return None, await self.page.inner_text("body", timeout=timeout), None
 
-        loc, via = await self.resolve(step.target, step.fallbacks, timeout)
+        loc, via = await self.resolve(step.target, step.fallbacks, locate)
         found = await self._identify(loc) if via != "target" else None
         if action == "wait_for":
             await loc.wait_for(state="visible", timeout=timeout)

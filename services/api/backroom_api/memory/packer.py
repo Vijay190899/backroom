@@ -4,6 +4,13 @@ task -> seed entities (`seeds_for`) -> facts valid at `as_of` within 2 hops -> r
 by (hop, recency, confidence) -> one compact triple per line, until the token budget is
 spent. The business's standing preferences and rules always come first, so a learned
 cap ("max 8%") reaches every brief. The pack ships with the run (ContextPack).
+
+Two more sources, both ranked behind what the task names directly:
+- **History** of the named entities: facts a newer one replaced, marked "from ... until
+  ...", so "what did butter cost before?" has an answer (the memory is bitemporal; the
+  pack used to show only the present).
+- **Kinds** the task mentions ("the menu", "holidays", "staff"): the entities of that kind,
+  so a question about a kind of thing, not a named one, still reaches its facts.
 """
 
 import json
@@ -14,6 +21,7 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 from psycopg import Connection
+from psycopg.rows import dict_row
 
 from backroom_api.contracts.api import ContextPack
 from backroom_api.memory.store import facts_as_of
@@ -30,6 +38,27 @@ BONN = ZoneInfo("Europe/Berlin")
 
 def estimate_tokens(text: str) -> int:
     return math.ceil(len(text) / CHARS_PER_TOKEN)
+
+
+# Words that mean "entities of this kind" (whole words, case-insensitive).
+KIND_WORDS: dict[str, tuple[str, ...]] = {
+    "product": ("menu", "menu items", "products"),
+    "holiday": ("holiday", "holidays"),
+    "staff": ("staff", "employees", "team", "people"),
+    "ingredient": ("ingredient", "ingredients"),
+    "supplier": ("supplier", "suppliers"),
+    "weather_day": ("weather", "forecast"),
+}
+
+
+def kinds_for(task: str) -> list[str]:
+    """Entity kinds the task talks about as a whole ("how many items on the menu")."""
+    text = task.lower()
+    return [
+        kind
+        for kind, words in KIND_WORDS.items()
+        if any(re.search(rf"\b{re.escape(w)}\b", text) for w in words)
+    ]
 
 
 def seeds_for(conn: Connection[Any], task: str) -> list[str]:
@@ -49,9 +78,33 @@ def _triple(fact: dict[str, Any]) -> str:
     if fact["value"] is not None:
         value = json.dumps(fact["value"], separators=(",", ":"), sort_keys=True)
         obj = f"{obj} {value}".strip()
-    since = fact["valid_from"].astimezone(BONN).date().isoformat()
+    start = fact["valid_from"].astimezone(BONN).date().isoformat()
     confidence = "" if fact["confidence"] >= 1 else f" conf={fact['confidence']:.2f}"
-    return f"{fact['subject_id']} {fact['predicate']} {obj} (since {since}{confidence})"
+    if fact.get("ended"):  # history: replaced by a newer fact
+        end = fact["valid_to"].astimezone(BONN).date().isoformat()
+        when = f"from {start} until {end}"
+    else:
+        when = f"since {start}"
+    return f"{fact['subject_id']} {fact['predicate']} {obj} ({when}{confidence})"
+
+
+HISTORY_SQL = """
+select * from fact
+where subject_id = any(%(ids)s)
+  and valid_to is not null and valid_to <= %(t)s
+  and recorded_at <= coalesce(%(r)s::timestamptz, now())
+order by subject_id, predicate, valid_from
+"""
+
+
+def _history(
+    conn: Connection[Any], ids: list[str], as_of: datetime, known_at: datetime | None
+) -> list[dict[str, Any]]:
+    if not ids:
+        return []
+    with conn.cursor(row_factory=dict_row) as cur:
+        rows = cur.execute(HISTORY_SQL, {"ids": ids, "t": as_of, "r": known_at}).fetchall()
+    return [{**r, "ended": True} for r in rows]
 
 
 def pack(
@@ -60,12 +113,26 @@ def pack(
     as_of: datetime,
     budget_tokens: int = DEFAULT_BUDGET_TOKENS,
     known_at: datetime | None = None,
+    task: str = "",
 ) -> ContextPack:
+    """The pack for `seeds` (named entities) and, if given, the kinds `task` mentions."""
     facts = facts_as_of(conn, as_of, known_at)
-    picked: dict[str, tuple[int, dict[str, Any]]] = {}
+    picked: dict[str, tuple[float, dict[str, Any]]] = {}  # fact id -> (rank, fact)
     for f in facts:  # standing rules rank first, ahead of everything the seeds reach
         if f["subject_id"] == BUSINESS and f["predicate"] in STANDING:
             picked[f["id"]] = (-1, f)
+    # What the task names directly: its current facts (hop 0), then their history.
+    for f in _history(conn, seeds, as_of, known_at):
+        picked[f["id"]] = (0.5, f)
+    # Kinds it mentions: every entity of that kind, ranked after the named ones.
+    kinds = kinds_for(task) if task else []
+    if kinds:
+        kind_ids = {
+            r[0] for r in conn.execute("select id from entity where type = any(%s)", [kinds])
+        } - set(seeds)
+        for f in facts:
+            if f["subject_id"] in kind_ids and f["id"] not in picked:
+                picked[f["id"]] = (1.5, f)
     seen = set(seeds)
     frontier = set(seeds)
     for distance in range(MAX_HOPS):

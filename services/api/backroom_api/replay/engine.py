@@ -227,7 +227,13 @@ async def replay(
         await finish_step(rec, i, outcome, page.url)
 
         if outcome.ok:
-            if outcome.resolved_via not in (None, "target") and outcome.found is not None:
+            # A fallback hit on a step with a role target means the target went stale: promote.
+            # A text-addressed step (no target) is found by its text every time: nothing to do.
+            if (
+                step.target is not None
+                and outcome.resolved_via not in (None, "target")
+                and outcome.found is not None
+            ):
                 found = Locator(
                     role=outcome.found.role, name=template_name(outcome.found.name, params)
                 )

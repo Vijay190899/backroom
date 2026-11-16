@@ -102,8 +102,8 @@ def factory() -> BenchRunner:
 
 
 def pack_for(question: str) -> str:
-    """B3's memory arm: the production context packer over the real memory, unchanged.
-    Seeds are the entities the question names; facts are as of now."""
+    """B3's memory arm: the production context packer over the real memory. Seeds are the
+    entities the question names, plus the kinds it mentions; facts are as of now."""
     from datetime import datetime
     from zoneinfo import ZoneInfo
 
@@ -113,4 +113,5 @@ def pack_for(question: str) -> str:
 
     settings = Settings()
     with psycopg.connect(settings.database_url) as conn:
-        return pack(conn, seeds_for(conn, question), datetime.now(ZoneInfo("Europe/Berlin"))).text
+        now = datetime.now(ZoneInfo("Europe/Berlin"))
+        return pack(conn, seeds_for(conn, question), now, task=question).text

@@ -176,7 +176,8 @@ async def test_observe_gives_refs_the_page_accepts(page: Page) -> None:
     await page.locator(f"aria-ref={buttons[0].ref}").click()
     assert await page.inner_text("#count") == "1"
     short = await observe(page, max_chars=80)
-    assert short.truncated and "(truncated)" in short.text
+    assert short.truncated and "truncated:" in short.text and "use `find`" in short.text
+    assert "Add to cart" in short.full and len(short.full) > len(short.text)  # find searches it
 
 
 async def test_contexts_are_isolated_and_limited(pool: BrowserPool, base_url: str) -> None:

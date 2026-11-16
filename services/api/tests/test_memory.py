@@ -197,6 +197,34 @@ def test_context_pack_is_ranked_and_within_budget(
     assert small.tokens <= 60 and small.fact_ids == full.fact_ids[: len(small.fact_ids)]
 
 
+def test_the_history_of_named_entities_is_packed(
+    conn: psycopg.Connection[Any], world: Path
+) -> None:
+    lines = packer.pack(conn, ["ingredient:butter"], at(TODAY)).text.splitlines()
+    price = [line for line in lines if "ingredient:butter unit_price_eur_per_kg" in line]
+    current = [line for line in price if "(since" in line]
+    earlier = [line for line in price if "until" in line]
+    assert len(current) == 1 and "8.24" in current[0]
+    assert earlier and "7.1" in earlier[0]  # what butter cost before the rise
+
+
+def test_kinds_the_task_mentions_reach_their_entities(
+    conn: psycopg.Connection[Any], world: Path
+) -> None:
+    products = conn.execute("select count(*) from entity where type = 'product'").fetchone()
+    menu = packer.pack(conn, [], at(TODAY), task="How many items are on the menu?")
+    prices = [line for line in menu.text.splitlines() if " menu_price_eur " in line]
+    assert products is not None and len(prices) == products[0]
+    named = packer.pack(
+        conn,
+        ["product:franzbroetchen"],
+        at(TODAY),
+        task="What does a Franzbrötchen cost on the menu?",
+    ).text.splitlines()
+    first_price = next(line for line in named if " menu_price_eur " in line)
+    assert first_price.startswith("product:franzbroetchen")  # named outranks its kind
+
+
 # --- audit follow-ups ----------------------------------------------------------------------
 
 

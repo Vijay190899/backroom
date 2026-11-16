@@ -36,7 +36,8 @@ class Element:
 class Observation:
     url: str
     title: str
-    text: str  # the snapshot, possibly truncated
+    text: str  # the snapshot, possibly truncated (what goes into a prompt)
+    full: str  # the whole snapshot (for `find`)
     elements: tuple[Element, ...]
     truncated: bool
 
@@ -73,7 +74,14 @@ async def observe(page: Page, max_chars: int = DEFAULT_MAX_CHARS) -> Observation
     return Observation(
         url=page.url,
         title=await page.title(),
-        text=snapshot[:max_chars] + ("\n... (truncated)" if truncated else ""),
+        text=snapshot[:max_chars]
+        + (
+            f"\n... (truncated: {len(snapshot) - max_chars:,} more characters; "
+            "use `find` to search them)"
+            if truncated
+            else ""
+        ),
+        full=snapshot,
         elements=parse_snapshot(snapshot),
         truncated=truncated,
     )
