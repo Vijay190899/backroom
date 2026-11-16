@@ -84,3 +84,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(runs.router)
     app.include_router(catalog.router)
     return app
+
+
+# The ASGI target of `pnpm dev:api` and infra/Dockerfile.api (`backroom_api.main:app`).
+# Cheap at import: the pool, browsers and model client are built in `lifespan`.
+app = create_app()
