@@ -394,3 +394,72 @@ def test_the_brief_day_is_the_data_day_not_the_clock(client: TestClient, data_di
     assert client.app.state.briefs._day(later).isoformat() == built_for  # type: ignore[attr-defined]
     first = client.get("/brief/today").json()
     assert client.get("/brief/today").json()["id"] == first["id"]
+
+
+class _ReplayMode:
+    """Require the access code for the duration of a test (the module's app is shared)."""
+
+    def __init__(self, client: TestClient) -> None:
+        self.settings = client.app.state.settings  # type: ignore[attr-defined]
+
+    def __enter__(self) -> None:
+        self.before = self.settings.demo_access_code
+        self.settings.demo_access_code = "s3cret-code"
+
+    def __exit__(self, *_: object) -> None:
+        self.settings.demo_access_code = self.before
+
+
+def test_mode_is_live_only_with_the_access_code(client: TestClient) -> None:
+    assert client.get("/mode").json()["mode"] == "live"  # dev default code: open
+    with _ReplayMode(client):
+        replay = client.get("/mode").json()
+        assert replay["mode"] == "replay" and "access code" in replay["reason"]
+        assert client.get("/mode", headers={"X-Demo-Code": "wrong"}).json()["mode"] == "replay"
+        assert client.get("/mode", headers={"X-Demo-Code": "s3cret-code"}).json()["mode"] == "live"
+
+
+def test_replay_mode_plays_the_recorded_run_and_changes_nothing(client: TestClient) -> None:
+    fake = cast(FakeRunner, client.app.state.fake)  # type: ignore[attr-defined]
+    price = card(client, "margin_erosion")
+    runs_before = len(fake.tasks)
+    with _ReplayMode(client):
+        approved = client.post(
+            f"/actions/{price['id']}/approve", headers={"Idempotency-Key": "k-replay"}
+        )
+        assert approved.status_code == 200
+        run_id = approved.json()["run_id"]
+        summary = wait_finished(client, run_id)
+        events = sse(client.get(f"/runs/{run_id}/events").text)
+        with client.websocket_connect(f"/runs/{run_id}/screen") as ws:
+            header = json.loads(ws.receive_text())
+            jpeg = ws.receive_bytes()
+        status_after = card(client, "margin_erosion")["status"]
+    assert len(fake.tasks) == runs_before  # no browser run at all
+    assert events[0]["recorded"] is True and events[0]["action_id"] == price["id"]
+    assert {e["run_id"] for e in events} == {run_id}
+    assert [e["seq"] for e in events] == list(range(1, len(events) + 1))
+    assert events[-1]["undo_available"] is False and summary["status"] == "succeeded"
+    assert header["type"] == "frame" and jpeg.startswith(b"\xff\xd8")
+    assert status_after == price["status"]  # the card is not marked as acted on
+
+
+def test_replay_mode_refuses_what_would_change_the_shared_demo(client: TestClient) -> None:
+    price = card(client, "margin_erosion")
+    with _ReplayMode(client):
+        calls = [
+            client.post(f"/actions/{price['id']}/reject", json={"reason": "max 8%"}),
+            client.get("/brief/today?regenerate=1"),
+            client.post("/chaos", json={"portal": "grainline", "seed": 7}),
+            client.post("/runs/run_any/undo"),
+            client.post("/runs/run_any/human", json={"action": "resume"}),
+        ]
+        for response in calls:
+            assert response.status_code == 403, response.text
+            assert response.json()["error"]["code"] == "live_mode_locked"
+        with_code = client.post(
+            "/chaos",
+            json={"portal": "grainline", "seed": 7},
+            headers={"X-Demo-Code": "s3cret-code"},
+        )
+        assert with_code.status_code == 200

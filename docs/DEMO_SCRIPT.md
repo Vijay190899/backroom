@@ -1,6 +1,6 @@
 # Demo Script — 5 minutes
 
-**Setup before the call:** deployed URL open in a browser at 110% zoom. `/bench` in a second tab. Run `pnpm demo:reset` (about 30 s, about $0.005): it clears runs and briefs, re-seeds memory (no price cap learned yet), learns both skills again at seed 0 and resets the portals. Chaos seed 7 verified to heal. Live-mode access code set. Local `docker compose` running as a backup. Open the app in a **fresh tab** just before the call: the café walk-in intro plays once per tab.
+**Setup before the call:** deployed URL open in a browser at 110% zoom. `/bench` in a second tab. Open the app once with `?code=<DEMO_ACCESS_CODE>` (the status pill then says **Live**; without it, visitors get recorded runs). Run `pnpm demo:reset` (about 30 s, about $0.005): it clears runs and briefs, re-seeds memory (no price cap learned yet), learns both skills again at seed 0 and resets the portals. Chaos seed 7 verified to heal. Live-mode access code set. Local `docker compose` running as a backup. Open the app in a **fresh tab** just before the call: the café walk-in intro plays once per tab.
 
 | t | Beat | What you show | Line |
 |---|---|---|---|

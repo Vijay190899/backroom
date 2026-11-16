@@ -1,0 +1,21 @@
+{
+  "name": "cancel",
+  "title": "Cancel the order (undo)",
+  "task": "grainline.cancel_order",
+  "chaos_seed": 0,
+  "status": "succeeded",
+  "summary": "Order GW-10483 cancelled",
+  "recorded_at": "2026-11-16T00:10:43.868398+00:00",
+  "git_sha": "e1127bd",
+  "totals": {
+    "elapsed_ms": 406,
+    "steps": 8,
+    "llm_calls": 0,
+    "tokens_in": 0,
+    "tokens_out": 0,
+    "cache_read_tokens": 0,
+    "usd": 0.0
+  },
+  "frames": 6,
+  "bytes": 120188
+}

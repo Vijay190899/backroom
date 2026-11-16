@@ -2,6 +2,7 @@
 
 import { useQuery, type QueryClient } from "@tanstack/react-query";
 
+import { accessHeaders } from "@/lib/access";
 import { API_URL } from "@/lib/api";
 import type { ActionCard, Brief } from "@/lib/contracts";
 import type { Source } from "@/lib/data";
@@ -80,20 +81,36 @@ export async function approve(brief: Brief, card: ActionCard) {
   const { approveResponseSchema } = await contracts();
   const res = await fetch(`${API_URL}/actions/${encodeURIComponent(card.id)}/approve`, {
     method: "POST",
-    headers: { "Idempotency-Key": idempotencyKey(brief, card) },
+    headers: { "Idempotency-Key": idempotencyKey(brief, card), ...accessHeaders() },
   });
-  if (!res.ok) throw new Error(`approve failed: ${res.status}`);
+  if (!res.ok) return failure(res, "approve");
   return approveResponseSchema.parse(await res.json());
+}
+
+/** An API refusal with its reason (`{"error": {code, message}}`), e.g. `live_mode_locked`. */
+export class ApiFailure extends Error {
+  constructor(
+    message: string,
+    readonly code: string,
+  ) {
+    super(message);
+  }
+}
+
+async function failure(res: Response, what: string): Promise<never> {
+  const body = (await res.json().catch(() => null)) as { error?: { code?: string; message?: string } } | null;
+  if (body?.error?.message) throw new ApiFailure(body.error.message, body.error.code ?? "error");
+  throw new Error(`${what} failed: ${res.status}`);
 }
 
 export async function reject(card: ActionCard, reason: string) {
   const { rejectResponseSchema } = await contracts();
   const res = await fetch(`${API_URL}/actions/${encodeURIComponent(card.id)}/reject`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...accessHeaders() },
     body: JSON.stringify({ reason }),
   });
-  if (!res.ok) throw new Error(`reject failed: ${res.status}`);
+  if (!res.ok) return failure(res, "reject");
   return rejectResponseSchema.parse(await res.json());
 }
 

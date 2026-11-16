@@ -1,0 +1,21 @@
+{
+  "name": "reorder",
+  "title": "Reorder oat milk",
+  "task": "grainline.reorder_item",
+  "chaos_seed": 0,
+  "status": "succeeded",
+  "summary": "Order GW-10482 placed: 28 x OAT-1L, €44.52",
+  "recorded_at": "2026-11-16T00:10:06.438131+00:00",
+  "git_sha": "e1127bd",
+  "totals": {
+    "elapsed_ms": 1108,
+    "steps": 13,
+    "llm_calls": 0,
+    "tokens_in": 0,
+    "tokens_out": 0,
+    "cache_read_tokens": 0,
+    "usd": 0.0
+  },
+  "frames": 14,
+  "bytes": 341938
+}

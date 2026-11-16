@@ -20,6 +20,7 @@ from backroom_api.contracts.api import (
     SkillSummary,
     SkillVersions,
 )
+from backroom_api.live.access import require_live
 from backroom_api.live.runs import RunManager
 from backroom_api.memory import store as memory
 from backroom_api.routes.errors import ApiProblem
@@ -144,6 +145,7 @@ async def chaos_state(request: Request) -> list[ChaosState]:
 
 @router.post("/chaos", response_model=ChaosState)
 async def set_chaos(body: ChaosRequest, request: Request) -> ChaosState:
+    require_live(request)  # re-skins the portal for every visitor
     admin: PortalAdmin = request.app.state.admin
     try:
         state = await admin.set_chaos(body.portal, body.seed)

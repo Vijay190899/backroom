@@ -460,3 +460,10 @@ export const chaosStateSchema = z.strictObject({
   variants: z.record(z.string(), z.string()),
 });
 export type ChaosState = z.infer<typeof chaosStateSchema>;
+
+// GET /mode: live (real runs) or replay (recorded runs) for this visitor, and why.
+export const modeInfoSchema = z.strictObject({
+  mode: z.enum(["live", "replay"]),
+  reason: z.string(),
+});
+export type ModeInfo = z.infer<typeof modeInfoSchema>;

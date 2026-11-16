@@ -95,6 +95,7 @@ backroom/
 | GET | `/memory/graph?as_of=` | nodes/edges valid at time |
 | GET | `/memory/facts/{id}` | fact + provenance |
 | POST | `/memory/ingest/invoice` | PDF/image → extractor → facts |
+| GET | `/mode` | this visitor's mode, `{mode: live \| replay, reason}`: live needs the access code (`X-Demo-Code`) and budget left |
 | POST | `/chaos` | `{portal, seed}` (dev/demo only). Forwards to the portals service's `POST /_admin/chaos` with `PORTALS_ADMIN_TOKEN` |
 | POST | `/ask` | SSE answer with tool calls + citations (P1) |
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { API_URL } from "@/lib/api";
 import type { RunEvent } from "@/lib/contracts";
+import { GOLDEN_PREFIX, loadGoldenRun } from "@/lib/runs";
 
 /** The committed sample run's id (fixtures/run-events.json). */
 export const SAMPLE_RUN_ID = "run_demo_seed7";
@@ -24,7 +25,8 @@ const EVENT_TYPES = [
 
 export type RunSource = {
   events: RunEvent[];
-  source: "sample" | "live";
+  /** live: the API stream; recorded: a golden run (a real run, played back); sample: the fixture. */
+  source: "sample" | "recorded" | "live";
   status: "loading" | "streaming" | "done" | "error";
 };
 
@@ -35,10 +37,29 @@ export type RunSource = {
  */
 export function useRunEvents(id: string): RunSource {
   const sample = id === SAMPLE_RUN_ID;
-  const [state, setState] = useState<RunSource>({ events: [], source: sample ? "sample" : "live", status: "loading" });
+  const golden = id.startsWith(GOLDEN_PREFIX);
+  const [state, setState] = useState<RunSource>({
+    events: [],
+    source: golden ? "recorded" : sample ? "sample" : "live",
+    status: "loading",
+  });
 
   useEffect(() => {
     let live = true;
+    if (golden) {
+      // A recorded real run: static files, so it plays even when the API is down (F7).
+      const abort = new AbortController();
+      loadGoldenRun(id.slice(GOLDEN_PREFIX.length), abort.signal)
+        .then((events) => {
+          if (!live) return;
+          setState(events ? { events, source: "recorded", status: "done" } : { events: [], source: "recorded", status: "error" });
+        })
+        .catch(() => live && setState((s) => ({ ...s, status: "error" })));
+      return () => {
+        live = false;
+        abort.abort();
+      };
+    }
     if (sample) {
       void Promise.all([import("@/lib/contracts"), import("@/fixtures/run-events.json")])
         .then(([{ runEventSchema }, fixture]) => {
@@ -87,7 +108,7 @@ export function useRunEvents(id: string): RunSource {
       live = false;
       es.close();
     };
-  }, [id, sample]);
+  }, [id, sample, golden]);
 
   return state;
 }
