@@ -14,7 +14,7 @@
 
 > An independent portfolio project. All businesses, portals and people are fictional; data is open or synthetic ([docs/DATA.md](docs/DATA.md)).
 
-<p align="center"><img src="docs/assets/showcase.webp" width="100%" alt="The live demo: the morning brief; one tap on Approve starts the agent; a warm replay finishes in 1.1 s with no model calls; then the same order on a redesigned, German-language portal, where the healer model repairs each moved control and the order is placed for $0.0041; then the measured benchmarks"></p>
+<p align="center"><picture><source srcset="docs/assets/showcase.avif" type="image/avif"><img src="docs/assets/showcase.webp" width="100%" alt="The live demo: the morning brief; one tap on Approve starts the agent; a warm replay finishes in 1.1 s with no model calls; then the same order on a redesigned, German-language portal, where the healer model repairs each moved control and the order is placed for $0.0041; then the measured benchmarks"></picture></p>
 
 <sub>Recorded from the live site in replay mode with [`scripts/showcase.py`](scripts/showcase.py); the heal is shown at 3&times; speed.</sub>
 
