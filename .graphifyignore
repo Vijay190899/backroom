@@ -1,0 +1,6 @@
+# Runtime artifacts, not knowledge: recorded run frames, local state and screenshots,
+# the graph's own output, and test fixtures.
+apps/web/public/golden/
+var/
+graphify-out/
+services/api/tests/fixtures/

@@ -191,7 +191,7 @@ Time check: as of Thu 12 Nov ~14:30 there are about 21 hours to the Fri 11:30 fr
 | Laptop | `services/portals/`, `data/`, `apps/web/src/` (all screens), `bench/backroom_bench/` (harness code), `services/api/backroom_api/{memory,analytics,brief}/`, `.github/workflows/deploy*.yml`, `docs/sync/laptop.md` |
 | PC | `services/api/backroom_api/{browser,skills,agents,replay}/`, `services/api/backroom_api/routes/runs*.py`, `infra/` (except `deploy.sh`), `bench/results/`, `docs/sync/pc.md` |
 | Shared, change only through L0 | `docs/CONTRACTS.md`, `skills/schema.py`, the event schema, the SQL migrations. A contract change goes through the PC, and the PC announces it in `docs/sync/pc.md`. |
-| Shared, careful | `pyproject.toml`, `package.json`, lockfiles: **add dependencies only inside the package you own**; after merging, the PC re-runs `uv lock` and `pnpm install` and commits the lockfiles. `docs/DECISIONS.md`: append only; the laptop numbers its decisions `L-1`, `L-2`, … and the PC renumbers on merge. `docs/HANDOVER.md`: **PC only** after this commit. |
+| Shared, careful | `pyproject.toml`, `package.json`, lockfiles: **add dependencies only inside the package you own**; after merging, the PC re-runs `uv lock` and `pnpm install` and commits the lockfiles. `docs/DECISIONS.md`: append only; the laptop numbers its decisions `L-1`, `L-2`, …, and they keep those ids after the merge (ADR-16: code and sync logs cite them). `docs/HANDOVER.md`: **PC only** after this commit. |
 
 - **Before the laptop pushes a branch:** `pnpm check` is green; tests are written with fakes or fixtures (no Docker, no Chromium); a sync-log entry says how to verify.
 - **When the PC merges:** `git pull`, `uv sync --all-packages`, `pnpm install`, `pnpm check`, then the task's "done when" check on real services, then a line in `docs/sync/pc.md`.
@@ -209,7 +209,7 @@ The UI branch already contains the whole backend stack, so three merges bring in
 PRs #1–#9 are earlier views of the same stack and close once #11 is in.
 
 - **Conflicts** appear only in the append-only `docs/DECISIONS.md` and `docs/sync/laptop.md` (keep both sides), and in `graphify-out/` (regenerate it).
-- **Numbering:** the laptop's decisions run L-1 … L-84; renumber them as §9.4 says.
+- **Numbering:** the laptop's decisions run L-1 … L-84 and keep those ids (ADR-16).
 - **After merging,** per §9.4:
   - `uv sync --all-packages`, `pnpm install`, `pnpm check` (expect 318 Python tests and the web checks green);
   - `pnpm seed` to build `data/out`;
