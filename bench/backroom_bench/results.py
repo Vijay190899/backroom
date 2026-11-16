@@ -31,6 +31,18 @@ def rate(hits: int, n: int) -> float | None:
     return round(hits / n, 4) if n else None
 
 
+def wilson(hits: int, n: int, z: float = 1.96) -> list[float] | None:
+    """95% Wilson score interval for a success rate: honest at small n and at 0% or 100%
+    (where the normal approximation collapses to a zero-width interval)."""
+    if not n:
+        return None
+    p = hits / n
+    denom = 1 + z * z / n
+    centre = (p + z * z / (2 * n)) / denom
+    half = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / denom
+    return [round(max(0.0, centre - half), 4), round(min(1.0, centre + half), 4)]
+
+
 def git_sha() -> str:
     """The commit the numbers came from, marked "-dirty" if the tree had local changes."""
     root = RESULTS_DIR.parents[1]
@@ -79,12 +91,14 @@ def write(
     n: int,
     fake: bool = False,
     out_dir: Path = RESULTS_DIR,
+    sha: str | None = None,
 ) -> Path:
-    """Write `<out_dir>/<bench_id>.json` with the reproducibility header first."""
+    """Write `<out_dir>/<bench_id>.json` with the reproducibility header first. `sha` is
+    the commit the run *started* on (a long run must not take a later commit's name)."""
     payload = {
         "id": bench_id,
         "ran_at": datetime.now(UTC).isoformat(timespec="seconds"),
-        "git_sha": git_sha(),
+        "git_sha": sha or git_sha(),
         "provider": settings.llm_provider,
         "models": models(settings),
         "seeds": list(seeds),

@@ -315,3 +315,57 @@ async def test_a_run_over_its_budget_asks_a_human_instead_of_healing(
         skill=skill_with([click("Add to basket")]), params={}, portal="fixture", max_usd=0.0,
     )  # fmt: skip
     assert result.needs_human and llm.calls == [] and "model budget" in (result.failure or "")
+
+
+async def test_find_reaches_an_element_beyond_a_truncated_page(page: Page, base_url: str) -> None:
+    # The prompt shows 150 characters of the page; "Add to cart" is far below the cut.
+    def find(_p: str) -> dict[str, Any]:
+        return {"name": "find", "input": {"text": "Add to cart"}}
+
+    executor, rec, llm = build(
+        page,
+        base_url,
+        [
+            find,
+            lambda p: act(p, "button", "Add to cart", intent="Add", action="click"),
+            finish(True),
+        ],
+    )
+    result = await explore(
+        page=page, executor=executor, rec=rec, vault=SecretVault({}), goal="Add one item",
+        params={}, portal="fixture", observe_chars=150,
+    )  # fmt: skip
+    assert result.ok and [a.name for a in result.actions] == ["Add to cart"]
+    assert await item_count(page) == "1" and len(llm.calls) == 3
+
+
+async def test_a_control_without_a_nameable_role_is_learned_by_its_text(
+    page: Page, base_url: str
+) -> None:
+    from backroom_api.skills.compiler import compile_action
+
+    executor, rec, _ = build(
+        page,
+        base_url,
+        [
+            lambda p: act(p, "generic", "Open menu", intent="Open the menu", action="click"),
+            finish(True),
+        ],
+    )
+    result = await explore(
+        page=page, executor=executor, rec=rec, vault=SecretVault({}), goal="Open the menu",
+        params={}, portal="fixture",
+    )  # fmt: skip
+    assert result.ok and result.actions[0].by_text
+    assert await page.evaluate("document.getElementById('menu').open") is True
+    step = compile_action(result.actions[0], {})
+    assert step.target is None and step.fallbacks == [TextFallback(text="Open menu")]
+    # Replayed: found by its text, with no model call and no (false) heal.
+    await page.evaluate("document.getElementById('menu').open = false")
+    executor2, rec2, llm2 = build(page, base_url, [])
+    replayed = await replay(
+        page=page, executor=executor2, rec=rec2, vault=SecretVault({}),
+        skill=skill_with([step]), params={}, portal="fixture",
+    )  # fmt: skip
+    assert replayed.ok and not replayed.healed and llm2.calls == []
+    assert await page.evaluate("document.getElementById('menu').open") is True

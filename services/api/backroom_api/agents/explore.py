@@ -22,14 +22,14 @@ from playwright.async_api import Page
 
 from backroom_api.agents.recorder import RunRecorder
 from backroom_api.browser.executor import Executor, StepOutcome
-from backroom_api.browser.snapshot import Observation, observe
+from backroom_api.browser.snapshot import DEFAULT_MAX_CHARS, Observation, observe
 from backroom_api.browser.vault import SecretVault
 from backroom_api.contracts.common import Mode
 from backroom_api.contracts.events import StepFinished, StepStarted
 from backroom_api.llm.meter import BudgetExceededError
 from backroom_api.llm.registry import Role
 from backroom_api.skills.compiler import Action
-from backroom_api.skills.schema import Locator, Step, StepAction
+from backroom_api.skills.schema import Locator, Step, StepAction, TextFallback
 
 ACTIONS: tuple[StepAction, ...] = (
     "click",
@@ -42,6 +42,7 @@ ACTIONS: tuple[StepAction, ...] = (
     "wait_for",
 )
 LLM_TIMEOUT_S = 30  # one step decision; the SDK default would wait minutes
+FIND_LIMIT = 8  # matching elements returned by one `find`
 _NEEDS_REF = {"click", "fill", "fill_secret", "select", "totp"}
 
 SYSTEM = """You operate a web portal on behalf of a café owner, through tool calls. \
@@ -55,6 +56,8 @@ snapshot. Refer to elements by their `ref` (like f3e38). Never invent a ref.
 example with the search box, so exactly one is left. The system rejects ambiguous clicks.
 - Sign-in: never type credentials yourself. Use action `fill_secret` with the `secret` key \
 that fits the field (listed in the task), and `totp` for a one-time code field.
+- A long page is cut short (it then says "truncated"). To reach something not shown, call `find` \
+with a distinctive text (an invoice number, a product name); it returns the refs to act on.
 - Pop-ups, cookie banners and "what's new" dialogs block the page: dismiss them first. \
 If navigation links are hidden behind a menu button, open the menu first.
 - Fields you fill with a secret look empty in the snapshot (the value is hidden on purpose). \
@@ -107,6 +110,18 @@ def tools(secret_keys: list[str], healing: bool = False) -> list[dict[str, Any]]
                     **(completes if healing else {}),
                 },
                 "required": ["intent", "action"],
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "find",
+            "description": "Search the whole current page for elements whose text contains `text` "
+            "(the page shown to you may be cut short). Returns their refs; acts on nothing.",
+            "strict": True,
+            "input_schema": {
+                "type": "object",
+                "properties": {"text": {"type": "string"}},
+                "required": ["text"],
                 "additionalProperties": False,
             },
         },
@@ -171,6 +186,7 @@ async def explore(
     max_steps: int = 25,
     max_usd: float = 0.05,
     first_index: int = 0,
+    observe_chars: int = DEFAULT_MAX_CHARS,
 ) -> ExploreResult:
     """Run the loop until the agent finishes, runs out of steps, or exceeds `max_usd`."""
     secret_keys = [k for k in vault.keys() if k.startswith(portal + "_")]  # noqa: SIM118
@@ -188,7 +204,7 @@ async def explore(
         if rec.usd - usd0 > max_usd:
             result.reason = "budget"
             return result
-        obs = await observe(page)
+        obs = await observe(page, max_chars=observe_chars)
         refs = {e.ref: e for e in obs.elements}
         try:
             reply = await asyncio.wait_for(
@@ -226,12 +242,31 @@ async def explore(
             continue
         args: dict[str, Any] = dict(call.input) if isinstance(call.input, dict) else {}
 
+        if call.name == "find":
+            # Ctrl+F over the whole page: a long page is cut for the prompt, not for this.
+            query = str(args.get("text", "")).strip()
+            hits = [
+                line.strip()
+                for line in obs.full.splitlines()
+                if query and query.lower() in line.lower() and "[ref=" in line
+            ]
+            found = "; ".join(hits[:FIND_LIMIT]) if hits else "no element on the page mentions it"
+            more = f" (+{len(hits) - FIND_LIMIT} more)" if len(hits) > FIND_LIMIT else ""
+            history.append(f"find {query!r} -> {found}{more}")
+            key = f"find:{query.lower()}"
+            repeated[key] = repeated.get(key, 0) + 1
+            if repeated[key] >= 3:
+                result.reason = f"stuck: searched for {query!r} three times"
+                return result
+            continue
+
         if call.name == "finish":
             result.finished = True
             result.summary = str(args.get("summary", ""))
             result.ok = bool(args.get("success"))
             if not result.ok:
-                result.reason = "agent gave up"
+                # The agent's own words: the failure table should say why, not just that.
+                result.reason = f"agent gave up: {result.summary}"[:300]
             return result
 
         action = str(args.get("action", ""))
@@ -251,8 +286,13 @@ async def explore(
                 "you already did exactly this on this page. Its effect may not be visible "
                 "(secret fields look empty). Continue with the next step of the goal"
             )
+        by_text = False
         if problem is None and element is not None and action in _NEEDS_REF:
             count = await _unique(page, element.role, element.name)
+            if count == 0 and await page.get_by_text(element.name, exact=True).count() == 1:
+                # Some controls have no role a locator can name (a <summary> menu toggle is
+                # "generic"); their visible text is unique, so the step uses that instead.
+                by_text, count = True, 1
             if count > 1:
                 problem = (
                     f"{count} elements are named {element.role} {element.name!r}; narrow the page "
@@ -274,7 +314,10 @@ async def explore(
         step = Step(
             intent=intent,
             action=action,  # type: ignore[arg-type]
-            target=Locator(role=element.role, name=element.name) if element else None,
+            target=(
+                Locator(role=element.role, name=element.name) if element and not by_text else None
+            ),
+            fallbacks=[TextFallback(text=element.name)] if element and by_text else [],
             value_template=(
                 "{{secret:" + (secret or "") + "}}" if action in ("fill_secret", "totp") else value
             ),
@@ -309,6 +352,7 @@ async def explore(
             url_before=url_before,
             url_after=page.url,
             obstacle=args.get("obstacle") is True,
+            by_text=by_text,
         )
         result.actions.append(recorded)
         if mode == "heal" and args.get("completes_step") is True:

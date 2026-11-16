@@ -16,8 +16,8 @@ from typing import Any, Protocol
 import duckdb
 
 from backroom_api.llm.meter import BudgetExceededError
-from backroom_bench.questions import QUESTIONS, Question
-from backroom_bench.results import percentile, rate
+from backroom_bench.questions import MEMORY_SCOPE, QUESTIONS, Question
+from backroom_bench.results import percentile, rate, wilson
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data" / "out"
 TOLERANCE = 0.01
@@ -213,6 +213,9 @@ def _summary(per_arm: dict[str, dict[str, Any]], rows: list[dict[str, Any]]) -> 
         "arms": per_arm,
         "headline": {
             "pack_tokens_vs_dump": ratio,
+            "pack_accuracy_memory_scope": pack["accuracy_by_scope"]["memory"] if pack else None,
+            "dump_accuracy_memory_scope": dump["accuracy_by_scope"]["memory"] if dump else None,
+            "scopes": {"memory": len(MEMORY_SCOPE), "analytics": 30 - len(MEMORY_SCOPE)},
             "targets": {"pack_accuracy": 0.9, "pack_tokens_vs_dump": 0.2},
         },
         "answers": rows,
@@ -241,13 +244,20 @@ async def b3(
                 {
                     "arm": arm.name,
                     "question": q.id,
+                    "scope": q.scope,
                     "truth": str(truth[q.id]),
                     "ok": ok,
                     **asdict(a),
                 }
             )
+        by_scope: dict[str, float | None] = {}
+        for scope in ("memory", "analytics"):
+            scoped = [ok for q, _, ok in answers if q.scope == scope]
+            by_scope[scope] = rate(sum(scoped), len(scoped))
         per_arm[arm.name] = {
             "accuracy": rate(sum(ok for *_, ok in answers), len(answers)),
+            "accuracy_ci95": wilson(sum(ok for *_, ok in answers), len(answers)),
+            "accuracy_by_scope": by_scope,
             "input_tokens": sum(a.prompt_tokens for _, a, _ in answers),
             "mean_input_tokens": round(fmean(a.prompt_tokens for _, a, _ in answers), 1),
             "cache_read_tokens": sum(a.cache_read_tokens for _, a, _ in answers),

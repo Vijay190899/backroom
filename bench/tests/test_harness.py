@@ -24,12 +24,39 @@ def test_fee_line_only_on_openrouter() -> None:
     assert results.with_fee(1.0, Settings(llm_provider="anthropic"))["provider_fee_usd"] == 0.0
 
 
-async def test_b1_grid_and_headline() -> None:
-    body = await browser.b1(fakes.FakeRunner(), seeds=[0, 1, 2])
-    assert len(body["runs"]) == 3 * 3 * 2  # tasks x seeds x {cold, warm}
+async def test_b1_cold_repeats_and_warm_from_the_seed0_skill() -> None:
+    body = await browser.b1(fakes.FakeRunner(), seeds=[0, 1, 2], seed0_repeats=4)
+    # per task: 4 cold at seed 0 + 2 cold at other seeds + 3 warm
+    assert len(body["runs"]) == 3 * (4 + 2 + 3)
     head = body["headline"]
     assert head["cold_success_at_seed0"] == 1.0 and head["warm_success_across_seeds"] == 1.0
-    assert body["groups"]["grainline.reorder_item/warm"]["usd"] == 0.0
+    assert (
+        head["cold_success_at_seed0_ci95"][1] == 1.0 and head["cold_success_at_seed0_ci95"][0] < 1
+    )
+    warm = [r for r in body["runs"] if r["start"] == "warm"]
+    # Warm starts from the seed-0 skill: free at seed 0, a heal on every redesigned seed.
+    assert all(not r["healed"] and r["usd"] == 0 for r in warm if r["seed"] == 0)
+    assert all(r["healed"] for r in warm if r["seed"] != 0)
+    assert body["failures"] == []
+
+
+async def test_b1_without_a_seed0_skill_counts_every_warm_run_as_failed() -> None:
+    class NeverLearns(fakes.FakeRunner):
+        async def run(self, task: str) -> browser.RunOutcome:
+            return browser.RunOutcome(False, 30_000, 25, 1, 1, 0.05, failure="max_steps")
+
+    body = await browser.b1(NeverLearns(), seeds=[0, 1], tasks=[browser.TASKS[0]], seed0_repeats=2)
+    warm = [r for r in body["runs"] if r["start"] == "warm"]
+    assert [r["failure"] for r in warm] == ["no seed-0 skill", "no seed-0 skill"]
+    assert body["headline"]["cold_success_at_seed0"] == 0.0 and len(body["failures"]) == 5
+
+
+def test_wilson_interval() -> None:
+    assert results.wilson(0, 0) is None
+    low, high = results.wilson(15, 15)  # type: ignore[misc]
+    assert high == 1.0 and 0.79 < low < 0.80  # 15/15 is not proof of 100%
+    low, high = results.wilson(17, 20)  # type: ignore[misc]
+    assert 0.63 < low < 0.65 and 0.94 < high < 0.96
 
 
 async def test_b2_spikes_at_redesigns_then_recovers() -> None:

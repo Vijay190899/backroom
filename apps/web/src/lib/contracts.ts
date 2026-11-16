@@ -94,7 +94,7 @@ export const stepSchema = z.strictObject({
   optional: z.boolean().default(false),
 });
 export const postconditionSchema = z.strictObject({
-  kind: z.enum(["url_matches", "text_visible", "portal_state"]),
+  kind: z.enum(["url_matches", "text_visible", "portal_state", "file_downloaded"]),
   value: z.string(),
   equals: z.string().nullable().default(null),
 });

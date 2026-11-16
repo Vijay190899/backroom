@@ -21,6 +21,7 @@ from backroom_api.agents.postconditions import PostResult, check
 from backroom_api.agents.recorder import EventSink, RunRecorder
 from backroom_api.agents.tasks import TASKS, TaskSpec
 from backroom_api.browser import Allowlist, BrowserPool, Executor, SecretVault
+from backroom_api.browser.downloads import DownloadLog
 from backroom_api.browser.executor import CursorCallback
 from backroom_api.browser.screencast import FrameCallback, Screencast
 from backroom_api.config import Settings
@@ -168,6 +169,7 @@ class SkillRunner:
         failure: str | None = None
         async with self.pool.session(allow) as page:
             executor = Executor(page, self.vault, allow, on_cursor=hooks.on_cursor)
+            downloads = DownloadLog(page)
             cast = Screencast(page, on_frame) if on_frame else None
             if cast:
                 await cast.start()
@@ -200,6 +202,7 @@ class SkillRunner:
                             admin=self.admin,
                             portal=spec.portal,
                             baseline_orders=baseline,
+                            downloads=downloads,
                         )
                         for p in spec.postconditions
                     ]
@@ -310,7 +313,7 @@ class SkillRunner:
         spec: TaskSpec,
         params: Mapping[str, Any],
     ) -> int | None:
-        """Persist what a verified run learned. Returns (version used, newly stored skill)."""
+        """Persist what a verified run learned. Returns the version used."""
         if skill is None and explored is not None:
             compiled = compile_skill(
                 task=spec.task,
@@ -321,6 +324,11 @@ class SkillRunner:
                 params_schema=spec.params_schema,
                 postconditions=spec.postconditions,
             )
+            existing = self.store.versions(spec.task)
+            if existing:  # a forced re-explore: the new skill is the next version, not v1
+                compiled = compiled.model_copy(
+                    update={"version": existing[-1] + 1, "heal_note": "Relearned by exploring"}
+                )
             self.store.save(compiled)
             return compiled.version
         if skill is not None and replayed is not None and replayed.healed and replayed.changes:
@@ -362,6 +370,14 @@ class SkillRunner:
         if not ok:
             return f"Did not finish: {failure or 'unknown reason'}", {"checks": checks}
         state = await self.admin.state(spec.portal)
+        if spec.task == "grainline.download_invoice":
+            invoice = str(params["invoice_id"])
+            proof = next((p.detail for p in posts if p.ok), "")
+            return f"Invoice {invoice} downloaded ({proof.split('(')[-1].rstrip(')')})", {
+                "invoice": invoice,
+                "file": f"{invoice}.pdf",
+                "checks": checks,
+            }
         if spec.task == "grainline.cancel_order":
             order_id = str(params["order_id"])
             return f"Order {order_id} cancelled", {

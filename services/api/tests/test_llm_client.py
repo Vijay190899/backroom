@@ -114,3 +114,50 @@ def test_ledger_only_counts_today(tmp_path: Path) -> None:
     ledger = SpendLedger(path, daily_budget_usd=1.0)
     assert ledger.spent_today() == 0.0
     ledger.check_budget()  # does not raise
+
+
+WRITER = """
+import sys
+from pathlib import Path
+from backroom_api.llm.meter import CallRecord, SpendLedger
+from datetime import UTC, datetime
+ledger = SpendLedger(Path(sys.argv[1]), daily_budget_usd=1e9)
+for i in range(int(sys.argv[2])):
+    ledger.record(CallRecord(
+        ts=datetime.now(UTC).isoformat(), provider="openrouter", role="worker",
+        model="claude-haiku-5-5", input_tokens=1000, output_tokens=100,
+        cache_read_tokens=0, cache_write_tokens=0, usd=0.001, priced=True,
+        stop_reason="end_turn", run_id=f"run_{sys.argv[3]}_{i:04d}",
+    ))
+    ledger.spent_today()  # readers interleave with writers, as in a bench + the API
+"""
+
+
+def test_ledger_keeps_every_record_when_processes_write_at_once(tmp_path: Path) -> None:
+    import subprocess
+    import sys
+
+    path, n, procs = tmp_path / "ledger.jsonl", 150, 4
+    workers = [
+        subprocess.Popen([sys.executable, "-c", WRITER, str(path), str(n), str(p)])
+        for p in range(procs)
+    ]
+    assert all(w.wait(timeout=120) == 0 for w in workers)
+    rows = [json.loads(line) for line in path.read_bytes().splitlines()]  # every line parses
+    assert len(rows) == n * procs and len({r["run_id"] for r in rows}) == n * procs
+    assert SpendLedger(path, 1.0).spent_today() == pytest.approx(0.001 * n * procs)
+
+
+def test_a_damaged_ledger_line_is_skipped_not_fatal(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    from datetime import UTC, datetime
+
+    path = tmp_path / "ledger.jsonl"
+    today = datetime.now(UTC).isoformat()
+    good = json.dumps({"ts": today, "usd": 0.25})
+    path.write_text(f'{good}\nd": "run_0496d831"}}\r\n{good}\n', encoding="utf-8")
+    ledger = SpendLedger(path, daily_budget_usd=1.0)
+    assert ledger.spent_today() == pytest.approx(0.5)
+    ledger.spent_today()
+    assert caplog.text.count("1 unreadable line") == 1  # warned once, not on every call

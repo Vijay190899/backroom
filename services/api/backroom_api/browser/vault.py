@@ -3,7 +3,7 @@
 A skill step names a secret as `{{secret:<key>}}`. Only `fill_secret` and `totp` steps may
 use one (the skill schema enforces it); the executor asks the vault for the value at the
 last moment and types it. Everything the executor reports goes through `redact`, which
-replaces any secret value with `«secret:<key>»`, so even an error message that echoes an
+replaces any secret value with `«hidden»`, so even an error message that echoes an
 input cannot leak one.
 """
 
@@ -18,6 +18,7 @@ from collections.abc import Mapping
 from backroom_api.config import Settings
 
 _SECRET_RE = re.compile(r"\{\{secret:([a-z][a-z0-9_]*)\}\}")
+HIDDEN = "«hidden»"  # what a prompt, an event or a log shows instead of a secret value
 _MIN_REDACT_LEN = 4  # shorter values would redact ordinary text; vault values are longer
 
 
@@ -85,11 +86,13 @@ class SecretVault:
 
     def redact(self, text: str) -> str:
         """Replace every secret value (and any current one-time code) in `text`."""
-        for key, secret in self._secrets.items():
+        for secret in self._secrets.values():
             if len(secret) >= _MIN_REDACT_LEN:
-                text = text.replace(secret, f"«secret:{key}»")
+                # Never name the key: two portals may share a value, and a wrong name (a
+                # Grainline key on the TillDesk page) made the agent refuse to sign in.
+                text = text.replace(secret, HIDDEN)
         totp_secret = self._secrets.get("grainline_totp")
         if totp_secret:
             for drift in (-30, 0, 30):
-                text = text.replace(totp_code(totp_secret, time.time() + drift), "«totp»")
+                text = text.replace(totp_code(totp_secret, time.time() + drift), HIDDEN)
         return text

@@ -180,12 +180,25 @@ def test_back_dated_fact_is_refused(conn: psycopg.Connection[Any], world: Path) 
     conn.rollback()
 
 
+def triples(text: str) -> list[str]:
+    """The grouped pack read back as one "subject predicate object (when)" per fact."""
+    out: list[str] = []
+    subject = ""
+    for line in text.splitlines():
+        if line.startswith("  "):
+            out.append(f"{subject} {line.strip()}")
+        else:
+            subject = line.split(" ", 1)[0]
+    return out
+
+
 def test_context_pack_is_ranked_and_within_budget(
     conn: psycopg.Connection[Any], world: Path
 ) -> None:
     full = packer.pack(conn, ["product:franzbroetchen"], at(TODAY))
     assert full.tokens <= full.budget_tokens == packer.DEFAULT_BUDGET_TOKENS
-    lines = full.text.splitlines()
+    lines = triples(full.text)
+    assert len(lines) == len(full.fact_ids)
     head = lines[:6]  # hop 0: the business's standing rules and the seed's own facts
     assert any("has_preference preference:grainline-order-days" in line for line in head)
     assert any("has_rule preference:margin-target" in line for line in head)
@@ -195,6 +208,54 @@ def test_context_pack_is_ranked_and_within_budget(
     assert not any("7.1" in line and "butter unit_price" in line for line in lines)
     small = packer.pack(conn, ["product:franzbroetchen"], at(TODAY), budget_tokens=60)
     assert small.tokens <= 60 and small.fact_ids == full.fact_ids[: len(small.fact_ids)]
+
+
+def test_the_history_of_named_entities_is_packed(
+    conn: psycopg.Connection[Any], world: Path
+) -> None:
+    lines = triples(packer.pack(conn, ["ingredient:butter"], at(TODAY)).text)
+    price = [line for line in lines if "ingredient:butter unit_price_eur_per_kg" in line]
+    current = [line for line in price if "(since" in line]
+    earlier = [line for line in price if "until" in line]
+    assert len(current) == 1 and "8.24" in current[0]
+    assert earlier and "7.1" in earlier[0]  # what butter cost before the rise
+
+
+def test_kinds_the_task_mentions_reach_their_entities(
+    conn: psycopg.Connection[Any], world: Path
+) -> None:
+    products = conn.execute("select count(*) from entity where type = 'product'").fetchone()
+    menu = packer.pack(conn, [], at(TODAY), task="How many items are on the menu?")
+    prices = [line for line in triples(menu.text) if " menu_price_eur " in line]
+    assert products is not None and len(prices) == products[0]
+    named = triples(
+        packer.pack(
+            conn,
+            ["product:franzbroetchen"],
+            at(TODAY),
+            task="What does a Franzbrötchen cost on the menu?",
+        ).text
+    )
+    first_price = next(line for line in named if " menu_price_eur " in line)
+    assert first_price.startswith("product:franzbroetchen")  # named outranks its kind
+
+
+def test_the_pack_is_grouped_by_entity_under_its_name(
+    conn: psycopg.Connection[Any], world: Path
+) -> None:
+    holidays = packer.pack(conn, [], at(TODAY), task="Which public holidays are there?")
+    headers = [line for line in holidays.text.splitlines() if not line.startswith("  ")]
+    assert len(headers) == len(set(headers))  # one group per entity
+    names = dict(conn.execute("select id, name from entity where type = 'holiday'").fetchall())
+    for entity_id, name in names.items():
+        assert f'{entity_id} "{name}"' in headers  # "Whit Monday", not only its date
+    # The budget holds on the grouped text, and a smaller budget keeps a prefix.
+    big = packer.pack(conn, ["ingredient:butter"], at(TODAY))
+    for budget in (40, 120, 400):
+        small = packer.pack(conn, ["ingredient:butter"], at(TODAY), budget_tokens=budget)
+        assert small.tokens <= budget and packer.estimate_tokens(small.text) == small.tokens
+        assert small.fact_ids == big.fact_ids[: len(small.fact_ids)]
+        assert len(triples(small.text)) == len(small.fact_ids)
 
 
 # --- audit follow-ups ----------------------------------------------------------------------

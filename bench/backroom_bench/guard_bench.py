@@ -30,13 +30,15 @@ def summarize(briefs: Sequence[Brief]) -> dict[str, Any]:
 
 
 def verify(briefs: Sequence[Brief]) -> dict[str, Any]:
-    """Re-run the guard on what each card displays (title and why) against its numbers."""
+    """Re-run the guard on what each card displays (title, why, and the code-written
+    preference note) against its numbers."""
     checked = 0
     failures: list[dict[str, Any]] = []
     for b in briefs:
         for c in b.cards:
-            found = sum(len(guard.extract(t)) for t in (c.title, c.why))
-            bad = guard.unmatched([c.title, c.why], c.numbers)
+            shown = [c.title, c.why, *([c.preference_note] if c.preference_note else [])]
+            found = sum(len(guard.extract(t)) for t in shown)
+            bad = guard.unmatched(shown, c.numbers)
             checked += found
             if bad:
                 failures.append({"brief": b.id, "card": c.id, "unbacked": bad})

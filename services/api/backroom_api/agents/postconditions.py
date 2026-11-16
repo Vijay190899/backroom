@@ -15,6 +15,7 @@ from urllib.parse import urlsplit
 from playwright.async_api import Page
 
 from backroom_api.agents.portals_admin import PortalAdmin
+from backroom_api.browser.downloads import DownloadLog
 from backroom_api.browser.executor import render
 from backroom_api.skills.schema import Postcondition
 
@@ -82,8 +83,22 @@ async def check(
     admin: PortalAdmin,
     portal: str,
     baseline_orders: int | None,
+    downloads: DownloadLog | None = None,
 ) -> PostResult:
     value = render(post.value, params)
+    if post.kind == "file_downloaded":
+        if downloads is None:
+            return PostResult(False, "downloads were not recorded for this run")
+        await downloads.settle()
+        got = [f for f in downloads.files if f.name == value]
+        if not got:
+            names = [f.name for f in downloads.files] or "nothing"
+            return PostResult(False, f"expected the file {value!r}, the browser got {names}")
+        data = got[-1].data
+        # The bytes must really be that kind of file, not an error page saved as .pdf.
+        if value.lower().endswith(".pdf") and not data.startswith(b"%PDF-"):
+            return PostResult(False, f"{value} is not a PDF ({len(data)} bytes)")
+        return PostResult(True, f"{value} downloaded ({len(data) // 1024} KB)")
     if post.kind == "url_matches":
         path = urlsplit(page.url).path
         ok = re.search(value, path) is not None

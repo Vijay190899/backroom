@@ -15,12 +15,19 @@ class FakeRunner:
     def __init__(self) -> None:
         self.seed: dict[str, int] = {}
         self.learned: dict[str, int | None] = {}
+        self.baseline: dict[str, int | None] = {}
 
     async def set_chaos(self, portal: str, seed: int) -> None:
         self.seed[portal] = seed
 
     async def reset_skill(self, task: str) -> None:
         self.learned[task] = None
+
+    async def save_baseline(self, task: str) -> None:
+        self.baseline[task] = self.learned.get(task)
+
+    async def restore_baseline(self, task: str) -> None:
+        self.learned[task] = self.baseline.get(task)
 
     async def run(self, task: str) -> RunOutcome:
         seed = self.seed.get(task.split(".")[0], 0)

@@ -40,7 +40,10 @@ def test_vault_resolves_and_redacts() -> None:
     assert vault.resolve("{{secret:grainline_password}}") == "hunter2-Secret!"
     assert vault.keys() == ["grainline_password"]  # empty values are not secrets
     redacted = vault.redact("typed hunter2-Secret! into the form")
-    assert "hunter2" not in redacted and "«secret:grainline_password»" in redacted
+    assert "hunter2" not in redacted and "«hidden»" in redacted
+    # Two keys with the same value: the marker names neither (it could name the wrong one).
+    shared = SecretVault({"grainline_password": "same-pass", "tilldesk_password": "same-pass"})
+    assert shared.redact("typed same-pass") == "typed «hidden»"
     with pytest.raises(UnknownSecretError):
         vault.resolve("{{secret:tilldesk_password}}")
     with pytest.raises(ValueError):

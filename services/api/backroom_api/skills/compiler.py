@@ -42,6 +42,7 @@ class Action:
     url_before: str = ""
     url_after: str = ""
     obstacle: bool = False  # it only cleared a pop-up/banner/menu that may not come back
+    by_text: bool = False  # located by its visible text (no role a locator can name)
 
 
 def _number(text: str) -> float | None:
@@ -110,8 +111,19 @@ def _path_expect(before: str, after: str) -> Expect | None:
     return Expect(url_pattern=f"^{pattern}$")
 
 
+def template_name(name: str, params: Mapping[str, Any]) -> str:
+    """A text parameter inside an element's name becomes `{{param}}`: the row-scoped link
+    "Download PDF INV-204107" replays for any invoice. Numbers stay literal (a "28" in a
+    name is far more likely a quantity on the page than the parameter)."""
+    for key, param in sorted(params.items(), key=lambda kv: -len(str(kv[1]))):
+        if isinstance(param, str) and len(param) >= 3 and param in name:
+            name = name.replace(param, "{{" + key + "}}")
+    return name
+
+
 def compile_action(act: Action, params: Mapping[str, Any]) -> Step:
-    target = Locator(role=act.role, name=act.name) if act.role and act.name else None
+    name = template_name(act.name, params) if act.name else None
+    target = Locator(role=act.role, name=name) if act.role and name and not act.by_text else None
     if act.action in ("fill_secret", "totp"):
         template: str | None = "{{secret:" + str(act.secret) + "}}"
     elif act.value is not None:
@@ -122,7 +134,13 @@ def compile_action(act: Action, params: Mapping[str, Any]) -> Step:
         intent=template_text(act.intent, params),
         action=act.action,
         target=target,
-        fallbacks=fallbacks_for(act.role, act.name) if act.action != "goto" else [],
+        fallbacks=(
+            [TextFallback(text=name)]
+            if act.by_text and name
+            else fallbacks_for(act.role, name)
+            if act.action != "goto"
+            else []
+        ),
         value_template=template,
         expect=_path_expect(act.url_before, act.url_after) if act.action != "goto" else None,
         optional=act.obstacle,

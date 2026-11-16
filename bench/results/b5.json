@@ -1,0 +1,34 @@
+{
+  "id": "B5",
+  "ran_at": "2026-11-16T01:56:48+00:00",
+  "git_sha": "3969c90",
+  "provider": "openrouter",
+  "models": {
+    "planner": "claude-sonnet-5-5",
+    "worker": "claude-haiku-5-5",
+    "verifier": "claude-haiku-5-5",
+    "heal": "claude-haiku-5-5",
+    "escalation": "claude-sonnet-5-5",
+    "ask": "claude-sonnet-5-5"
+  },
+  "seeds": [],
+  "n": 10,
+  "fake": false,
+  "guard": {
+    "briefs": 10,
+    "cards": 30,
+    "model_copy_passed_first_try": 1.0,
+    "model_copy_passed_after_regeneration": 0.0,
+    "template_fallbacks": 0,
+    "regenerations": 0
+  },
+  "verification": {
+    "numbers_checked": 178,
+    "unbacked": 0,
+    "verified": 1.0,
+    "failures": [],
+    "target": {
+      "verified": 1.0
+    }
+  }
+}
