@@ -1,9 +1,18 @@
 name: backroom
 
+# Logs rotate at 10 MB, three files per container: a flood can't fill the disk, and nothing
+# is kept for long. (The API and portals write no access logs.)
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   postgres:
     image: pgvector/pgvector:pg16
     restart: unless-stopped
+    logging: *logging
     environment:
       POSTGRES_USER: backroom
       POSTGRES_PASSWORD: backroom
@@ -25,6 +34,7 @@ services:
       context: ..
       dockerfile: infra/Dockerfile.portals
     restart: unless-stopped
+    logging: *logging
     env_file: ../.env
     expose:
       - "8001"
@@ -35,6 +45,7 @@ services:
       context: ..
       dockerfile: infra/Dockerfile.api
     restart: unless-stopped
+    logging: *logging
     env_file: ../.env
     environment:
       DATABASE_URL: postgresql://backroom:backroom@postgres:5432/backroom
@@ -54,9 +65,9 @@ services:
     profiles: ["deploy"]
     image: caddy:2
     restart: unless-stopped
+    logging: *logging
     environment:
       API_HOST: ${API_HOST:-api.localhost}
-      PORTALS_HOST: ${PORTALS_HOST:-portals.localhost}
     ports:
       - "80:80"
       - "443:443"

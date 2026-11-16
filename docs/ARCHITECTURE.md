@@ -1,6 +1,6 @@
 # Backroom — Technical Architecture
 
-Stack follows Super44's: **Python + TypeScript + AWS**, with the frontend on Vercel (their marketing site is a Vercel-deployed Next.js app).
+Stack: **Python + TypeScript + AWS**, with the frontend on Vercel.
 
 ## 1. System overview
 
@@ -72,7 +72,7 @@ backroom/
 
 | Concern | Choice | Why |
 |---|---|---|
-| Runtime | Python 3.12, `uv`, FastAPI, Pydantic v2 | Their stack. Typed schemas shared with LLM structured outputs |
+| Runtime | Python 3.12, `uv`, FastAPI, Pydantic v2 | Typed schemas shared with LLM structured outputs |
 | DB | Postgres 16 + pgvector (`pgvector/pgvector:pg16`), `psycopg` 3 (synchronous pool, called from worker threads; ADR-10), plain SQL migrations | One store for graph, runs and skills. Bitemporal queries are easy in SQL |
 | Analytics | DuckDB over Parquet | Fast embedded OLAP. Detectors are pure SQL |
 | Browser | Playwright (Python) Chromium; CDP `Page.startScreencast` for live frames | Own the loop. No vendor lock-in. Live view for free |
@@ -189,7 +189,7 @@ LLM_PLANNER_MODEL=claude-haiku-5-5 LLM_ESCALATION_MODEL=claude-haiku-5-5
 | Fonts | `next/font`: Geist, Geist Mono (DECISIONS L-75) |
 | Quality | ESLint, `tsc --noEmit`, Playwright e2e (390 px + 1440 px), Lighthouse ≥ 90 |
 
-Routes: `/` Today · `/runs/[id]` Run theater · `/memory` · `/skills` · `/bench` · `/about` (architecture for the interview).
+Routes: `/` Today · `/runs/[id]` Run theater · `/memory` · `/skills` · `/bench` · `/about` (how it works).
 
 ## 7. Memory schema (sketch)
 
@@ -218,7 +218,7 @@ create index on fact (subject_id, predicate, valid_from desc);
 | Piece | Where | Cost |
 |---|---|---|
 | Web | Vercel Hobby | $0 |
-| API + portals + Postgres + Chromium | AWS Lightsail, Ubuntu 24.04, **2 GB / 2 vCPU** instance plus a **2 GB swap file**, static IP, docker compose, `restart: unless-stopped`, one Chromium with 2 contexts | ~$12/mo (check the current free-trial offer); 4 GB ($24/mo) is the safe upgrade if memory is tight; delete after the interview |
+| API + portals + Postgres + Chromium | AWS Lightsail, Ubuntu 24.04, **2 GB / 2 vCPU** instance plus a **2 GB swap file**, static IP, docker compose, `restart: unless-stopped`, one Chromium with 2 contexts | ~$12/mo (check the current free-trial offer); 4 GB ($24/mo) is the safe upgrade if memory is tight; delete it when the demo is retired |
 | LLM | OpenRouter credits (or Anthropic direct) | pay-as-you-go; set a credit limit on the key |
 | TLS / DNS | Caddy auto-HTTPS on `api.<ip>.sslip.io` and `portals.<ip>.sslip.io` (no domain purchase needed) | $0 |
 | Errors (P1) | Sentry free tier | $0 |
@@ -228,7 +228,6 @@ create index on fact (subject_id, predicate, valid_from desc);
 - **Deploy:** a GitHub Actions workflow builds the api and portals images and pushes them to GHCR (the api image is 4.3 GB, too heavy to build on a 2 GB server or a light laptop). `infra/deploy.sh`: ssh → `docker compose pull` → `docker compose up -d` → wait for health → smoke test. Take a Lightsail snapshot before the final deploy (rollback in 2 minutes). See ADR-14.
 - **Guards:** daily LLM budget cap, per-IP rate limit on mutation endpoints, live mode behind `DEMO_ACCESS_CODE`, CORS restricted to the Vercel domain.
 - **Fallback:** no AWS account or quota issue → the same compose file runs on Hetzner CX22 (~€4/mo) or Fly.io. Keep compose portable.
-- **Freeze:** no deploys after Fri 11:30.
 
 ## 9. Security notes (talking points)
 - Secrets live in a server-side vault (env or file); the model only sees `secret_key` names; events are redacted.
@@ -236,8 +235,8 @@ create index on fact (subject_id, predicate, valid_from desc);
 - Idempotency keys; dry-run previews; undo where the portal supports it.
 - No PII; synthetic or open data only, clearly labelled.
 
-## 10. How this maps to the real Super44 problem
+## 10. How this maps to a production system
 - **Adapter strategy:** API-first integrations where they exist (POS, accounting). Browser skills cover the long tail of portals without APIs. Both expose the same `Action` interface to the planner.
 - **Skills per portal** are shared across merchants on the same portal. One merchant's heal fixes everyone. Compounding at the network level.
-- **Memory per merchant** plus a cross-merchant "best practices" layer (their "unique dataset of industry knowledge").
+- **Memory per merchant** plus a cross-merchant "best practices" layer.
 - **Human handoff** (CAPTCHA, 2FA on the owner's phone, ambiguous choices) as first-class UX, not a failure.

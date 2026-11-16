@@ -12,7 +12,7 @@
 
 **The engine under "Approve all".** Backroom is an agentic back office for a local café. It finds money in the business data, explains it with evidence, and carries out the fix in the owner's web tools: logging in, handling 2FA, clicking through. It gets faster, cheaper and more aligned with the owner every time it runs.
 
-> Independent exploration built for a Founding Engineer interview with Super44. Not affiliated with or endorsed by Super44. All businesses, portals and people are fictional; data is open or synthetic ([docs/DATA.md](docs/DATA.md)).
+> An independent portfolio project. All businesses, portals and people are fictional; data is open or synthetic ([docs/DATA.md](docs/DATA.md)).
 
 <p align="center"><img src="docs/assets/demo.gif" alt="The run theater replaying a supplier order: the agent signs in, a button has moved, the healer model repairs the step, and the order is placed" width="100%"></p>
 

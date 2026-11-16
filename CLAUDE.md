@@ -1,6 +1,6 @@
 # Backroom — agent guide
 
-Agentic back office for a café: brief → approve → a browser agent acts in mock merchant portals, with self-healing skills, temporal memory and benchmarks. Interview demo; **code freeze Fri 13 Nov 11:30**.
+Agentic back office for a café: brief → approve → a browser agent acts in mock merchant portals, with self-healing skills, temporal memory and benchmarks. A public portfolio demo.
 
 ## Verify every change
 **Find the most optimal way to verify your own work after doing it and make sure you verify every update before going further to next task or in the same task.**
@@ -52,7 +52,7 @@ Rules:
 - Secrets never reach prompts or logs (`fill_secret` / `{{secret:key}}`).
 - Every LLM call goes through the cost meter + daily budget guard.
 - Mock portals only; no bot-protection evasion.
-- Fictional names only (Hafer & Bohne, Grainline, TillDesk, Localboard). Never use Super44 branding or copy in the product UI.
+- Fictional names only (Hafer & Bohne, Grainline, TillDesk, Localboard). Never use a real company's branding or copy in the product UI or the docs.
 
 ## Frontend quality bar
 - Load the `ui-ux-pro-max` skill for UI work and `dataviz` before any chart. Tokens live in `apps/web/src/styles/tokens.css` (starting palette: PRD §7).

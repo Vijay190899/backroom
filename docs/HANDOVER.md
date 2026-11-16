@@ -101,7 +101,7 @@ The full list is `docs/DECISIONS.md` (ADR-1 to ADR-15). The ones a new session i
 - **OpenRouter is the default provider**, Anthropic direct is a switch; one code path via the `anthropic` SDK (ADR-9). Models: Haiku 5.5 does the work, Sonnet 5.5 plans.
 - **Sync psycopg pool in worker threads**, because async psycopg and Playwright need different event loops on Windows (ADR-10).
 - **Task runner is `pnpm` root scripts over a uv workspace** (ADR-8). Never invent other entry points.
-- The demo story uses a **Franzbrötchen and butter +16%**, and the 8% price cap is **learned live** (no seeded price cap). Do not reuse "almond croissant" or "butter +18%": they come from Super44's own homepage.
+- The demo story uses a **Franzbrötchen and butter +16%**, and the 8% price cap is **learned live** (no seeded price cap). Do not reuse "almond croissant" or "butter +18%": they come from a real company's website.
 
 ## 5. Working agreements with the user
 
@@ -110,13 +110,13 @@ The full list is `docs/DECISIONS.md` (ADR-1 to ADR-15). The ones a new session i
 - **Stop at every milestone gate** and show evidence; the user then says "go".
 - **Cost-conscious runtime models**, swappable via env, and documented as such.
 - The user is an ML/AI engineer, backend-leaning, but wants a top-tier frontend.
-- Public repo: keep Super44 branding and copy out of the product UI. The README states that this is an independent exploration, not affiliated.
+- Public repo: keep real companies' branding and copy out of the product UI and the docs.
 
 ## 6. Windows environment quirks (the user's machine)
 
 - `uv` is not on the Bash tool's PATH until VS Code is fully restarted: use `export PATH="$HOME/.local/bin:$PATH"`.
 - **Playwright MCP calls must be sent one at a time**; batching resize + navigate + screenshot races. Screenshots may only be written under the repo (`.playwright-mcp/`, gitignored).
-- **To stop dev servers, use PowerShell and kill by port and by interpreter**, not by command line: stop the `OwningProcess` of `Get-NetTCPConnection -State Listen -LocalPort 8000,8001,3000`, every process whose `ExecutablePath` is under `Super44 Demo\.venv` or `Roaming\uv\python`, and the `node|uv|uvicorn|cmd` processes whose command line mentions `Super44 Demo`. Uvicorn's `--reload` child on Windows has no `backroom_*` in its command line, survives its parent, keeps the port, and keeps serving **old code** (it hid a fix for an hour). A leftover also causes `WinError 10013` on the next start. Bash `netstat` does not find them.
+- **To stop dev servers, use PowerShell and kill by port and by interpreter**, not by command line: stop the `OwningProcess` of `Get-NetTCPConnection -State Listen -LocalPort 8000,8001,3000`, every process whose `ExecutablePath` is under the repo's `.venv` or `Roaming\uv\python`, and the `node|uv|uvicorn|cmd` processes whose command line mentions the repo folder. Uvicorn's `--reload` child on Windows has no `backroom_*` in its command line, survives its parent, keeps the port, and keeps serving **old code** (it hid a fix for an hour). A leftover also causes `WinError 10013` on the next start. Bash `netstat` does not find them.
 - Run graphify Python snippets with `PYTHONUTF8=1 python -X utf8`.
 - Write files with the editor tools rather than shell heredocs containing apostrophes.
 
@@ -137,7 +137,7 @@ At every milestone gate, before committing:
 
 **Rule of thumb.** *Writing* code and testing it with fakes, fixtures and `TestClient` is light, so it goes to the laptop. Anything that needs **Docker, a running Chromium, many model-driven runs, or a server deploy rehearsal** is heavy, so it stays on this PC. Model calls themselves are network-bound and light; it is the browser and Docker that weigh.
 
-Time check: as of Thu 12 Nov ~14:30 there are about 21 hours to the Fri 11:30 freeze. Both machines must work in parallel. If time runs short, use the cut order in `docs/PRD.md` §6. Never cut: heal under chaos, the number guard, the bench page, the replay fallback.
+Both machines work in parallel. If time runs short, use the cut order in `docs/PRD.md` §6. Never cut: heal under chaos, the number guard, the bench page, the replay fallback.
 
 ### 9.1 Laptop tasks (light)
 
@@ -170,7 +170,7 @@ Time check: as of Thu 12 Nov ~14:30 there are about 21 hours to the Fri 11:30 fr
 | **H6** | Record golden runs → replay mode (M4) | H5 | the UI plays them with the "Replay" badge |
 | **H7** | **Run the benchmarks** B1–B5 (Chromium × many runs; about $5 of model calls) and commit `bench/results/*.json` (M4) | H5, L11 | real numbers on `/bench` |
 | **H8** | Deploy rehearsal: pull the images on the server, `compose up`, kill-the-API replay-fallback test, Lightsail snapshot (M4) | L12, H6 | public URL works on a phone over 4G; replay fallback verified |
-| **H9** | Final rehearsals ×3 on the deployed URL; freeze Fri 11:30 (M5) | everything | 3 clean runs |
+| **H9** | Final rehearsals ×3 on the deployed URL (M5) | everything | 3 clean runs |
 
 *Either machine:* `/graphify . --update` (light, uses model calls) and docs-only edits.
 
@@ -254,7 +254,8 @@ Full details are in each branch's `docs/sync/laptop.md` "Needs from PC" entries.
 - **Server:**
   - AWS Lightsail `backroom-demo`, Frankfurt, Ubuntu 24.04, 2 GB RAM / 2 vCPU ($12/month), 2 GB swap.
   - Static IP `63.186.156.153`. Firewall: 22, 80, 443.
-  - Caddy serves `api.` and `portals.63.186.156.153.sslip.io` with Let's Encrypt certificates.
+  - Caddy serves only `api.63.186.156.153.sslip.io` (Let's Encrypt), with security headers, a 1 MB body cap and IP-free error logs. The portals are internal (ADR-42).
+  - The API rate-limits per client IP: 240 reads and 30 writes a minute.
   - SSH from the PC: `ssh backroom` (key `~/.ssh/backroom`).
 - **Environment:** `.env.production` on the PC. It is git-ignored and copied to `/opt/backroom/.env` with mode 600. It holds the production OpenRouter key (with a credit limit), the access code, and random portal secrets.
 - **Runbook** (Git Bash, from the repo root):
@@ -270,5 +271,9 @@ Full details are in each branch's `docs/sync/laptop.md` "Needs from PC" entries.
   - With the API stopped, the site falls back to the sample brief and recorded runs.
   - Skills survive an API restart.
   - Memory after learning: about 750 MB used, 1.1 GB available.
-- **Owner to do:** take a Lightsail snapshot (rollback in about two minutes); open the site once with `?code=…` to check live mode; try it on a phone over mobile data.
-- **Cost guardrails:** root MFA, a $20/month AWS Budget alert, no AWS access keys, automatic snapshots off. **Teardown after the interview:** delete the instance, the static IP (billed once detached) and any snapshots. A stopped instance still bills.
+- **Owner to do:**
+  - open the site once with `?code=…` to check live mode;
+  - try it on a phone over mobile data;
+  - set the legal page's operator details in Vercel (`OPERATOR_NAME`, `OPERATOR_EMAIL`, and `OPERATOR_ADDRESS` with lines separated by `;` if a German Impressum is needed), then redeploy (ADR-43).
+- **Snapshot:** `backroom-h8`, taken 16 Nov 2026.
+- **Cost guardrails:** root MFA, a $20/month AWS Budget alert, no AWS access keys, automatic snapshots off. **Teardown when the demo is retired:** delete the instance, the static IP (billed once detached) and any snapshots. A stopped instance still bills.

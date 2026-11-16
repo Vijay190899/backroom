@@ -40,6 +40,10 @@ if ! sudo swapon --show | grep -q /swapfile; then
   echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab >/dev/null
 fi
 sudo mkdir -p /opt/backroom && sudo chown "$USER" /opt/backroom
+# SSH: keys only (Lightsail's default), and no root login at all.
+printf 'PermitRootLogin no\nPasswordAuthentication no\nKbdInteractiveAuthentication no\n' \
+  | sudo tee /etc/ssh/sshd_config.d/10-backroom.conf >/dev/null
+sudo sshd -t && sudo systemctl reload ssh
 if [ -f /var/run/reboot-required ]; then echo "setup done; a reboot is required: sudo reboot"; else echo "setup done"; fi
 REMOTE
     ;;
@@ -49,7 +53,7 @@ REMOTE
     env_file="${ENV_FILE:-$here/../.env.production}"
     [[ -f "$env_file" ]] || { echo "missing $env_file (the server's .env; see .env.example)" >&2; exit 1; }
     # Refuse to ship an environment that would run open or keyless.
-    for key in OPENROUTER_API_KEY DEMO_ACCESS_CODE PORTALS_ADMIN_TOKEN WEB_ORIGIN API_HOST PORTALS_HOST; do
+    for key in OPENROUTER_API_KEY DEMO_ACCESS_CODE PORTALS_ADMIN_TOKEN WEB_ORIGIN API_HOST; do
       value="$(tr -d '\r' < "$env_file" | grep -E "^$key=" | tail -1 | cut -d= -f2-)"
       if [[ -z "$value" || "$value" == "change-me" ]]; then
         echo "$env_file: $key is empty or change-me" >&2; exit 1

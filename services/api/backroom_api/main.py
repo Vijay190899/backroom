@@ -18,6 +18,7 @@ from backroom_api.live.briefs import BriefService
 from backroom_api.live.runs import RunManager
 from backroom_api.llm.client import LLM
 from backroom_api.llm.registry import is_configured
+from backroom_api.ratelimit import RateLimiter
 from backroom_api.routes import brief, catalog, errors, health, runs
 from backroom_api.seed_db import migrate
 from backroom_api.skills.store import SkillStore
@@ -71,6 +72,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     app = FastAPI(title="Backroom API", version="0.1.0", lifespan=lifespan)
     app.state.settings = settings
+    # Added first, so it runs inside CORS and a 429 still carries the CORS headers.
+    app.add_middleware(
+        RateLimiter,
+        read_per_min=settings.rate_limit_read_per_min,
+        write_per_min=settings.rate_limit_write_per_min,
+    )
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[settings.web_origin],

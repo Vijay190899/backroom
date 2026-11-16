@@ -6,6 +6,7 @@ import { ApiStatus } from "./api-status";
 import { CommandButton } from "./command-button";
 import { TabBarLinks, TopBarLinks } from "./nav-links";
 import { ShellExtras } from "./shell-extras";
+import { SiteFooter } from "./site-footer";
 import { ThemeToggle } from "./theme-toggle";
 import { Wordmark } from "./wordmark";
 
@@ -35,7 +36,10 @@ export function AppShell({ children }: { children: ReactNode }) {
       <CafePattern />
 
       <main id="main" tabIndex={-1} className="flex-1 px-4 pt-8 pb-44 outline-none sm:px-6 lg:px-10 lg:pt-12 lg:pb-28">
-        <div className="mx-auto w-full max-w-6xl">{children}</div>
+        <div className="mx-auto w-full max-w-6xl">
+          {children}
+          <SiteFooter />
+        </div>
       </main>
 
       <nav

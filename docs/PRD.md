@@ -4,9 +4,9 @@
 
 | | |
 |---|---|
-| Status | v1.0. Build window: Wed 11 Nov 22:00 → Fri 13 Nov 11:30 (code freeze) |
+| Status | v1.0 |
 | Owner | Vijay (Vijay190899) |
-| Audience | Super44 founders (Henry George, CTO; Alex Riesenkampff), in the Founding Engineer interview on Fri 13 Nov |
+| Audience | Engineers and product people evaluating agentic back-office automation |
 | Build agent | Claude Fable 5.2 in Claude Code |
 | Runtime LLMs | Claude Haiku 5.5 (worker) + Sonnet 5.5 (planner), via **OpenRouter** by default or Anthropic direct. Provider and models are env-swappable (see [ARCHITECTURE.md §5](ARCHITECTURE.md#5-model-layer)) |
 
@@ -14,7 +14,7 @@
 
 ## 1. Why this exists
 
-Super44's live product already shows the conversational front end: a morning brief with "Approve all", review insights, profit bridges, recipe costing and rotas. Their JD names the hard problems underneath it:
+Back-office assistants for small hospitality businesses usually show the friendly part: a morning brief with an "Approve all" button. The hard problems sit underneath it:
 
 1. **Browser automation that actually works.** Reliable agentic action across arbitrary web interfaces, including auth.
 2. **Multi-agent orchestration** across merchant tools, with expert context.
@@ -22,14 +22,14 @@ Super44's live product already shows the conversational front end: a morning bri
 4. **Agentic self-improvement**: systems that get smarter from every interaction.
 5. **UX for agentic systems**, where AI takes action and is simpler than ChatGPT.
 
-Backroom is a working, measured slice of **all five**. It deliberately does not clone their homepage. It shows the machinery and proves it with numbers.
+Backroom is a working, measured slice of **all five**. It doesn't clone any existing product. It shows the machinery and proves it with numbers.
 
-### The pitch, in one sentence for the interview
-> "Your homepage has an 'Approve all' button. I built what happens after the owner taps it, and a benchmark showing it doesn't break when the website it's driving changes."
+### In one sentence
+> "An 'Approve all' button is easy to draw. Backroom is what happens after the owner taps it, with a benchmark showing it doesn't break when the website it's driving changes."
 
 ## 2. Goals and non-goals
 
-### Goals (what must be true on Friday)
+### Goals (what must be true for the demo)
 - **G1, Acts, not suggests.** Approving an action makes a browser agent carry it out live in a merchant web portal, with login and 2FA, while the owner watches.
 - **G2, Self-improving.** Repeat tasks get faster and cheaper (compiled skills). Broken skills repair themselves when the site changes (healing). Owner rejections become rules the system obeys (preference learning).
 - **G3, Compounding memory.** A temporal knowledge graph of the business where facts have validity windows, supersede each other, and feed compact, token-budgeted context to agents.
@@ -67,7 +67,7 @@ All names are fictional. No real brands are imitated; the UI is generic.
 
 ## 4. Users and jobs to be done
 - **Lena, the owner (primary).** "Tell me the 3 things that matter today, with the € impact, and do them when I say yes. Don't make me log into five websites."
-- **The interviewer (demo user).** "Show me it's real: it acts, survives change, remembers, and you know what it costs."
+- **The evaluator (demo user).** "Show me it's real: it acts, survives change, remembers, and you know what it costs."
 
 ## 5. Core flows (user stories with acceptance criteria)
 
@@ -124,7 +124,7 @@ As Lena, after approving, I watch the agent work.
 
 ## 6. Prioritisation
 
-| P0 (must ship by Thu 23:30) | P1 (ship if on track) | P2 (stretch) |
+| P0 (must ship) | P1 (ship if on track) | P2 (stretch) |
 |---|---|---|
 | Grainline + TillDesk portals with chaos engine | Localboard portal + rainy-day post | WhatsApp-style mobile thread |
 | Browser agent: explore / compile / replay / heal | Ask (⌘K chat with tools) | Voice note in (speech → intent) |
@@ -211,7 +211,7 @@ All benchmarks are reproducible with one command (`pnpm bench`). Results are JSO
 | B4 (P1) | Model swap | B1-cold subset + B3 on Haiku 5.5 / Sonnet 5.5 / Opus 5.5 | same, per model | inform the default choice |
 | B5 | Number guard | All generated briefs during bench | guard pass rate, regenerations | 100% displayed numbers verified |
 
-## 10. Success criteria for the interview
+## 10. Success criteria for the demo
 1. The full demo script ([DEMO_SCRIPT.md](DEMO_SCRIPT.md)) runs live on the public URL in < 5 minutes without a hitch, three rehearsals in a row.
 2. The bench page shows real B1–B3 and B5 numbers.
 3. The README explains the architecture in < 2 minutes of reading, with a GIF.
@@ -232,4 +232,4 @@ All benchmarks are reproducible with one command (`pnpm bench`). Results are JSO
 ## 12. Open questions (decide during build; log in DECISIONS.md)
 - Maven dataset licence for redistribution. If unclear, commit only the download script and derived aggregates.
 - React Flow vs a force-graph library for `/memory` (decide on perf with ~300 nodes).
-- Does Localboard make P1? Decide at the Thu 19:00 gate.
+- Does Localboard make P1? Decide at the M4 gate.
